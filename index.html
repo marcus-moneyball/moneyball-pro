@@ -182,7 +182,7 @@ TODO mercado em mercados[] gera uma entrada em "analise". Métrica individual au
 ========================
 PIPELINE (por mercado)
 ========================
-1. Ler ctx (dna, janela_encaixe, desfalques) — vale pra todos os mercados da partida.
+1. Ler ctx (dna, janela_encaixe, desfalques) — vale pra todos os mercados da partida. dna ausente é normal (Engine só inclui quando há amostra suficiente) e não penaliza banda por si só — só use dna quando presente, como reforço.
 2. Ler snap, proj, base, interf, cond, av do mercado.
 3. Calcular o Gatilho de Desvio: comparar proj (o que o time/atleta "merece") com base (o que aconteceu na janela recente):
    - MLB: ERA (base) vs xFIP (proj); xwOBA sofrido vs AVG sofrido
@@ -202,6 +202,8 @@ BANDAS DE CONFIANÇA (Protocolo de Normalidade)
 🟡 Amarela — divergência leve entre proj e base (ex: time cria xG alto mas não converte; pitcher com xFIP bom mas ERA recente ruim), OU janela_encaixe instável, OU av com métrica relevante ausente.
 🔴 Vermelha — divergência agressiva entre proj e base sem explicação por interf/cond identificada (colapso estatístico), OU gate.confianca = "baixa" para aquele mercado. Banda Vermelha = veto total, stake sempre 0, independente do EV calculado depois.
 Nunca reclassificar banda com base em EV — a banda vem primeiro, o EV é checado depois e nunca a sobrepõe.
+
+Nota sobre tamanho de amostra (n): base.n pequeno (menos de 5 jogos/starts) tem ruído estatístico natural — uma divergência isolada nessas condições não é "colapso", é amostra curta. Se base.n < 5, o teto de classificação é Amarela, mesmo que a divergência pareça grande — nunca classificar Vermelha com n < 5. Vermelha exige divergência agressiva E amostra suficiente (n >= 5) para ser considerada um padrão real, não ruído.
 ========================
 PSM — PROTOCOLO DE SELEÇÃO DE MERCADO
 ========================
@@ -241,6 +243,27 @@ Para toda entrada Verde ou Amarela, sugerir uma "saída de emergência" no campo
 GESTÃO DE CORRELAÇÃO (nível do bilhete, não do mercado)
 ========================
 Depois de gerar todas as entradas, revisar o conjunto: se 2+ seleções Verdes/Amarelas dependem da mesma variável de risco (mesmo jogo E mesmo fator de Condicionamento, ex: mesmo bullpen cansado sustentando tanto o Run Line quanto o Total), preencher "correlacao_alerta" nessas entradas citando a variável compartilhada.
+========================
+EXEMPLO RESOLVIDO (template obrigatório — copiar a forma exata)
+========================
+Entrada recebida (trecho do MDM):
+{"snap":{"nome":"Pitcher Strikeouts","jogador":"T. Skubal","linha":8.5,"odds":{"over":2.0,"under":1.75}},"proj":{"k_9":11.4,"k_bb_pct":28.5,"xfip":2.7},"base":{"k_9_l3_5":10.8,"n":4},"interf":{"k_pct_lineup_adv":19.2},"cond":{"pitch_count_medio":97,"dias_descanso":5}}
+
+Raciocínio aplicado (não vai na saída, só ilustra o pipeline):
+1. Gatilho de Desvio: k_9 proj (11.4) vs k_9 base (10.8) — divergência pequena, mesma direção.
+2. Amostra: n=4 (< 5) → teto de banda é Amarela, mesmo a divergência sendo pequena e favorável.
+3. janela_encaixe não se aplica a prop individual sem sinal em ctx — ignorar.
+4. PSM: desvio concentrado no arremessador → Categoria C (Individual). Mercado é prop de strikeouts → mercado correto, sem penalidade.
+5. Proteção de Props: precisa de k_bb_pct em padrão favorável por 3+ starts — só há n=4, no limite, mas dentro do exigido → critério de proteção cumprido.
+6. Banda final: Amarela (travada pelo n baixo, não pela divergência).
+7. p_imp = 1/2.00 = 50%. Banda Amarela → ajuste de +2 a +5 p.p. → p_est = 54%.
+8. ev = (0.54 * 2.00) - 1 = 0.08. kelly = (0.54*2.00-1)/(2.00-1) = 0.08 → capado em 0.05 já é o teto, aqui fica abaixo, então kelly = 0.08 (dentro do teto de 0.05? não — 0.08 > 0.05, aplicar teto: kelly = 0.05).
+9. stake_sugerida (Amarela) = 0.5.
+
+Saída correspondente:
+{"e":"Los Angeles Angels vs Detroit Tigers","m":"Pitcher Strikeouts Over 8.5","s":"Tarik Skubal","l":8.5,"o":2.0,"banda":"amarela","categoria_psm":"C","pe":54,"pi":50,"ev":0.08,"stake_sugerida":0.5,"margem_seguranca":"Reduzir para linha 7.5 se disponível, absorve variância de amostra pequena","correlacao_alerta":"","rob":58,"rating":"Média","w":"K/9 projetado (11.4) e recente (10.8, apenas 4 starts) convergem, mas amostra curta trava banda em Amarela.","f":["xFIP","K-BB%","Amostra pequena"]}
+
+Este exemplo é a referência de forma e de raciocínio — replicar exatamente esta sequência de passos e este nível de citação de dado em "w" para todo mercado analisado.
 ========================
 ORDENAÇÃO
 ========================
