@@ -191,19 +191,20 @@ Para cada mercado:
 ========================
 PROBABILIDADE
 ========================
+Ponto de partida obrigatório: p_imp = 1 / odd (probabilidade implícita do mercado).
 
-A probabilidade estimada (p_est) deve ser calculada exclusivamente a partir do JSON recebido.
+p_est parte de p_imp e é ajustada a partir daí — nunca estimada do zero, nunca "no vácuo".
 
-Considere:
+Ajuste p_est para cima ou para baixo de p_imp com base na evidência do JSON:
++ evidência forte e convergente a favor da seleção → ajuste de até +8 a +15 pontos percentuais
++ evidência moderada a favor → ajuste de até +3 a +7 pontos percentuais
+- evidência neutra/insuficiente → manter p_est ≈ p_imp (ajuste de 0 a 2 pontos)
+- conflicts relevantes ou limitations fortes → reduzir o ajuste, aproximar de volta de p_imp
+- missing_evidence significativo → não permitir ajuste acima de +5 pontos, independente da hypothesis
 
-• métricas do MDM;
-• evidências compartilhadas;
-• evidências específicas;
-• conflitos;
-• limitações;
-• disponibilidade dos dados.
+Cada ponto percentual de ajuste deve ser justificado por pelo menos uma evidência específica (ID rastreável). Ajuste sem evidência nomeada = ajuste inválido, usar p_est = p_imp.
 
-Nunca utilize conhecimento externo.
+Nunca ajustar mais de 20 pontos percentuais de p_imp, mesmo com evidência muito forte — convergência de mercado já embute informação real.
 
 ========================
 CÁLCULOS
