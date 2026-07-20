@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Sistema</title>
+    <title>Moneyball Pro | Não prevê resultados</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,7 +31,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v12.0
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
-            <p class="text-xs text-slate-500">Cola o JSON de odds → o Groq analisa com os parâmetros treinados → monta o bilhete</p>
+            <p class="text-xs text-slate-500">Inteligência quantitativa aplicada ao esporte.</p>
         </div>
 
         <!-- SELETOR DE ESPORTE -->
@@ -144,55 +144,75 @@
     // e "tb" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
-return `Moneyball Pro Bet Builder v12.0 — Lean Engine
-
-MISSÃO: Analisar MDM v8.3, gerar prognóstico (<300 chars) e ranquear mercados por Moneyball Score. Responda APENAS em JSON válido.
-DIRETRIZ: O objetivo não é prever o vencedor, mas identificar o mercado com melhor relação entre vantagem estatística, representatividade tática e odds.
+return `Moneyball Pro Bet Builder v8.7 — Código Nexus
+Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido em Português.
 
 ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 
-1. PROGNÓSTICO & IP AJUSTADO
-• Desenhe a leitura macro da partida (ritmo, choque tático e veículo ideal de aposta).
-• IP Base (0-10) = ((Ataque + Defesa)/2) × Encaixe [Fav: 1.10 | Neutro: 1.00 | Desf: 0.90]. (Normalizar 0-100 no Score).
-• Pesos ASP: MLB/Beisebol (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%).
+1. CÁLCULOS & FÓRMULAS
+• IP = ((ataque_score + defesa_score) / 2) * mult [Favorável: 1.10 | Neutro: 1.00 | Desfavorável: 0.90]
+• Pesos IP: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%)
+• Score (0-100): IP(35%) + Amostra_n(25%) + Edge(25%) + Contexto(10%) + EV(5%)
+• Ajustes: Bônus (+5 a +10: matchup dominante, encaixe, edge alto, n robusto) | Penalidades (-5 a -15: amostra curta, ausências, divergência Proj×Base, edge baixo, fragilidade).
 
-2. MONEYBALL SCORE (0-100)
-Score = soma ponderada de seis pilares:
-• IP Ajustado (30%): Qualidade do confronto direto (Ataque × Defesa × Encaixe).
-• Robustez (25%): Tamanho da amostra (n), estabilidade, convergência Proj × Base e consistência dos dados.
-• Edge (20%): Diferença entre p_est e p_imp. Mercados eficientes (ex.: Moneyline) exigem Edge maior para nota alta.
-• Contexto (10%): Descanso, mando, viagens, clima, desfalques.
-• Eficiência do Mercado (10%): Priorize mercados que isolem diretamente a vantagem (ex.: Pitcher dominante → Strikeouts/Outs > Handicap > Moneyline).
-• EV (5%): Relação risco × retorno. Nunca supera IP, Robustez ou Edge.
+2. MATRIZ DE QUADRANTES & ÁRVORE DE ANÁLISE (Obrigatório no campo "w")
+• Camada 1 (Estrutural): Dados frios (ERA, xG, Net Rating, K%).
+• Camada 2 (Fricção/Ambiente): Cansaço, B2B, Clima, Park Factor, Desfalques.
+• Camada 3 (Quadrantes de Encaixe Tático):
+  - [Q1] Predador vs Presa (Desequilíbrio técnico direto no matchup).
+  - [Q2] Ritmo & Volume (Ataque acelerado vs Defesa passiva -> Over/Props).
+  - [Q3] Fricção & Trinca (Jogo Amarrado/Desfalques/Clima -> Under/Handicap).
+  - [Q4] Encaixe Neutro/Risco (Vantagens se anulam).
+• ESTRUTURA DO CAMPO "w": Explicitar obrigatoriamente o Quadrante (Q1-Q3) e a combinação das Camadas.
+  Exemplo: "Q1 Predador: Starter Tarik Skubal (ERA 2.15) domina a lineup em K% (Camada 1+3) superando o desgaste recente do bullpen."
 
-Ajustes: +5 a +10 (matchup dominante, consistência/convergência) | -5 a -15 (amostra curta, desfalque, conflito de dados). Limitar Score entre 0 e 100.
+3. BANDAS & STAKES
+• Verde (Score >= 75): Stake 1.0 | Amarela (60 <= Score < 75): Stake 0.5 | Vermelha (50 <= Score < 60): Stake 0.0 | Descarte (Score < 50): Proibido em top_bilhetes.
 
-3. BANDAS & RANKING ("tb") — OBRIGATÓRIO EXATAMENTE 5 ITENS
-• Score define o ranking. Banda define a exposição (stake). Um nunca altera o outro.
-• Verde (Score ≥ 75 | Stake 1.0) | Amarela (60–74 | Stake 0.5) | Vermelha (45–59 | Stake 0.0) | Descarte (<45).
-• ⚠️ TRAVA DE ARRAY: O array "tb" DEVE CONTER OBRIGATORIAMENTE EXATAMENTE 5 OBJETOS (mercados de maior Score). NUNCA retorne menos de 5 itens em "tb" (a menos que o MDM tenha < 5 mercados no total).
-• Corte = 45 é sobre a Banda (Descarte): se menos de 5 mercados atingirem 45, complete os 5 em "tb" com os próximos melhores mesmo abaixo de 45, marcando-os como "Descarte" e avisando em "r".
-• Entre mercados de Score parecido, priorize Handicaps/Props sobre ML.
+4. REGRAS DE SELEÇÃO & GATE SCORE >= 50
+• Filtrar mercados com Score >= 50 em ordem DECRESCENTE.
+• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo de maior Score (>= 50).
+• Selecionar até os 6 maiores em "top_bilhetes". score_bilhete = Média simples dos scores em top_bilhetes.
+• GATE DE CORTE (< 50): Se NENHUM mercado tiver Score >= 50, "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Nenhum mercado atingiu a margem mínima de segurança (Score >= 50)."
+• "analise": Deve conter TODOS os mercados processados.
 
-4. LIMITES DE SAÍDA QUALITATIVA
-• p: Máximo 300 caracteres. Fluxo tático do jogo.
-• r: Máximo 150 caracteres. Síntese executiva.
-• w: Máximo 200 caracteres por item. Raciocínio prático: cenário, sustento dos dados, isolamento da vantagem e risco.
+5. RESOLUÇÃO ABSOLUTA DE NOMES REAIS (CAMPO "s") — ZERO TOLERÂNCIA
+• PROIBIDO usar códigos, siglas, iniciais ou genéricos (EXPLICITAMENTE PROIBIDO: "DXB", "H", "A", "pitcher_vis", "starter", "time_casa").
+• OBRIGATÓRIO extrair o NOME COMPLETO REAL do time (de partida.evento) ou do atleta (de ato1.starter/ctx).
+• Formato do campo "s": "[Nome Completo do Time/Atleta] + [Mercado e Linha]"
+  (Ex correto: "Detroit Tigers -1.5", "Tarik Skubal Over 6.5 Ks", "Los Angeles Angels Moneyline").
 
-SAÍDA (JSON ESTRITO — O ARRAY "tb" DEVE CONTER OBRIGATORIAMENTE 5 OBJETOS):
+SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 {
-  "p": "Prognóstico em até 300 chars",
-  "r": "Resumo executivo em até 150 chars",
-  "sb": 0,
-  "tb": [
-    { "e": "${modulo.label}", "m": "Mercado Top 1", "s": "Seleção + Linha Exata", "at": "A|B", "sc": 85, "ip": 8.0, "b": "Verde", "st": 1.0, "ev": 0.0, "w": "Justificativa...", "f": ["fator_risco"] },
-    { "e": "${modulo.label}", "m": "Mercado Top 2", "s": "Seleção + Linha Exata", "at": "A|B", "sc": 72, "ip": 7.0, "b": "Amarela", "st": 0.5, "ev": 0.0, "w": "Justificativa...", "f": [] },
-    { "e": "${modulo.label}", "m": "Mercado Top 3", "s": "Seleção + Linha Exata", "at": "A|B", "sc": 64, "ip": 6.2, "b": "Amarela", "st": 0.5, "ev": 0.0, "w": "Justificativa...", "f": [] },
-    { "e": "${modulo.label}", "m": "Mercado Top 4", "s": "Seleção + Linha Exata", "at": "A|B", "sc": 52, "ip": 5.1, "b": "Vermelha", "st": 0.0, "ev": 0.0, "w": "Justificativa...", "f": [] },
-    { "e": "${modulo.label}", "m": "Mercado Top 5", "s": "Seleção + Linha Exata", "at": "A|B", "sc": 41, "ip": 4.0, "b": "Descarte", "st": 0.0, "ev": 0.0, "w": "Justificativa...", "f": [] }
+  "resumo": "Visão geral quantitativa em 2 frases com base no Quadrante dominante da partida.",
+  "score_bilhete": 0.0,
+  "top_bilhetes": [
+    {
+      "e": "Esporte",
+      "m": "Mercado",
+      "s": "Nome Completo Real do Time/Atleta + Linha Exata",
+      "ativo": "Ativo A|Ativo B",
+      "ip_ajustado": 0.0,
+      "ataque_score": 0.0,
+      "defesa_score": 0.0,
+      "moneyball_score": 85,
+      "banda": "Verde|Amarela|Vermelha",
+      "stake_sugerida": 1.0,
+      "ev": 0.0,
+      "w": "Quadrante + Gatilho das Camadas 1/2/3 + Conclusão em Português",
+      "f": "fator de risco/fricção"
+    }
   ],
-  "a": [
-    { "e": "${modulo.label}", "m": "Mercado 6+", "s": "Seleção", "sc": 35, "b": "Descarte", "st": 0.0 }
+  "analise": [
+    {
+      "e": "Esporte",
+      "m": "Mercado",
+      "s": "Nome Completo Real do Time/Atleta + Linha Exata",
+      "ativo": "Ativo A|Ativo B",
+      "moneyball_score": 45,
+      "banda": "Descarte|Vermelha|Amarela|Verde",
+      "stake_sugerida": 0.0
+    }
   ]
 }`;
 }
