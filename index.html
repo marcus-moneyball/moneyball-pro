@@ -22,11 +22,14 @@
         }
     </script>
 </head>
-<body class="bg-base-bg text-slate-200 font-sans min-h-screen">
+<body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.08), transparent 60%);">
     <div class="max-w-2xl mx-auto p-4 md:p-8 space-y-6">
 
         <!-- HEADER -->
-        <div class="text-center space-y-1">
+        <div class="text-center space-y-2 pt-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v12.0
+            </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
             <p class="text-xs text-slate-500">Cola o JSON de odds → o Groq analisa com os parâmetros treinados → monta o bilhete</p>
         </div>
@@ -137,8 +140,8 @@
 
        // ============================================================
       // 2 PROMPT — v8.5: Análise / Moneyball Score v2 / Ranking.
-     // Saída em dois níveis: "analise" (todo mercado, campos leves)
-    // e "top_bilhetes" (5-6 melhores, detalhamento completo).
+     // Saída em dois níveis: "a" (todo mercado, campos leves)
+    // e "tb" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
 return `Moneyball Pro Bet Builder v12.0 — Lean Engine
@@ -270,9 +273,9 @@ SAÍDA (JSON ESTRITO):
             { role: "user", content: userInput }
         ],
         temperature: 0.2,
-        max_tokens: 6000,
+        max_completion_tokens: 6000,
         reasoning_effort: "low",
-        reasoning_format: "hidden",
+        include_reasoning: false,
         response_format: { type: "json_object" }
     })
 });
@@ -302,15 +305,28 @@ SAÍDA (JSON ESTRITO):
 
         // ============================================================
         // 4. CLASSIFICAÇÃO POR MONEYBALL SCORE
-        //    (única fonte de confiabilidade visual — sem probabilidade/margem antigas)
+        //    Fonte primária: a banda ("b") que o próprio modelo já
+        //    calculou (Verde/Amarela/Vermelha/Descarte). O score só
+        //    entra como fallback se "b" não vier, usando os MESMOS
+        //    limiares do prompt (75/60/45) — nunca um limiar próprio
+        //    do front-end desalinhado do que o modelo usa.
         // ============================================================
-        function tierPorScore(score) {
-            const s = Number(score);
-            if (score === undefined || score === null || isNaN(s)) return { tier: "indefinida", label: "SEM SCORE" };
-            if (s >= 80) return { tier: "alta", label: "ALTA CONFIABILIDADE" };
-            if (s >= 60) return { tier: "media", label: "MÉDIA CONFIABILIDADE" };
-            if (s >= 40) return { tier: "baixa", label: "BAIXA CONFIABILIDADE" };
-            return { tier: "descartada", label: "SCORE BAIXO" };
+        const BANDA_MAP = {
+            "verde": { tier: "alta", label: "BANDA VERDE" },
+            "amarela": { tier: "media", label: "BANDA AMARELA" },
+            "vermelha": { tier: "baixa", label: "BANDA VERMELHA" },
+            "descarte": { tier: "descartada", label: "DESCARTE" },
+        };
+
+        function tierPorItem(item) {
+            const score = Number(item.sc ?? item.moneyball_score);
+            const banda = (item.b || "").toLowerCase();
+            if (BANDA_MAP[banda]) return { ...BANDA_MAP[banda], score };
+            if (isNaN(score)) return { tier: "indefinida", label: "SEM SCORE", score: null };
+            if (score >= 75) return { tier: "alta", label: "ALTA CONFIABILIDADE", score };
+            if (score >= 60) return { tier: "media", label: "MÉDIA CONFIABILIDADE", score };
+            if (score >= 45) return { tier: "baixa", label: "BAIXA CONFIABILIDADE", score };
+            return { tier: "descartada", label: "SCORE BAIXO", score };
         }
 
         const CONFIABILIDADE_STYLE = {
@@ -322,64 +338,75 @@ SAÍDA (JSON ESTRITO):
         };
 
         function cardMercado(item) {
-            const tier = tierPorScore(item.moneyball_score);
+            const tier = tierPorItem(item);
             const v = CONFIABILIDADE_STYLE[tier.tier];
 
-            const selecaoTxt = `${item.s || ""}${item.l !== undefined && item.l !== null && item.l !== "" ? ` ${item.l}` : ""}`;
-            const linhaOdd = [];
-            if (item.o !== undefined && item.o !== null) linhaOdd.push(`Odd ${item.o}`);
+            const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
+            const ev = item.ev;
+            const ip = item.ip ?? item.ip_ajustado;
+            const stake = item.st ?? item.stake_sugerida;
+            const ativo = item.at ?? item.ativo;
+            const fatores = item.f || [];
 
             const extras = [];
-            if (item.ev !== undefined && item.ev !== null) {
-                const evPositivo = Number(item.ev) >= 0;
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${item.ev}</span>`);
+            if (ev !== undefined && ev !== null) {
+                const evPositivo = Number(ev) >= 0;
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
             }
-            if (item.ip_ajustado !== undefined && item.ip_ajustado !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${item.ip_ajustado}</span>`);
+            if (ip !== undefined && ip !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
             }
-            if (item.stake_sugerida !== undefined && item.stake_sugerida !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${item.stake_sugerida}u</span>`);
+            if (stake !== undefined && stake !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
             }
-            if (item.ativo) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${item.ativo}</span>`);
+            if (ativo) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
             }
             const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
+            const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
 
             return `
-                <div class="p-4 bg-base-card rounded-xl border ${v.border}">
+                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
                     <div class="flex justify-between items-start gap-2">
                         <span class="font-bold text-white text-sm">${item.m || ""}</span>
-                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${item.moneyball_score ?? "-"}</span>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
                     </div>
                     <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
-                    ${linhaOdd.length ? `<div class="text-xs text-slate-500 mt-1">${linhaOdd.join(" · ")}</div>` : ""}
                     ${extrasHtml}
+                    ${fatoresHtml}
                     ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
-                    ${item.margem_seguranca ? `<div class="text-[11px] text-slate-600 mt-1">${item.margem_seguranca}</div>` : ""}
                 </div>`;
         }
 
         // ============================================================
         // 5. RENDERIZAÇÃO DO BILHETE
-        //    Lê "top_bilhetes" / "analise" / "score_bilhete" — os campos
-        //    que o prompt v7.4 realmente devolve.
+        //    Lê o schema real do prompt v12.0: "tb" (top bilhetes),
+        //    "a" (análise leve), "sb" (score do bilhete), "p" (prognóstico),
+        //    "r" (resumo executivo) — com fallback pras chaves antigas
+        //    (top_bilhetes/analise/score_bilhete/resumo) caso uma versão
+        //    anterior do prompt ainda esteja em uso.
         // ============================================================
         function renderizarBilhete(data) {
             const display = document.getElementById("display-area");
-            const analiseCompleta = data.analise || [];
-            const topBilhetes = [...(data.top_bilhetes || [])]
-                .sort((a, b) => (Number(b.moneyball_score) || 0) - (Number(a.moneyball_score) || 0));
+            const analiseCompleta = data.a || data.analise || [];
+            const topBilhetes = [...(data.tb || data.top_bilhetes || [])]
+                .sort((a, b) => (Number(b.sc ?? b.moneyball_score) || 0) - (Number(a.sc ?? a.moneyball_score) || 0));
+
+            const scoreBilhete = data.sb ?? data.score_bilhete;
+            const prognostico = data.p || data.resumo;
+            const resumoExecutivo = data.r;
 
             const melhor = topBilhetes[0] || null;
-            const melhorSelecaoTxt = melhor ? `${melhor.s || ""}${melhor.l !== undefined && melhor.l !== null && melhor.l !== "" ? ` ${melhor.l}` : ""}` : "";
+            const melhorSelecaoTxt = melhor ? (melhor.s || `${melhor.selecao || ""}${melhor.l ? ` ${melhor.l}` : ""}`) : "";
+            const melhorScore = melhor ? (melhor.sc ?? melhor.moneyball_score) : null;
 
             const destaqueHtml = melhor ? `
-                <div class="p-4 bg-accent/10 border-2 border-accent rounded-xl">
+                <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border-2 border-accent rounded-xl">
                     <div class="flex items-center gap-2 text-accent text-xs font-bold mb-1">
                         <i class="fa-solid fa-trophy"></i> MELHOR SUGESTÃO DO JOGO
                     </div>
                     <div class="text-white font-black text-xl">${melhorSelecaoTxt}</div>
-                    <div class="text-xs text-slate-400 mt-1">${melhor.m || ""} · Moneyball Score: <span class="font-semibold text-slate-300">${melhor.moneyball_score ?? "-"}</span>${melhor.ev !== undefined ? ` · EV: <span class="font-semibold text-slate-300">${melhor.ev}</span>` : ""}</div>
+                    <div class="text-xs text-slate-400 mt-1">${melhor.m || ""} · Moneyball Score: <span class="font-semibold text-slate-300">${melhorScore ?? "-"}</span>${melhor.ev !== undefined ? ` · EV: <span class="font-semibold text-slate-300">${melhor.ev}</span>` : ""}</div>
                     <div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${melhor.w || ""}</div>
                 </div>
             ` : "";
@@ -389,16 +416,17 @@ SAÍDA (JSON ESTRITO):
                     <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">2</span>
                         <h2 class="text-sm font-semibold text-slate-300">Bilhete Sugerido</h2>
-                        ${data.score_bilhete !== undefined && data.score_bilhete !== null ? `<span class="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-accent/15 text-accent">Score do Bilhete: ${data.score_bilhete}</span>` : ""}
+                        ${scoreBilhete !== undefined && scoreBilhete !== null ? `<span class="ml-auto text-[10px] font-bold px-2 py-1 rounded-lg bg-accent/15 text-accent">Score do Bilhete: ${scoreBilhete}</span>` : ""}
                     </div>
 
-                    ${data.resumo ? `<p class="text-sm italic text-slate-400 border-l-2 border-accent pl-3">${data.resumo}</p>` : ""}
+                    ${prognostico ? `<p class="text-sm text-slate-400 border-l-2 border-accent pl-3 leading-relaxed">${prognostico}</p>` : ""}
+                    ${resumoExecutivo ? `<p class="text-xs italic text-slate-500">${resumoExecutivo}</p>` : ""}
 
                     ${destaqueHtml}
 
                     <div class="space-y-3">
                         ${topBilhetes.length === 0
-                            ? `<p class="text-sm text-slate-500 text-center py-4">O Groq não retornou top_bilhetes nessa resposta — veja a análise completa abaixo.</p>`
+                            ? `<p class="text-sm text-slate-500 text-center py-4">O modelo não retornou "tb" nessa resposta — veja a análise completa abaixo.</p>`
                             : topBilhetes.map(item => cardMercado(item)).join("")
                         }
                     </div>
