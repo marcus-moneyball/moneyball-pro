@@ -43,9 +43,9 @@
                 <i class="fa-solid fa-key text-accent"></i> Configuração da API Groq
             </summary>
             <div class="mt-4 space-y-2">
-                <label class="text-[10px] text-slate-500 font-bold tracking-widest">GROQ API KEY (só fica na memória do navegador, nunca é salva no arquivo)</label>
+                <label class="text-[10px] text-slate-500 font-bold tracking-widest">GROQ API KEY (Salva no navegador)</label>
                 <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono">
-                <p class="text-[11px] text-slate-600">Como o repositório é público no GitHub, a chave NUNCA deve ficar escrita no código. Cole aqui toda vez que abrir a página — ela não é salva em lugar nenhum, nem enviada pra nenhum lugar além da API do Groq.</p>
+                <p class="text-[11px] text-slate-600">A chave é salva de forma privada no armazenamento local do seu navegador (localStorage). Ela nunca fica salva no código-fonte do GitHub.</p>
             </div>
         </details>
 
@@ -138,13 +138,11 @@
             activeBtn.classList.add("bg-accent/15", "text-accent", "border-accent/40");
         }
 
-       // ============================================================
-      // 2 PROMPT — v8.5: Análise / Moneyball Score v2 / Ranking.
-     // Saída em dois níveis: "a" (todo mercado, campos leves)
-    // e "tb" (5-6 melhores, detalhamento completo).
-   // ============================================================
-function montarSystemPrompt(modulo) {
-return `Moneyball Pro Bet Builder v8.7 — Código Nexus
+        // ============================================================
+        // 2 PROMPT — v8.7: Análise / Moneyball Score
+        // ============================================================
+        function montarSystemPrompt(modulo) {
+        return `Moneyball Pro Bet Builder v8.7 — Código Nexus
 Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido em Português.
 
 ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
@@ -215,7 +213,8 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
     }
   ]
 }`;
-}
+        }
+
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
@@ -267,24 +266,25 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
                 const userInput = raw;
 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        model: "openai/gpt-oss-120b",
-        messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userInput }
-        ],
-        temperature: 0.2,
-        max_completion_tokens: 6000,
-        reasoning_effort: "low",
-        include_reasoning: false,
-        response_format: { type: "json_object" }
-    })
-});
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "openai/gpt-oss-120b",
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: userInput }
+                        ],
+                        temperature: 0.2,
+                        max_completion_tokens: 6000,
+                        reasoning_effort: "low",
+                        include_reasoning: false,
+                        response_format: { type: "json_object" }
+                    })
+                });
+
                 if (!response.ok) {
                     const errText = await response.text();
                     throw new Error(`HTTP ${response.status}: ${errText.slice(0, 200)}`);
@@ -311,11 +311,6 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 
         // ============================================================
         // 4. CLASSIFICAÇÃO POR MONEYBALL SCORE
-        //    Fonte primária: a banda ("b") que o próprio modelo já
-        //    calculou (Verde/Amarela/Vermelha/Descarte). O score só
-        //    entra como fallback se "b" não vier, usando os MESMOS
-        //    limiares do prompt (75/60/45) — nunca um limiar próprio
-        //    do front-end desalinhado do que o modelo usa.
         // ============================================================
         const BANDA_MAP = {
             "verde": { tier: "alta", label: "BANDA VERDE" },
@@ -386,11 +381,6 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 
         // ============================================================
         // 5. RENDERIZAÇÃO DO BILHETE
-        //    Lê o schema real do prompt v12.0: "tb" (top bilhetes),
-        //    "a" (análise leve), "sb" (score do bilhete), "p" (prognóstico),
-        //    "r" (resumo executivo) — com fallback pras chaves antigas
-        //    (top_bilhetes/analise/score_bilhete/resumo) caso uma versão
-        //    anterior do prompt ainda esteja em uso.
         // ============================================================
         function renderizarBilhete(data) {
             const display = document.getElementById("display-area");
@@ -452,11 +442,24 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
         }
 
         // ============================================================
-        // INIT
+        // INIT & PERSISTÊNCIA DA CHAVE
         // ============================================================
         window.onload = () => {
             buildSportTabs();
             selecionarSport("beisebol");
+
+            const groqInput = document.getElementById("groq-key");
+
+            // 1. Carrega a chave salva no seu navegador (se existir)
+            const savedKey = localStorage.getItem("moneyball_groq_key");
+            if (savedKey) {
+                groqInput.value = savedKey;
+            }
+
+            // 2. Salva automaticamente no seu navegador conforme você digita
+            groqInput.addEventListener("input", (e) => {
+                localStorage.setItem("moneyball_groq_key", e.target.value.trim());
+            });
         };
     </script>
 </body>
