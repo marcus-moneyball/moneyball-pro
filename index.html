@@ -144,73 +144,142 @@
     // e "tb" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
+
 return `Moneyball Pro Bet Builder v12.0 — Lean Engine
 
+
+
 MISSÃO: Analisar MDM v8.3, gerar prognóstico (<300 chars) e ranquear mercados por Moneyball Score. Responda APENAS em JSON válido.
+
 DIRETRIZ: O objetivo não é prever o vencedor, mas identificar o mercado com melhor relação entre vantagem estatística, representatividade tática e odds.
+
+
 
 ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 
+
+
 1. PROGNÓSTICO & IP AJUSTADO
+
 • Desenhe a leitura macro da partida (ritmo, choque tático e veículo ideal de aposta).
+
 • IP Base (0-10) = ((Ataque + Defesa)/2) × Encaixe [Fav: 1.10 | Neutro: 1.00 | Desf: 0.90]. (Normalizar 0-100 no Score).
-• Pesos ASP: MLB/Beisebol (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%).
+
+• Pesos ASP: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%).
+
+
 
 2. MONEYBALL SCORE (0-100)
-Score = soma ponderada de seis pilares:
-• IP Ajustado (30%): Qualidade do confronto direto (Ataque × Defesa × Encaixe).
-• Robustez (25%): Tamanho da amostra (n), estabilidade, convergência Proj × Base e consistência dos dados.
-• Edge (20%): Diferença entre p_est e p_imp. Mercados eficientes (ex.: Moneyline) exigem Edge maior para nota alta.
-• Contexto (10%): Descanso, mando, viagens, clima, desfalques.
-• Eficiência do Mercado (10%): Priorize mercados que isolem diretamente a vantagem (ex.: Pitcher dominante → Strikeouts/Outs > Handicap > Moneyline).
-• EV (5%): Relação risco × retorno. Nunca supera IP, Robustez ou Edge.
 
-Ajustes: +5 a +10 (matchup dominante, consistência/convergência) | -5 a -15 (amostra curta, desfalque, conflito de dados). Limitar Score entre 0 e 100.
+
+
+Score = soma ponderada de seis pilares.
+
+• IP Ajustado (30%): Qualidade do confronto direto (Ataque × Defesa × Encaixe).
+
+• Robustez (25%): Tamanho da amostra (n), estabilidade, convergência Proj × Base e consistência dos dados.
+
+• Edge (20%): Diferença entre p_est e p_imp. Mercados naturalmente eficientes (ex.: Moneyline) exigem Edge significativamente maior para receber nota alta. Favoritismo isolado nunca aumenta este componente.
+
+• Contexto (10%): Descanso, mando, viagens, clima, desfalques e condições específicas.
+
+• Eficiência do Mercado (10%): Quanto melhor o mercado captura a vantagem encontrada na análise. Priorize mercados que isolem diretamente essa vantagem (ex.: Pitcher dominante → Strikeouts/Outs > Handicap > Moneyline).
+
+• EV (5%): Confirmação matemática da relação risco × retorno. Nunca deve superar IP, Robustez ou Edge.
+
+
+
+Ajustes:
+
++5 a +10: matchup dominante, alta consistência ou convergência total.
+
+-5 a -15: amostra curta, ausência importante, divergência Proj × Base, mercado pouco eficiente ou conflito entre indicadores.
+
+
+
+Limitar o Moneyball Score entre 0 e 100.
+
+
 
 3. BANDAS & RANKING ("tb")
+
 • Score define o ranking. Banda define a exposição (stake). Um nunca altera o outro.
+
 • Verde (Score ≥ 75 | Stake 1.0) | Amarela (60–74 | Stake 0.5) | Vermelha (45–59 | Stake 0.0) | Descarte (<45).
-• Ranquear TODOS os mercados do MDM em ordem decrescente de Score. SEMPRE inclua em "tb" exatamente os 5 de maior Score (ou todos se o MDM tiver menos de 5).
-• Corte = 45 é sobre a Banda (Descarte): se menos de 5 mercados atingirem 45, complete os 5 em "tb" com os próximos melhores mesmo abaixo de 45, marcando-os como "Descarte" e avisando em "r".
-• Entre mercados de Score parecido, priorize Handicaps/Props sobre ML.
+
+• Ranquear TODOS os mercados do MDM em ordem decrescente de Score. SEMPRE inclua em "tb" os 5 de maior Score — nunca menos que 5 se o MDM tiver 5 ou mais mercados analisados, mesmo que o melhor deles seja muito superior aos outros. Retornar "tb" com apenas 1 item quando existem 2+ mercados analisados é uma FALHA de formatação, não uma leitura válida de baixa qualidade.
+
+• Corte = 45 é sobre a Banda (Descarte), não sobre quantos entram em "tb": se menos de 5 mercados atingirem 45, complete os 5 com os próximos melhores mesmo abaixo do corte, mas marque-os como "Descarte" e avise em "r" que parte da lista tem baixa qualidade estatística. Só retorne menos de 5 em "tb" se o MDM tiver menos de 5 mercados no total (nesse caso, inclua todos os que existirem).
+
+• Entre mercados de Score parecido, priorize Handicaps/Props sobre ML se expressarem a mesma leitura.
+
+
 
 4. LIMITES DE SAÍDA QUALITATIVA
+
 • p: Máximo 300 caracteres. Fluxo tático do jogo.
+
 • r: Máximo 150 caracteres. Síntese executiva.
+
 • w: Máximo 200 caracteres por item. Raciocínio prático: cenário, sustento dos dados, isolamento da vantagem e risco.
 
-SAÍDA (JSON ESTRITO — PROIBIDO TEXTO FORA DO JSON):
+
+
+SAÍDA (JSON ESTRITO — "tb" deve ter 5 itens, um por mercado, seguindo a regra 3):
+
 {
+
   "p": "Prognóstico em até 300 chars",
+
   "r": "Resumo executivo em até 150 chars",
+
   "sb": 0,
+
   "tb": [
+
     {
-      "e": "${modulo.label}",
+
+      "e": "Esporte",
+
       "m": "Mercado",
+
       "s": "Seleção + Linha Exata",
+
       "at": "A|B",
+
       "sc": 80,
+
       "ip": 7.5,
+
       "b": "Verde|Amarela|Vermelha",
+
       "st": 1.0,
+
       "ev": 0.0,
+
       "w": "Justificativa prática em até 200 chars",
+
       "f": ["fator_risco"]
+
     }
+
   ],
+
   "a": [
+
     {
-      "e": "${modulo.label}",
-      "m": "Mercado fora do Top 5",
-      "s": "Seleção",
-      "sc": 40,
-      "b": "Descarte",
-      "st": 0.0
+
+      "e": "", "m": "", "s": "", "sc": 0, "b": "Descarte", "st": 0
+
     }
+
   ]
+
 }`;
-}
+
+} 
+
+
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
