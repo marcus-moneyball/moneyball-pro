@@ -141,49 +141,31 @@
     // e "top_bilhetes" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
-return `Moneyball Pro Bet Builder v8.5 — Código Nexus.
-Missão: Ler MDM v8.0, analisar todos os mercados e extrair obrigatoriamente as 6 MELHORES seleções do jogo (Top 6 por Moneyball Score).
-Regras: Sem pesquisas externas ou dados inventados. Não alterar odds/linhas. Responder EXCLUSIVAMENTE em JSON válido.
+return `Moneyball Pro Bet Builder v8.6 — Código Nexus
+Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido.
 
-ESPORTE: ${modulo.label}
-MERCADOS: ${modulo.mercados.join(", ")}
-ENTRADA: ctx, mercados[], market_intelligence, gate.
-COBERTURA: Todos os mercados de entrada devem aparecer obrigatoriamente na chave "analise".
+ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 
-PIPELINE: Dados -> IP Ajustado -> Moneyball Score -> Ordenação Decrescente -> Anti-Redundância -> Top 6 Bilhetes.
+1. CÁLCULOS & FÓRMULAS
+• IP = ((ataque_score + defesa_score) / 2) * mult [Favorável: 1.10 | Neutro: 1.00 | Desfavorável: 0.90]
+• Pesos IP: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%)
+• Score (0-100): IP(35%) + Amostra_n(25%) + Edge(25%) + Contexto(10%) + EV(5%)
+• Ajustes: Bônus (+5 a +10: matchup dominante, encaixe, edge alto, n robusto) | Penalidades (-5 a -15: amostra curta, ausências, divergência Proj×Base, edge baixo, fragilidade).
 
-1. IP AJUSTADO (0.0 a 10.0)
-• Fontes: vs, proj, base, ato1/ato2 (H2H apenas confirma).
-• Pesos: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%).
-• Encaixe: Favorável (1.10) | Neutro (1.00) | Desfavorável (0.90).
-• Fórmula: IP = ((ataque_score + defesa_score) / 2) * multiplicador.
+2. BANDAS & STAKES
+• Verde (Score >= 75): Stake 1.0 | Amarela (60 <= Score < 75): Stake 0.5 | Vermelha (50 <= Score < 60): Stake 0.0 | Descarte (Score < 50): Proibido em top_bilhetes.
 
-2. MONEYBALL SCORE (0 a 100)
-• Base: IP Ajustado (35%) + Robustez/Amostra n (25%) + Edge/p_est-p_imp (25%) + Contexto (10%) + EV (5%).
-• Bônus: Matchup dominante (+10), Encaixe forte (+8), Edge alto (+5), Amostra n robusta (+5).
-• Penalidades: Amostra curta (-5), Ausência secundária (-5), Divergência Proj×Base (-10), Edge baixo (-10), Ausência titular (-10), Fragilidade alta (-15). Travar rigorosamente em [0, 100].
+3. REGRAS DE SELEÇÃO & GATE SCORE >= 50
+• Filtrar mercados com Score >= 50 em ordem DECRESCENTE.
+• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo de maior Score (>= 50).
+• Selecionar até os 6 maiores em "top_bilhetes". score_bilhete = Média simples dos scores em top_bilhetes.
+• GATE DE CORTE (< 50): Se NENHUM mercado tiver Score >= 50, "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Nenhum mercado atingiu a margem mínima de segurança (Score >= 50)."
+• "analise": Deve conter TODOS os mercados processados.
 
-3. BANDA DE CONFIANÇA & STAKE
-• Verde (Score >= 75): Stake = 1.0.
-• Amarela (60 <= Score < 75): Stake = 0.5.
-• Vermelha (Score < 60): Stake = 0.0 (Mantém no Top 6 se for uma das 6 maiores notas do jogo, indicando Risco em "f").
+4. NOME REAL NO CAMPO "s"
+• Extrair NOME REAL em ato1/ctx/partida (Ex: "Tarik Skubal Over 6.5 Ks", "Detroit Tigers -1.5"). NUNCA use termos genéricos ("starter", "pitcher_vis").
 
-4. DIVERSIDADE E ANTI-REDUNDÂNCIA
-• Ativo A: Props de jogadores, Totais (O/U), Escanteios, Cartões, Handicaps.
-• Ativo B: Moneyline / Resultado Final.
-• REGRA ANTI-REDUNDÂNCIA: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo mercado de maior Score.
-
-5. SELEÇÃO DO TOP 6 BILHETES
-• Ordenar TODOS os mercados em ordem DECRESCENTE de Moneyball Score.
-• Selecionar exatamente os 6 MAIORES Scores em "top_bilhetes" (respeitando a regra anti-redundância).
-• score_bilhete = Média simples dos Moneyball Scores presentes em "top_bilhetes".
-
-⚠️ RESOLUÇÃO OBRIGATÓRIA DE NOMES REAIS (CAMPO "s"):
-• Extraia o NOME REAL do atleta em ato1 (ex: ato1.starter_casa.nome), ctx ou partida.
-• NUNCA escreva "pitcher_vis", "pitcher_casa", "starter" ou "jogador".
-• Formato no campo "s": "[Nome do Atleta ou Time] + [Mercado e Linha Exata]" (Ex: "Tarik Skubal Over 6.5 Ks", "Detroit Tigers -1.5").
-
-SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
+SAÍDA (JSON ESTRITO):
 {
   "resumo": "Visão geral quantitativa em 2 frases.",
   "score_bilhete": 0.0,
@@ -191,7 +173,7 @@ SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
     {
       "e": "Esporte",
       "m": "Mercado",
-      "s": "Nome Real do Atleta/Time + Linha Exata",
+      "s": "Nome Real + Linha Exata",
       "ativo": "Ativo A|Ativo B",
       "ip_ajustado": 0.0,
       "ataque_score": 0.0,
@@ -208,10 +190,10 @@ SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
     {
       "e": "Esporte",
       "m": "Mercado",
-      "s": "Nome Real do Atleta/Time + Linha Exata",
+      "s": "Nome Real + Linha Exata",
       "ativo": "Ativo A|Ativo B",
       "moneyball_score": 45,
-      "banda": "Verde|Amarela|Vermelha",
+      "banda": "Descarte|Vermelha|Amarela|Verde",
       "stake_sugerida": 0.0
     }
   ]
