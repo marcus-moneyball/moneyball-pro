@@ -141,8 +141,8 @@
     // e "top_bilhetes" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
-return `Moneyball Pro Bet Builder v8.7 — Código Nexus
-Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido.
+return `Moneyball Pro Bet Builder v8.8 — Código Nexus
+Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 45). Responda EXCLUSIVAMENTE em JSON válido.
 
 ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 
@@ -150,24 +150,24 @@ ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 • IP Ajustado (0.0 a 10.0) = ((ataque_score + defesa_score) / 2) * mult [Favorável: 1.10 | Neutro: 1.00 | Desfavorável: 0.90]
 • Pesos IP: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%)
 
-• MONEYBALL SCORE (0 a 100) - ATENÇÃO À MULTIPLICAÇÃO DE ESCALA:
-  - IP_Score = (IP_Ajustado * 10) * 0.35          [Ex: IP 8.0 -> (8.0 * 10) * 0.35 = 28 pts]
+• MONEYBALL SCORE (0 a 100) - MULTIPLICAÇÃO DE ESCALA OBRIGATÓRIA:
+  - IP_Score = (IP_Ajustado * 10) * 0.35          [Ex: IP 7.0 -> (7.0 * 10) * 0.35 = 24.5 pts]
   - Amostra_Score = (Amostra_n_0a100) * 0.25      [Ex: n=10 -> 80 * 0.25 = 20 pts]
   - Edge_Score = (Edge_0a100) * 0.25             [Ex: Edge alto -> 75 * 0.25 = 18.75 pts]
   - Contexto_Score = (Contexto_0a100) * 0.10     [Ex: Sem fricção -> 90 * 0.10 = 9 pts]
   - EV_Score = (EV_0a100) * 0.05                 [Ex: EV+ -> 80 * 0.05 = 4 pts]
   - Soma_Base = IP_Score + Amostra_Score + Edge_Score + Contexto_Score + EV_Score
 
-• AJUSTES FINAIS: Bônus (+5 a +10: matchup dominante, encaixe forte) | Penalidades (-5 a -15: amostra curta, ausências, divergência Proj×Base, fragilidade). Travar resultado final em [0, 100].
+• AJUSTES FINAIS: Bônus (+5 a +10: matchup dominante, encaixe forte) | Penalidades (-5 a -15: amostra curta, ausências, divergência Proj×Base, fragilidade). Travar resultado em [0, 100].
 
 2. BANDAS & STAKES
-• Verde (Score >= 75): Stake 1.0 | Amarela (60 <= Score < 75): Stake 0.5 | Vermelha (50 <= Score < 60): Stake 0.0 | Descarte (Score < 50): Proibido em top_bilhetes.
+• Verde (Score >= 75): Stake 1.0 | Amarela (60 <= Score < 75): Stake 0.5 | Vermelha (45 <= Score < 60): Stake 0.0 | Descarte (Score < 45): Proibido em top_bilhetes.
 
-3. REGRAS DE SELEÇÃO & GATE SCORE >= 50
-• Filtrar mercados com Score >= 50 em ordem DECRESCENTE.
-• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo de maior Score (>= 50).
+3. REGRAS DE SELEÇÃO & GATE SCORE >= 45
+• Filtrar mercados com Score >= 45 em ordem DECRESCENTE.
+• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo de maior Score (>= 45).
 • Selecionar até os 6 maiores em "top_bilhetes". score_bilhete = Média simples dos scores em top_bilhetes.
-• GATE DE CORTE (< 50): Se NENHUM mercado tiver Score >= 50, "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Nenhum mercado atingiu a margem mínima de segurança (Score >= 50)."
+• GATE DE CORTE (< 45): Se NENHUM mercado tiver Score >= 45, "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Nenhum mercado atingiu a margem mínima de segurança (Score >= 45)."
 • "analise": Deve conter TODOS os mercados processados.
 
 4. NOME REAL NO CAMPO "s"
@@ -200,7 +200,7 @@ SAÍDA (JSON ESTRITO):
       "m": "Mercado",
       "s": "Nome Real + Linha Exata",
       "ativo": "Ativo A|Ativo B",
-      "moneyball_score": 45,
+      "moneyball_score": 40,
       "banda": "Descarte|Vermelha|Amarela|Verde",
       "stake_sugerida": 0.0
     }
