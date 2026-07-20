@@ -175,15 +175,16 @@ Limitar o Moneyball Score entre 0 e 100.
 3. BANDAS & RANKING ("tb")
 • Score define o ranking. Banda define a exposição (stake). Um nunca altera o outro.
 • Verde (Score ≥ 75 | Stake 1.0) | Amarela (60–74 | Stake 0.5) | Vermelha (45–59 | Stake 0.0) | Descarte (<45).
-• Ranquear em ordem decrescente. Selecionar até 6 em "tb" (priorize Handicaps/Props sobre ML se expressarem a mesma leitura).
-• Corte = 45. Se nenhum atingir 45, selecione obrigatoriamente o Top 1 e avise em "r" que a partida tem baixa qualidade estatística. NUNCA retorne "tb" vazio.
+• Ranquear TODOS os mercados do MDM em ordem decrescente de Score. SEMPRE inclua em "tb" os 5 de maior Score — nunca menos que 5 se o MDM tiver 5 ou mais mercados analisados, mesmo que o melhor deles seja muito superior aos outros. Retornar "tb" com apenas 1 item quando existem 2+ mercados analisados é uma FALHA de formatação, não uma leitura válida de baixa qualidade.
+• Corte = 45 é sobre a Banda (Descarte), não sobre quantos entram em "tb": se menos de 5 mercados atingirem 45, complete os 5 com os próximos melhores mesmo abaixo do corte, mas marque-os como "Descarte" e avise em "r" que parte da lista tem baixa qualidade estatística. Só retorne menos de 5 em "tb" se o MDM tiver menos de 5 mercados no total (nesse caso, inclua todos os que existirem).
+• Entre mercados de Score parecido, priorize Handicaps/Props sobre ML se expressarem a mesma leitura.
 
 4. LIMITES DE SAÍDA QUALITATIVA
 • p: Máximo 300 caracteres. Fluxo tático do jogo.
 • r: Máximo 150 caracteres. Síntese executiva.
 • w: Máximo 200 caracteres por item. Raciocínio prático: cenário, sustento dos dados, isolamento da vantagem e risco.
 
-SAÍDA (JSON ESTRITO):
+SAÍDA (JSON ESTRITO — "tb" deve ter 5 itens, um por mercado, seguindo a regra 3):
 {
   "p": "Prognóstico em até 300 chars",
   "r": "Resumo executivo em até 150 chars",
