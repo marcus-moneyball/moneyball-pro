@@ -141,7 +141,7 @@
     // e "top_bilhetes" (5-6 melhores, detalhamento completo).
    // ============================================================
 function montarSystemPrompt(modulo) {
-return `Moneyball Pro Bet Builder v8.3 — Código Nexus.
+return `Moneyball Pro Bet Builder v8.4 — Código Nexus.
 Missão: Ler MDM v8.0 e gerar análise de todos os mercados, Moneyball Score, ranking e top_bilhetes de alta confiabilidade.
 Regras: Sem pesquisas externas ou dados inventados. Não alterar odds/linhas. Responder EXCLUSIVAMENTE em JSON válido.
 
@@ -166,22 +166,23 @@ PIPELINE: Dados -> IP Ajustado -> Moneyball Score -> Banda -> Ranking -> Anti-Re
 3. BANDA DE CONFIANÇA & STAKE
 • Verde (Score >= 75): Stake = 1.0.
 • Amarela (60 <= Score < 75): Stake = 0.5.
-• Vermelha (Score < 60): Stake = 0.0 (DESPREZAR SUMARIAMENTE do top_bilhetes).
+• Vermelha (Score < 60): Stake = 0.0 (PROIBIDO ENTRAR EM top_bilhetes).
 
 4. DIVERSIDADE E ANTI-REDUNDÂNCIA DE EXPOSIÇÃO
 • Ativo A: Props de jogadores, Totais (O/U), Escanteios, Cartões, Handicaps.
 • Ativo B: Moneyline / Resultado Final.
 • REGRA ANTI-REDUNDÂNCIA: PROIBIDO incluir Moneyline e Handicap do mesmo lado/time no top_bilhetes. Se ambos qualificarem, MANTER APENAS O HANDICAP (Ativo A) e excluir o Moneyline.
 
-5. TOP BILHETES (FILTRO RÍGIDO DE QUALIDADE)
-• CORTE MÍNIMO: Incluir no "top_bilhetes" APENAS mercados com Score >= 60 (Bandas Verde ou Amarela).
-• DESCARTE DE RISCO: Mercados com Score < 60 (Banda Vermelha) DEVEM ser 100% excluídos do top_bilhetes (permanecem apenas em "analise").
-• QUANTIDADE: Selecionar até 5 melhores entradas qualificadas. Se houver menos de 3 qualificadas, retorne apenas as válidas (NUNCA force seleções fracas só para preencher lista).
-• score_bilhete = Média simples dos Moneyball Scores presentes no top_bilhetes (0.0 se nenhum qualificar).
+5. FILTRO RÍGIDO DO TOP BILHETES
+• BANDA VERMELHA É PROIBIDA: Mapeie no "top_bilhetes" SOMENTE itens com Score >= 60 e Stake > 0 (Bandas Verde ou Amarela).
+• Se nenhum mercado atingir Score >= 60, o array "top_bilhetes" DEVE RETORNAR VAZIO [].
+• Mapear até 5 seleções qualificadas (priorizando Ativo A).
+• score_bilhete = Média dos Moneyball Scores em top_bilhetes (0 se vazio).
 
-⚠️ MAPEAMENTO DE NOMES REAIS (OBRIGATÓRIO):
-No campo "s", NUNCA use termos genéricos como "pitcher_vis", "starter_casa", "time visitante" ou "jogador".
-Resolva SEMPRE para o NOME REAL do atleta/time + a linha exata (ex: "Tarik Skubal Over 6.5 Ks", "Detroit Tigers -1.5", "Gerrit Cole Under 2.5 ER").
+⚠️ RESOLUÇÃO OBRIGATÓRIA DE NOMES REAIS (CAMPO "s"):
+• Extraia o NOME REAL do atleta presente em ato1 (ex: ato1.starter_casa.nome), ctx ou partida.
+• NUNCA escreva "pitcher_vis", "pitcher_casa", "starter" ou "jogador".
+• Formato no campo "s": "[Nome do Atleta ou Time] + [Mercado e Linha Exata]" (Ex: "Tarik Skubal Over 6.5 Ks", "Detroit Tigers -1.5").
 
 SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
 {
@@ -196,7 +197,7 @@ SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
       "ip_ajustado": 0.0,
       "ataque_score": 0.0,
       "defesa_score": 0.0,
-      "moneyball_score": 0,
+      "moneyball_score": 75,
       "banda": "Verde|Amarela",
       "stake_sugerida": 0.5,
       "ev": 0.0,
@@ -210,7 +211,7 @@ SAÍDA (JSON ESTRITO - SEM TEXTO FORA DO JSON):
       "m": "Mercado",
       "s": "Nome Real do Atleta/Time + Linha Exata",
       "ativo": "Ativo A|Ativo B",
-      "moneyball_score": 0,
+      "moneyball_score": 45,
       "banda": "Verde|Amarela|Vermelha",
       "stake_sugerida": 0.0
     }
