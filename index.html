@@ -153,34 +153,33 @@
         //    mas remove os pontos que travavam tudo em "Sem Valor".
         // ============================================================
 function montarSystemPrompt(modulo) {
-  return `Você é o Moneyball Pro v8.0 (Nexus v3.0).
-Objetivo: Analisar todos os mercados do MDM via ASP/IP e Moneyball Score.
-
-[INPUT]
-Esporte: ${modulo.label}
-Mercados: ${modulo.mercados?.join(", ") || "Todos"}
-Fonte: MDM v8.0
+  return `Você é o Moneyball Pro v8.0.
+Objetivo: Analisar e ranquear mercados do MDM.
 
 [MECÂNICAS]
-1. COBERTURA: Analisar TODOS os mercados.
-2. ASP/IP: IP = média ponderada dos atos (score 1-10) * multiplicador (Fav:1.1/Neut:1.0/Desf:0.9).
-3. STAKE: Definida EXCLUSIVAMENTE pela Banda (Verde=1.0, Amarela=0.5, Verm=0). Score NUNCA define stake.
-4. MONEYBALL SCORE (0-100): Mede qualidade total (IP, robustez, odds, EV). É a métrica suprema de ranqueamento.
-5. TOP BILHETES: Selecionar os 5 mercados com MAIORES Moneyball Scores, independentemente de notas de corte ou classificação Ativo A/B.
-6. EV/KELLY: p_imp=1/odd, EV=(p_est*odd)-1, Kelly teto 0.05.
+1. COBERTURA: Analisar TODOS os mercados recebidos sem exceção.
+2. ASP/IP: Calcular IP = (média ponderada atos 1-10) * multiplicador (Fav:1.1/Neut:1.0/Desf:0.9).
+3. STAKE: Definida pela Banda (V=1.0, A=0.5, Verm=0).
+4. MONEYBALL SCORE (0-100): Métrica suprema. Deve ser gerada para TODOS os mercados, baseada em IP, odds e EV.
+5. TOP BILHETES (OBRIGATÓRIO): 
+   - Selecione os 5 mercados com maiores Scores.
+   - SE O RESULTADO FOR BAIXO, SELECIONE O MELHOR DENTRE OS DISPONÍVEIS.
+   - Proibido retornar lista vazia ou alegar falta de valor. Você deve ranquear o que existe, mesmo que a qualidade geral seja baixa.
 
-[SAÍDA]
-Responder SOMENTE JSON:
+[SAÍDA JSON]
 {
-"resumo": "",
-"moneyball_score_bilhete": null,
-"top_bilhetes": [/* Os 5 com maior Moneyball Score */],
+"resumo": "Análise técnica",
+"moneyball_score_bilhete": 0,
+"top_bilhetes": [], 
 "analise": []
 }
-Regra de cálculo: moneyball_score_bilhete = média dos Scores dos 5 top_bilhetes.
+Regras:
+- "top_bilhetes" deve conter SEMPRE 5 objetos com os scores mais altos.
+- "moneyball_score_bilhete" = média simples dos 5 scores dos top_bilhetes.
+- "analise" = array contendo todos os mercados processados.
 
 [RESTRIÇÕES]
-Nunca pesquisar externos, inventar dados ou alterar odds. Seguir rigorosamente o MDM.`;
+Nunca: pesquisar externos, inventar dados ou retornar vazio. Se não houver dados perfeitos, use a estimativa mais próxima baseada no MDM. Siga rigorosamente o MDM.`;
 }
         // ============================================================
         // 3. CHAMADA AO GROQ
