@@ -176,30 +176,32 @@ PASSO 6: Auditoria e Output
 
 ---
 
-### 3. SCHEMA JSON OBRIGATÓRIO
+### SAÍDA:
 {
-  "resumo": "Análise concluída para o confronto. Moneyball Score Médio: W.",
-  "score_bilhete": 87.4,
-  "analise": [
+  "p": "Prognóstico em até 300 chars",
+  "r": "Resumo executivo em até 150 chars",
+  "sb": 0,
+  "tb": [
     {
-      "m": "Nome do Mercado",
-      "s": "Nome do Time / Seleção",
-      "sc": 88,
-      "filtro": "aprovado",
-      "motivo": "Justificativa analítica detalhada."
+      "e": "Esporte",
+      "m": "Mercado",
+      "s": "Seleção + Linha Exata",
+      "at": "A|B",
+      "sc": 80,
+      "ip": 7.5,
+      "b": "Verde|Amarela|Vermelha",
+      "st": 1.0,
+      "ev": 0.0,
+      "w": "Justificativa prática em até 200 chars",
+      "f": ["fator_risco"]
     }
   ],
-  "top_bilhetes": [
+  "a": [
     {
-      "m": "Nome do Mercado",
-      "s": "Nome do Time / Seleção (Ex: Palmeiras ou Over 2.5)",
-      "odds": 1.85,
-      "sc": 88,
-      "w": "Explicação técnica detalhando o motivo da decisão com ~20 caracteres"
+      "e": "", "m": "", "s": "", "sc": 0, "b": "Descarte", "st": 0
     }
   ]
-}
-`;
+}`;
 }
 
         // ============================================================
@@ -366,11 +368,9 @@ PASSO 6: Auditoria e Output
             "vermelha": { tier: "baixa", label: "BANDA VERMELHA" },
             "descarte": { tier: "descartada", label: "DESCARTE" },
         };
-
+ 
         function tierPorItem(item) {
-            if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
-            // Lê prioritariamente 'sc' (que o prompt novo emite) ou alternativas legadas
-            const score = Number(item.sc ?? item.score ?? item.moneyball_score);
+            const score = Number(item.sc ?? item.moneyball_score);
             const banda = (item.b || "").toLowerCase();
             if (BANDA_MAP[banda]) return { ...BANDA_MAP[banda], score };
             if (isNaN(score)) return { tier: "indefinida", label: "SEM SCORE", score: null };
@@ -379,7 +379,7 @@ PASSO 6: Auditoria e Output
             if (score >= 45) return { tier: "baixa", label: "BAIXA CONFIABILIDADE", score };
             return { tier: "descartada", label: "SCORE BAIXO", score };
         }
-
+ 
         const CONFIABILIDADE_STYLE = {
             alta: { bg: "bg-conf-alta/15", text: "text-conf-alta", border: "border-conf-alta/30" },
             media: { bg: "bg-conf-media/15", text: "text-conf-media", border: "border-conf-media/30" },
@@ -387,25 +387,45 @@ PASSO 6: Auditoria e Output
             descartada: { bg: "bg-conf-baixa/15", text: "text-conf-baixa", border: "border-conf-baixa/30" },
             indefinida: { bg: "bg-slate-700/20", text: "text-slate-400", border: "border-slate-700/40" },
         };
-
+ 
         function cardMercado(item) {
-            if (!item || typeof item !== 'object') return '';
             const tier = tierPorItem(item);
             const v = CONFIABILIDADE_STYLE[tier.tier];
-
-            // Pega o nome do time/seleção independentemente da chave usada
-            const selecaoTxt = item.s || item.selecao || item.l || "Seleção Principal";
-            const mercadoTxt = item.m || "Mercado";
-            const explicacao = item.w || item.motivo || "";
-
+ 
+            const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
+            const ev = item.ev;
+            const ip = item.ip ?? item.ip_ajustado;
+            const stake = item.st ?? item.stake_sugerida;
+            const ativo = item.at ?? item.ativo;
+            const fatores = item.f || [];
+ 
+            const extras = [];
+            if (ev !== undefined && ev !== null) {
+                const evPositivo = Number(ev) >= 0;
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
+            }
+            if (ip !== undefined && ip !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
+            }
+            if (stake !== undefined && stake !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
+            }
+            if (ativo) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
+            }
+            const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
+            const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
+ 
             return `
-                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
+                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
                     <div class="flex justify-between items-start gap-2">
-                        <span class="font-bold text-white text-sm">${mercadoTxt}</span>
+                        <span class="font-bold text-white text-sm">${item.m || ""}</span>
                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
                     </div>
-                    <div class="text-accent font-black text-lg">${selecaoTxt}</div>
-                    ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/60">${explicacao}</div>` : ""}
+                    <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
+                    ${extrasHtml}
+                    ${fatoresHtml}
+                    ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
                 </div>`;
         }
 
