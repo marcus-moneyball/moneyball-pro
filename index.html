@@ -141,48 +141,52 @@
         // ============================================================
         // 2 PROMPT — v8.7: Análise / Moneyball Score
         // ============================================================
-        function montarSystemPrompt(modulo) {
-        return `Moneyball Pro Bet Builder v8.7 — Código Nexus
-Missão: Analisar MDM v8.3 e extrair até Top 6 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido em Português.
+       function montarSystemPrompt(modulo) {
+return `Moneyball Pro Bet Builder v8.7 — Código Nexus
+Missão: Analisar MDM v8.3 e extrair até Top 10 seleções (Moneyball Score >= 50). Responda EXCLUSIVAMENTE em JSON válido em Português.
 
 ESPORTE: ${modulo.label} | MERCADOS: ${modulo.mercados.join(", ")}
 
-1. CÁLCULOS & FÓRMULAS
+1. AS 4 LEIS FUNDAMENTAIS DA ÁRVORE DE ANÁLISE
+• Lei 1 — DNA do Cenário (Diagnóstico): Classificar o jogo em Equilíbrio (Xadrez), Domínio (Caça) ou Caos (Aleatoriedade). Se for "Caos", aplicar penalidade severa de Risco Sistêmico (-15 no Score) ou descartar.
+• Lei 2 — Sinergia do Conflito (Ataque x Defesa): Analisar o choque entre o estilo do Ataque A e a estrutura da Defesa B para definir a vantagem de matchup.
+• Lei 3 — Realidade Técnica (Filtro Anti-Hype): Ignorar nome, tradição ou peso de "estrelas" em fase de colapso. Usar apenas a fase real e dados frios para explorar precificações erradas.
+• Lei 4 — Lei da Fricção (Variáveis Exógenas): Ponderar obrigatoriamente clima, altitude, piso/estádio, cansaço, B2B e logística como freios diretos da performance.
+
+2. CÁLCULOS & FÓRMULAS
 • IP = ((ataque_score + defesa_score) / 2) * mult [Favorável: 1.10 | Neutro: 1.00 | Desfavorável: 0.90]
 • Pesos IP: MLB (Starter 65%, Bullpen 35%) | Futebol (1T 50%, 2T 50%) | NBA (Starters 70%, Bench 30%)
 • Score (0-100): IP(35%) + Amostra_n(25%) + Edge(25%) + Contexto(10%) + EV(5%)
-• Ajustes: Bônus (+5 a +10: matchup dominante, encaixe, edge alto, n robusto) | Penalidades (-5 a -15: amostra curta, ausências, divergência Proj×Base, edge baixo, fragilidade).
+• Ajustes: Bônus (+5 a +10: matchup dominante, edge alto, n robusto) | Penalidades (-5 a -15: cenário Caos, estrela em colapso [Anti-Hype], atrito contextual alto, amostra curta).
 
-2. MATRIZ DE QUADRANTES & ÁRVORE DE ANÁLISE (Obrigatório no campo "w")
-• Camada 1 (Estrutural): Dados frios (ERA, xG, Net Rating, K%).
-• Camada 2 (Fricção/Ambiente): Cansaço, B2B, Clima, Park Factor, Desfalques.
-• Camada 3 (Quadrantes de Encaixe Tático):
-  - [Q1] Predador vs Presa (Desequilíbrio técnico direto no matchup).
-  - [Q2] Ritmo & Volume (Ataque acelerado vs Defesa passiva -> Over/Props).
-  - [Q3] Fricção & Trinca (Jogo Amarrado/Desfalques/Clima -> Under/Handicap).
-  - [Q4] Encaixe Neutro/Risco (Vantagens se anulam).
-• ESTRUTURA DO CAMPO "w": Explicitar obrigatoriamente o Quadrante (Q1-Q3) e a combinação das Camadas.
-  Exemplo: "Q1 Predador: Starter Tarik Skubal (ERA 2.15) domina a lineup em K% (Camada 1+3) superando o desgaste recente do bullpen."
+3. MATRIZ DE QUADRANTES & CAMADAS (Obrigatório no campo "w")
+• Camada 1 (Métricas Base): Dados quantitativos puros (ERA, xG, Net Rating, K%, Usage, Pace).
+• Camada 2 (Contexto & Fatores Exógenos / Lei 4): Calendário (B2B/Descanso), Clima, Desfalques e Logística.
+• Camada 3 (Game Script & Quadrantes de Matchup / Leis 1 e 2):
+  - [Q1] Matchup Favorável / Dominância Tática: Disparidade clara de qualidade e encaixe técnico amplamente superior.
+  - [Q2] Volume & Alto Ritmo (High Pace): Confronto focado em transição rápida e eficiência ofensiva (Tendência a Over / Props).
+  - [Q3] Jogo Trancado / Alto Atrito (Grindout): Defesas prevalecem, ritmo lento ou fatores climáticos/físicos adversos (Tendência a Under / Handicaps).
+  - [Q4] Alta Volatilidade / Incerteza (Cenário Caos): Partida equilibrada com alto ruído, desfalques críticos ou variáveis instáveis (Risco elevado / Evitar).
+• ESTRUTURA DO CAMPO "w": Explicitar o Game Script (Q1-Q4), as Métricas Base (Camada 1), o Contexto de Atrito (Camada 2) e a leitura técnica livre de hype (Lei 3).
 
-3. BANDAS & STAKES
+4. BANDAS & STAKES
 • Verde (Score >= 75): Stake 1.0 | Amarela (60 <= Score < 75): Stake 0.5 | Vermelha (50 <= Score < 60): Stake 0.0 | Descarte (Score < 50): Proibido em top_bilhetes.
 
-4. REGRAS DE SELEÇÃO & GATE SCORE >= 50
+5. REGRAS DE SELEÇÃO & GATE SCORE >= 50
 • Filtrar mercados com Score >= 50 em ordem DECRESCENTE.
-• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 6, REMOVER o Moneyline e promover o próximo de maior Score (>= 50).
-• Selecionar até os 6 maiores em "top_bilhetes". score_bilhete = Média simples dos scores em top_bilhetes.
-• GATE DE CORTE (< 50): Se NENHUM mercado tiver Score >= 50, "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Nenhum mercado atingiu a margem mínima de segurança (Score >= 50)."
+• Anti-Redundância: Se Moneyline e Handicap do mesmo time estiverem no Top 10, REMOVER o Moneyline e promover o próximo de maior Score (>= 50).
+• Selecionar até os 10 maiores em "top_bilhetes". score_bilhete = Média simples dos scores em top_bilhetes.
+• GATE DE CORTE (< 50): Se NENHUM mercado tiver Score >= 50 ou se o jogo for classificado como "Alta Volatilidade / Caos", "top_bilhetes" deve ser [] (score_bilhete: 0.0) e "resumo" = "⚠️ PARTIDA SEM VALOR QUANTITATIVO: Cenário de Alta Volatilidade ou nenhum mercado atingiu a margem mínima de segurança (Score >= 50)."
 • "analise": Deve conter TODOS os mercados processados.
 
-5. RESOLUÇÃO ABSOLUTA DE NOMES REAIS (CAMPO "s") — ZERO TOLERÂNCIA
-• PROIBIDO usar códigos, siglas, iniciais ou genéricos (EXPLICITAMENTE PROIBIDO: "DXB", "H", "A", "pitcher_vis", "starter", "time_casa").
+6. RESOLUÇÃO ABSOLUTA DE NOMES REAIS (CAMPO "s") — ZERO TOLERÂNCIA
+• PROIBIDO usar códigos, siglas, iniciais ou genéricos ("DXB", "H", "A", "pitcher_vis", "starter", "time_casa").
 • OBRIGATÓRIO extrair o NOME COMPLETO REAL do time (de partida.evento) ou do atleta (de ato1.starter/ctx).
 • Formato do campo "s": "[Nome Completo do Time/Atleta] + [Mercado e Linha]"
-  (Ex correto: "Detroit Tigers -1.5", "Tarik Skubal Over 6.5 Ks", "Los Angeles Angels Moneyline").
 
 SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 {
-  "resumo": "Visão geral quantitativa em 2 frases com base no Quadrante dominante da partida.",
+  "resumo": "Visão geral quantitativa em 2 frases baseada no Game Script (Lei 1) e Quadrante dominante.",
   "score_bilhete": 0.0,
   "top_bilhetes": [
     {
@@ -197,8 +201,8 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
       "banda": "Verde|Amarela|Vermelha",
       "stake_sugerida": 1.0,
       "ev": 0.0,
-      "w": "Quadrante + Gatilho das Camadas 1/2/3 + Conclusão em Português",
-      "f": "fator de risco/fricção"
+      "w": "Game Script + Matchup + Fatores Exógenos/Anti-Hype + Conclusão quantitativa",
+      "f": "fator de risco/atrito"
     }
   ],
   "analise": [
@@ -213,8 +217,7 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
     }
   ]
 }`;
-        }
-
+}
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
