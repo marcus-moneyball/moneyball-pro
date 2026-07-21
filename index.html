@@ -65,7 +65,7 @@
         <div id="display-area"></div>
     </div>
 
-    <script>
+<script>
         // ============================================================
         // 1. CONFIG — cada esporte define seus mercados de interesse.
         // ============================================================
@@ -320,6 +320,7 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
         };
 
         function tierPorItem(item) {
+            if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
             const score = Number(item.sc ?? item.moneyball_score);
             const banda = (item.b || "").toLowerCase();
             if (BANDA_MAP[banda]) return { ...BANDA_MAP[banda], score };
@@ -339,62 +340,75 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
         };
 
         function cardMercado(item) {
-    const tier = tierPorItem(item);
-    const v = CONFIABILIDADE_STYLE[tier.tier];
+            if (!item || typeof item !== 'object') return '';
+            const tier = tierPorItem(item);
+            const v = CONFIABILIDADE_STYLE[tier.tier];
 
-    const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
-    const ev = item.ev;
-    const ip = item.ip ?? item.ip_ajustado;
-    const stake = item.st ?? item.stake_sugerida;
-    const ativo = item.at ?? item.ativo;
-    
-    // ➔ CORREÇÃO: Trata 'f' se vier como String ou como Array
-    let fatores = [];
-    if (Array.isArray(item.f)) {
-        fatores = item.f;
-    } else if (typeof item.f === 'string' && item.f.trim() !== '') {
-        fatores = [item.f];
-    }
+            const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
+            const ev = item.ev;
+            const ip = item.ip ?? item.ip_ajustado;
+            const stake = item.st ?? item.stake_sugerida;
+            const ativo = item.at ?? item.ativo;
+            
+            // ➔ BLINDAGEM DE 'fatores' (f)
+            let fatores = [];
+            if (Array.isArray(item.f)) {
+                fatores = item.f;
+            } else if (typeof item.f === 'string' && item.f.trim() !== '') {
+                fatores = [item.f];
+            } else if (item.f) {
+                fatores = [String(item.f)];
+            }
 
-    const extras = [];
-    if (ev !== undefined && ev !== null) {
-        const evPositivo = Number(ev) >= 0;
-        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
-    }
-    if (ip !== undefined && ip !== null) {
-        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
-    }
-    if (stake !== undefined && stake !== null) {
-        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
-    }
-    if (ativo) {
-        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
-    }
-    
-    const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
-    const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
+            const extras = [];
+            if (ev !== undefined && ev !== null) {
+                const evPositivo = Number(ev) >= 0;
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
+            }
+            if (ip !== undefined && ip !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
+            }
+            if (stake !== undefined && stake !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
+            }
+            if (ativo) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
+            }
+            const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
+            const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
 
-    return `
-        <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
-            <div class="flex justify-between items-start gap-2">
-                <span class="font-bold text-white text-sm">${item.m || ""}</span>
-                <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
-            </div>
-            <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
-            ${extrasHtml}
-            ${fatoresHtml}
-            ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
-        </div>`;
-}
+            return `
+                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
+                    <div class="flex justify-between items-start gap-2">
+                        <span class="font-bold text-white text-sm">${item.m || ""}</span>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
+                    </div>
+                    <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
+                    ${extrasHtml}
+                    ${fatoresHtml}
+                    ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
+                </div>`;
+        }
 
         // ============================================================
-        // 5. RENDERIZAÇÃO DO BILHETE
+        // 5. RENDERIZAÇÃO DO BILHETE (SUPER BLINDADA)
         // ============================================================
         function renderizarBilhete(data) {
             const display = document.getElementById("display-area");
-            const analiseCompleta = data.a || data.analise || [];
-            const topBilhetes = [...(data.tb || data.top_bilhetes || [])]
-                .sort((a, b) => (Number(b.sc ?? b.moneyball_score) || 0) - (Number(a.sc ?? a.moneyball_score) || 0));
+
+            // ➔ BLINDAGEM DE 'analiseCompleta'
+            let rawAnalise = data.a || data.analise || [];
+            if (!Array.isArray(rawAnalise)) {
+                rawAnalise = typeof rawAnalise === 'object' && rawAnalise !== null ? [rawAnalise] : [];
+            }
+            const analiseCompleta = rawAnalise;
+
+            // ➔ BLINDAGEM DE 'topBilhetes'
+            let rawTop = data.tb || data.top_bilhetes || [];
+            if (!Array.isArray(rawTop)) {
+                rawTop = typeof rawTop === 'object' && rawTop !== null ? [rawTop] : [];
+            }
+            const topBilhetes = [...rawTop].sort((a, b) => (Number(b.sc ?? b.moneyball_score) || 0) - (Number(a.sc ?? a.moneyball_score) || 0));
 
             const scoreBilhete = data.sb ?? data.score_bilhete;
             const prognostico = data.p || data.resumo;
@@ -430,7 +444,7 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 
                     <div class="space-y-3">
                         ${topBilhetes.length === 0
-                            ? `<p class="text-sm text-slate-500 text-center py-4">O modelo não retornou "tb" nessa resposta — veja a análise completa abaixo.</p>`
+                            ? `<p class="text-sm text-slate-500 text-center py-4">Nenhum mercado atingiu a margem mínima de segurança (Score >= 50).</p>`
                             : topBilhetes.map(item => cardMercado(item)).join("")
                         }
                     </div>
@@ -458,13 +472,11 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
 
             const groqInput = document.getElementById("groq-key");
 
-            // 1. Carrega a chave salva no seu navegador (se existir)
             const savedKey = localStorage.getItem("moneyball_groq_key");
             if (savedKey) {
                 groqInput.value = savedKey;
             }
 
-            // 2. Salva automaticamente no seu navegador conforme você digita
             groqInput.addEventListener("input", (e) => {
                 localStorage.setItem("moneyball_groq_key", e.target.value.trim());
             });
