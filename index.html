@@ -174,7 +174,7 @@ PASSO 4: Filtro Anti-Fragilidade e Banda
       Verde (score ≥ 75) · Amarela (60–74) · Vermelha (45–59) · Descarte (< 45).
 
 PASSO 5: Seleção de Top Bilhetes
-   └─ Extraia para \`tb\` SEMPRE os 5 mercados de maior score (nunca menos que 5 se houver 5+ mercados analisados, mesmo que o líder seja muito superior aos outros — retornar só 1 item é uma FALHA de formatação). Se menos de 5 mercados atingirem 45, complete com os próximos melhores marcados como Descarte e avise em \`r\`. Cada item DEVE conter o nome da equipe/seleção e uma explicação técnica rica em \`w\`.
+   └─ Extraia para \`tb\` SEMPRE os 5 mercados de maior score (nunca menos que 5 se houver 5+ mercados analisados, mesmo que o líder seja muito superior aos outros — retornar só 1 item é uma FALHA de formatação). Se menos de 5 mercados atingirem 45, complete com os próximos melhores marcados como Descarte e avise em \`r\`. Cada item DEVE conter o nome da equipe/seleção e uma justificativa objetiva em \`w\` — direto ao ponto, SEM repetir o mesmo argumento entre itens diferentes, respeitando rigorosamente o limite de 200 caracteres (corte a frase antes de estourar, nunca ultrapasse).
 
 PASSO 6: Auditoria e Output
    └─ Emita EXCLUSIVAMENTE o JSON estruturado abaixo.
@@ -383,7 +383,7 @@ PASSO 6: Auditoria e Output
                             { role: "user", content: userInput }
                         ],
                         temperature: 0.2,
-                        max_completion_tokens: 6000,
+                        max_completion_tokens: 14000,
                         reasoning_effort: "low",
                         include_reasoning: false,
                         response_format: { type: "json_object" }
