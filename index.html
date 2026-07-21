@@ -174,7 +174,10 @@ PASSO 4: Filtro Anti-Fragilidade e Banda
       Verde (score ≥ 75) · Amarela (60–74) · Vermelha (45–59) · Descarte (< 45).
 
 PASSO 5: Seleção de Top Bilhetes
-   └─ Extraia para \`tb\` SEMPRE os 5 mercados de maior score (nunca menos que 5 se houver 5+ mercados analisados, mesmo que o líder seja muito superior aos outros — retornar só 1 item é uma FALHA de formatação). Se menos de 5 mercados atingirem 45, complete com os próximos melhores marcados como Descarte e avise em \`r\`. Cada item DEVE conter o nome da equipe/seleção e uma justificativa objetiva em \`w\` — direto ao ponto, SEM repetir o mesmo argumento entre itens diferentes, respeitando rigorosamente o limite de 200 caracteres (corte a frase antes de estourar, nunca ultrapasse).
+   └─ Extraia para \`tb\` SEMPRE os 5 mercados de maior score (nunca menos que 5 se houver 5+ mercados analisados, mesmo que o líder seja muito superior aos outros — retornar só 1 item é uma FALHA de formatação). Se menos de 5 mercados atingirem 45, complete com os próximos melhores marcados como Descarte e avise em \`r\`. Cada item DEVE conter o nome da equipe/seleção e uma justificativa objetiva em \`w\` — direto ao ponto, SEM repetir o mesmo argumento entre itens diferentes, respeitando rigorosamente o limite de 120 caracteres (corte a frase antes de estourar, nunca ultrapasse).
+
+PASSO 5.1: Análise Leve dos Demais
+   └─ Em \`a\`, inclua APENAS os mercados que ficaram FORA do \`tb\` (nunca repita um mercado que já está em \`tb\` — isso dobra o tamanho da resposta à toa). Cada item de \`a\` é só \`e\`,\`m\`,\`s\`,\`sc\`,\`b\` — sem \`w\`, sem justificativa, sem fatores de risco. Se todos os mercados analisados já couberem em \`tb\`, retorne \`"a": []\`.
 
 PASSO 6: Auditoria e Output
    └─ Emita EXCLUSIVAMENTE o JSON estruturado abaixo.
@@ -187,10 +190,10 @@ PASSO 6: Auditoria e Output
 
 ---
 
-### SAÍDA (o array "tb" deve ter 5 itens — ver Passo 5):
+### SAÍDA (o array "tb" deve ter 5 itens — ver Passo 5; "a" só mercados fora de "tb" — ver Passo 5.1):
 {
-  "p": "Prognóstico em até 300 chars",
-  "r": "Resumo executivo em até 150 chars",
+  "p": "Prognóstico em até 180 chars",
+  "r": "Resumo executivo em até 100 chars",
   "sb": 0,
   "tb": [
     {
@@ -203,14 +206,12 @@ PASSO 6: Auditoria e Output
       "b": "Verde|Amarela|Vermelha",
       "st": 1.0,
       "ev": 0.0,
-      "w": "Justificativa prática em até 200 chars",
+      "w": "Justificativa objetiva em até 120 chars",
       "f": ["fator_risco"]
     }
   ],
   "a": [
-    {
-      "e": "", "m": "", "s": "", "sc": 0, "b": "Descarte", "st": 0
-    }
+    { "e": "", "m": "", "s": "", "sc": 0, "b": "Descarte" }
   ]
 }`;
         }
@@ -383,7 +384,7 @@ PASSO 6: Auditoria e Output
                             { role: "user", content: userInput }
                         ],
                         temperature: 0.2,
-                        max_completion_tokens: 14000,
+                        max_completion_tokens: 8000,
                         reasoning_effort: "low",
                         include_reasoning: false,
                         response_format: { type: "json_object" }
