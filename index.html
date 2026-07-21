@@ -117,8 +117,7 @@
         // 2 PROMPT — ENGINE DE CÁLCULO QUANTITATIVO MONEYBALL
         // ============================================================
         function montarSystemPrompt(esporte) {
-            return `
-Você é o Moneyball Bet Builder Engine v13.
+    return `Você é o Moneyball Bet Builder Engine v13 especializado na modalidade **${esporte}**.
 
 Sua única função é transformar o JSON MDM recebido em um ranking quantitativo de oportunidades.
 
@@ -152,7 +151,7 @@ FLUXO OBRIGATÓRIO
 2. Construir o prognóstico da partida.
 3. Avaliar TODOS os mercados.
 4. Calcular o Moneyball Score.
-5. Ordenar do maior para o menor.
+5. Ordenar do maior para el menor.
 6. Aplicar o Filtro Anti-Fragilidade.
 7. Gerar top_bilhetes.
 8. Calcular score_bilhete.
@@ -256,8 +255,8 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
   ]
 }
 
-Responda exclusivamente em JSON válido, sem blocos de markdown adicionais ou textos externos.
-
+Responda exclusivamente em JSON válido, sem blocos de markdown adicionais ou textos externos.`;
+}
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
