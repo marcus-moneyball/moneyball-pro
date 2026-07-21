@@ -134,22 +134,22 @@
             activeBtn.classList.add("bg-accent/15", "text-accent", "border-accent/40");
         }
 
-        // ============================================================
-        // 2 PROMPT — v8.7: Análise / Moneyball Score
+       // ============================================================
+        // 2 PROMPT — v8.10: Análise / Moneyball Score (Com Nome dos Times)
         // ============================================================
       function montarSystemPrompt(esporte) {
   return `
-Você é o **Bet Builder Engine (v8.9)**, motor quantitativo de decisão do sistema Moneyball para a modalidade **${esporte}**. Sua função é processar o MDM JSON, calcular scores, aplicar o Filtro Anti-Fragilidade e emitir o JSON final.
+Você é o **Bet Builder Engine (v8.10)**, motor quantitativo de decisão do sistema Moneyball para a modalidade **${esporte}**. Sua função é processar o MDM JSON, calcular scores, aplicar o Filtro Anti-Fragilidade e emitir o JSON final.
 
 ---
 
 ### 1. ALGORITMO SEQUENCIAL DE EXECUÇÃO
 
 PASSO 1: Leitura do MDM
-   └─ Extraia os dados e métricas do MDM JSON recebido para ${esporte}.
+   └─ Extraia os dados e o confronto (Time Casa vs Time Visitante) do MDM JSON recebido para ${esporte}.
 
 PASSO 2: Cálculo do Moneyball Score (0 a 100)
-   └─ Atribua uma nota para TODOS os mercados com base em:
+   └─ Atribua uma nota (0 a 100) para TODOS os mercados com base em:
       - Alinhamento de Atos e Força (IP Ajustado)
       - Robustez e estabilidade da amostra (n)
       - Distância entre linha projetada e linha da casa (Edge)
@@ -161,13 +161,12 @@ PASSO 3: Ranking Bruto
 
 PASSO 4: Filtro Anti-Fragilidade
    └─ Atribua \`filtro: "aprovado"\` ou \`filtro: "bloqueado"\`.
-   └─ Bloqueie mercados com dependência de roteiro único, conflito de ranking ou margem frágil, preenchendo o \`motivo\`.
 
 PASSO 5: Seleção de Top Bilhetes
-   └─ Extraia para \`top_bilhetes\` apenas os aprovados do topo (máx 6).
+   └─ Extraia para \`top_bilhetes\` apenas os aprovados do topo (máx 6). Cada item DEVE conter explicitamente o nome da equipe/seleção e uma explicação técnica rica e detalhada em \`w\`.
 
 PASSO 6: Auditoria e Output
-   └─ Calcule a média dos scores e emita EXCLUSIVAMENTE o JSON estruturado abaixo.
+   └─ Emita EXCLUSIVAMENTE o JSON estruturado abaixo.
 
 ---
 
@@ -179,29 +178,81 @@ PASSO 6: Auditoria e Output
 
 ### 3. SCHEMA JSON OBRIGATÓRIO
 {
-  "resumo": "Analisados X mercados. Y aprovados. O Filtro Anti-Fragilidade bloqueou Z. Moneyball Score Médio: W.",
-  "moneyball_score_bilhete": 87.4,
+  "resumo": "Análise concluída para o confronto. Moneyball Score Médio: W.",
+  "score_bilhete": 87.4,
   "analise": [
     {
       "m": "Nome do Mercado",
-      "s": "Seleção",
-      "score": 88,
+      "s": "Nome do Time / Seleção",
+      "sc": 88,
       "filtro": "aprovado",
-      "motivo": "Justificativa curta da nota/filtro."
+      "motivo": "Justificativa analítica detalhada."
     }
   ],
   "top_bilhetes": [
     {
       "m": "Nome do Mercado",
-      "s": "Seleção",
+      "s": "Nome do Time / Seleção (Ex: Palmeiras ou Over 2.5)",
       "odds": 1.85,
-      "score": 88,
-      "w": "Explicação técnica enxuta."
+      "sc": 88,
+      "w": "Explicação técnica rica detalhando o motivo da vantagem, cruzamento de dados e robustez da amostra."
     }
   ]
 }
 `;
 }
+
+        // ============================================================
+        // 4. CLASSIFICAÇÃO POR MONEYBALL SCORE (Corrigida para ler 'sc')
+        // ============================================================
+        const BANDA_MAP = {
+            "verde": { tier: "alta", label: "BANDA VERDE" },
+            "amarela": { tier: "media", label: "BANDA AMARELA" },
+            "vermelha": { tier: "baixa", label: "BANDA VERMELHA" },
+            "descarte": { tier: "descartada", label: "DESCARTE" },
+        };
+
+        function tierPorItem(item) {
+            if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
+            // Lê prioritariamente 'sc' (que o prompt novo emite) ou alternativas legadas
+            const score = Number(item.sc ?? item.score ?? item.moneyball_score);
+            const banda = (item.b || "").toLowerCase();
+            if (BANDA_MAP[banda]) return { ...BANDA_MAP[banda], score };
+            if (isNaN(score)) return { tier: "indefinida", label: "SEM SCORE", score: null };
+            if (score >= 75) return { tier: "alta", label: "ALTA CONFIABILIDADE", score };
+            if (score >= 60) return { tier: "media", label: "MÉDIA CONFIABILIDADE", score };
+            if (score >= 45) return { tier: "baixa", label: "BAIXA CONFIABILIDADE", score };
+            return { tier: "descartada", label: "SCORE BAIXO", score };
+        }
+
+        const CONFIABILIDADE_STYLE = {
+            alta: { bg: "bg-conf-alta/15", text: "text-conf-alta", border: "border-conf-alta/30" },
+            media: { bg: "bg-conf-media/15", text: "text-conf-media", border: "border-conf-media/30" },
+            baixa: { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30" },
+            descartada: { bg: "bg-conf-baixa/15", text: "text-conf-baixa", border: "border-conf-baixa/30" },
+            indefinida: { bg: "bg-slate-700/20", text: "text-slate-400", border: "border-slate-700/40" },
+        };
+
+        function cardMercado(item) {
+            if (!item || typeof item !== 'object') return '';
+            const tier = tierPorItem(item);
+            const v = CONFIABILIDADE_STYLE[tier.tier];
+
+            // Pega o nome do time/seleção independentemente da chave usada
+            const selecaoTxt = item.s || item.selecao || item.l || "Seleção Principal";
+            const mercadoTxt = item.m || "Mercado";
+            const explicacao = item.w || item.motivo || "";
+
+            return `
+                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
+                    <div class="flex justify-between items-start gap-2">
+                        <span class="font-bold text-white text-sm">${mercadoTxt}</span>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
+                    </div>
+                    <div class="text-accent font-black text-lg">${selecaoTxt}</div>
+                    ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/60">${explicacao}</div>` : ""}
+                </div>`;
+        }
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
@@ -296,8 +347,8 @@ PASSO 6: Auditoria e Output
             return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl">⚠️ ${msg}</div>`;
         }
 
-        // ============================================================
-        // 4. CLASSIFICAÇÃO POR MONEYBALL SCORE
+       // ============================================================
+        // 4. CLASSIFICAÇÃO POR MONEYBALL SCORE (Corrigida para ler 'sc')
         // ============================================================
         const BANDA_MAP = {
             "verde": { tier: "alta", label: "BANDA VERDE" },
@@ -308,7 +359,8 @@ PASSO 6: Auditoria e Output
 
         function tierPorItem(item) {
             if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
-            const score = Number(item.sc ?? item.moneyball_score);
+            // Lê prioritariamente 'sc' (que o prompt novo emite) ou alternativas legadas
+            const score = Number(item.sc ?? item.score ?? item.moneyball_score);
             const banda = (item.b || "").toLowerCase();
             if (BANDA_MAP[banda]) return { ...BANDA_MAP[banda], score };
             if (isNaN(score)) return { tier: "indefinida", label: "SEM SCORE", score: null };
@@ -331,49 +383,19 @@ PASSO 6: Auditoria e Output
             const tier = tierPorItem(item);
             const v = CONFIABILIDADE_STYLE[tier.tier];
 
-            const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
-            const ev = item.ev;
-            const ip = item.ip ?? item.ip_ajustado;
-            const stake = item.st ?? item.stake_sugerida;
-            const ativo = item.at ?? item.ativo;
-            
-            // ➔ BLINDAGEM DE 'fatores' (f)
-            let fatores = [];
-            if (Array.isArray(item.f)) {
-                fatores = item.f;
-            } else if (typeof item.f === 'string' && item.f.trim() !== '') {
-                fatores = [item.f];
-            } else if (item.f) {
-                fatores = [String(item.f)];
-            }
-
-            const extras = [];
-            if (ev !== undefined && ev !== null) {
-                const evPositivo = Number(ev) >= 0;
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
-            }
-            if (ip !== undefined && ip !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
-            }
-            if (stake !== undefined && stake !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
-            }
-            if (ativo) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
-            }
-            const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
-            const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
+            // Pega o nome do time/seleção independentemente da chave usada
+            const selecaoTxt = item.s || item.selecao || item.l || "Seleção Principal";
+            const mercadoTxt = item.m || "Mercado";
+            const explicacao = item.w || item.motivo || "";
 
             return `
-                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
+                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
                     <div class="flex justify-between items-start gap-2">
-                        <span class="font-bold text-white text-sm">${item.m || ""}</span>
+                        <span class="font-bold text-white text-sm">${mercadoTxt}</span>
                         <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
                     </div>
-                    <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
-                    ${extrasHtml}
-                    ${fatoresHtml}
-                    ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
+                    <div class="text-accent font-black text-lg">${selecaoTxt}</div>
+                    ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-1 border-t border-slate-800/60">${explicacao}</div>` : ""}
                 </div>`;
         }
 
