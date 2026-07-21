@@ -254,21 +254,33 @@ Cante as notas com base nos critérios abaixo:
             const mercadoTxt = item.m || "Mercado";
             const explicacao = item.w || item.motivo || "";
             const oddsVal = item.odds !== undefined ? ` · Odds: <span class="text-white font-mono">${item.odds}</span>` : "";
+            
+            const ev = item.ev;
+            const ip = item.ip ?? item.ip_ajustado;
+            const extras = [];
+            if (ev !== undefined && ev !== null) {
+                const evPositivo = Number(ev) >= 0;
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
+            }
+            if (ip !== undefined && ip !== null) {
+                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP ${ip}</span>`);
+            }
+            const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
 
             return `
                 <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
                     <div class="flex justify-between items-start gap-2">
                         <span class="font-bold text-white text-sm">${mercadoTxt}</span>
-                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score !== null ? tier.score : "-"}</span>
+                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score !== null ? tier.score : "-"}</span>
                     </div>
                     <div class="text-accent font-black text-lg flex items-center justify-between">
                         <span>${selecaoTxt}</span>
                         <span class="text-xs font-normal text-slate-400">${oddsVal}</span>
                     </div>
-                    ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60">${explicacao}</div>` : ""}
+                    ${extrasHtml}
+                    ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-1.5 border-t border-slate-800/60">${explicacao}</div>` : ""}
                 </div>`;
         }
-
         function renderizarBilhete(data) {
             const display = document.getElementById("display-area");
 
