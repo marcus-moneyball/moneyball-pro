@@ -339,45 +339,53 @@ SAÍDA (JSON ESTRITO EM PORTUGUÊS):
         };
 
         function cardMercado(item) {
-            const tier = tierPorItem(item);
-            const v = CONFIABILIDADE_STYLE[tier.tier];
+    const tier = tierPorItem(item);
+    const v = CONFIABILIDADE_STYLE[tier.tier];
 
-            const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
-            const ev = item.ev;
-            const ip = item.ip ?? item.ip_ajustado;
-            const stake = item.st ?? item.stake_sugerida;
-            const ativo = item.at ?? item.ativo;
-            const fatores = item.f || [];
+    const selecaoTxt = item.s || `${item.selecao || ""}${item.l ? ` ${item.l}` : ""}`;
+    const ev = item.ev;
+    const ip = item.ip ?? item.ip_ajustado;
+    const stake = item.st ?? item.stake_sugerida;
+    const ativo = item.at ?? item.ativo;
+    
+    // ➔ CORREÇÃO: Trata 'f' se vier como String ou como Array
+    let fatores = [];
+    if (Array.isArray(item.f)) {
+        fatores = item.f;
+    } else if (typeof item.f === 'string' && item.f.trim() !== '') {
+        fatores = [item.f];
+    }
 
-            const extras = [];
-            if (ev !== undefined && ev !== null) {
-                const evPositivo = Number(ev) >= 0;
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
-            }
-            if (ip !== undefined && ip !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
-            }
-            if (stake !== undefined && stake !== null) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
-            }
-            if (ativo) {
-                extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
-            }
-            const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
-            const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
+    const extras = [];
+    if (ev !== undefined && ev !== null) {
+        const evPositivo = Number(ev) >= 0;
+        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-conf-alta/15 text-conf-alta' : 'bg-conf-baixa/15 text-conf-baixa'}">EV ${evPositivo ? '+' : ''}${ev}</span>`);
+    }
+    if (ip !== undefined && ip !== null) {
+        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP Ajustado ${ip}</span>`);
+    }
+    if (stake !== undefined && stake !== null) {
+        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-accent/15 text-accent">Stake ${stake}u</span>`);
+    }
+    if (ativo) {
+        extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">Ativo ${ativo}</span>`);
+    }
+    
+    const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
+    const fatoresHtml = fatores.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${fatores.map(fr => `<span class="text-[10px] font-medium px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20">⚠ ${fr}</span>`).join("")}</div>` : "";
 
-            return `
-                <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
-                    <div class="flex justify-between items-start gap-2">
-                        <span class="font-bold text-white text-sm">${item.m || ""}</span>
-                        <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
-                    </div>
-                    <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
-                    ${extrasHtml}
-                    ${fatoresHtml}
-                    ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
-                </div>`;
-        }
+    return `
+        <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors">
+            <div class="flex justify-between items-start gap-2">
+                <span class="font-bold text-white text-sm">${item.m || ""}</span>
+                <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score ?? "-"}</span>
+            </div>
+            <div class="text-accent font-black text-lg mt-1">${selecaoTxt}</div>
+            ${extrasHtml}
+            ${fatoresHtml}
+            ${item.w ? `<div class="text-xs text-slate-500 mt-1.5 leading-relaxed">${item.w}</div>` : ""}
+        </div>`;
+}
 
         // ============================================================
         // 5. RENDERIZAÇÃO DO BILHETE
