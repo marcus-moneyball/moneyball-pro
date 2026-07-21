@@ -75,35 +75,42 @@
             basquete: { label: "Basquete", icon: "fa-basketball" }
         };
 
-        // BYPASS DA VALIDAÇÃO (Nexus v1.0 é a fonte de verdade)
-        function validarDadosMinimos(dadosOdds, modulo) {
-            return { ok: true, faltando: [] };
-        }
+        // ============================================================
+        // DETECTOR INTELIGENTE DE ESPORTE (Impede JSON Cruzado)
+        // ============================================================
+        function validarDadosMinimos(dadosOdds, moduloAtivoKey) {
+            const str = JSON.stringify(dadosOdds).toLowerCase();
+            
+            // Termos inconfundíveis de cada esporte no MDM / Stats
+            const termosEsportes = {
+                futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "half time", "gols", "futebol", "corners"],
+                beisebol: ["pitcher", "era", "whip", "innings", "runs", "strikeouts", "mlb", "home runs", "beisebol"],
+                basquete: ["rebotes", "assistencias", "pontos", "nba", "quarto", "triplos", "basquete", "handicap"]
+            };
 
-        let sportAtivo = "beisebol";
+            // Detecta para qual esporte o JSON aparenta ser
+            let esporteDetectado = null;
+            let maxHits = 0;
 
-        function buildSportTabs() {
-            const container = document.getElementById("sport-tabs");
-            container.innerHTML = Object.entries(MODULES).map(([id, m]) => `
-                <button onclick="selecionarSport('${id}')" id="sporttab-${id}"
-                    class="sport-tab py-3 rounded-xl border text-sm font-semibold flex flex-col items-center gap-1 transition-all">
-                    <i class="fa-solid ${m.icon}"></i>
-                    <span>${m.label}</span>
-                </button>
-            `).join("");
-        }
-
-        function selecionarSport(id) {
-            sportAtivo = id;
-            document.querySelectorAll(".sport-tab").forEach(btn => {
-                btn.classList.remove("bg-accent/15", "text-accent", "border-accent/40");
-                btn.classList.add("bg-base-panel", "text-slate-400", "border-base-border");
-            });
-            const activeBtn = document.getElementById("sporttab-" + id);
-            if (activeBtn) {
-                activeBtn.classList.remove("bg-base-panel", "text-slate-400", "border-base-border");
-                activeBtn.classList.add("bg-accent/15", "text-accent", "border-accent/40");
+            for (const [esporte, termos] of Object.entries(termosEsportes)) {
+                const hits = termos.filter(t => str.includes(t)).length;
+                if (hits > maxHits && hits >= 2) { // Exige pelo menos 2 termos fortes
+                    maxHits = hits;
+                    esporteDetectado = esporte;
+                }
             }
+
+            // Se detectou um esporte diferente do selecionado na aba, bloqueia
+            if (esporteDetectado && esporteDetectado !== moduloAtivoKey) {
+                const nomeDetectado = MODULES[esporteDetectado]?.label || esporteDetectado;
+                const nomeAtivo = MODULES[moduloAtivoKey]?.label || moduloAtivoKey;
+                return {
+                    ok: false,
+                    erro: `Você colou um JSON de **${nomeDetectado}**, mas a aba selecionada é **${nomeAtivo}**. Alterne a aba acima para continuar.`
+                };
+            }
+
+            return { ok: true };
         }
 
         // ============================================================
@@ -173,7 +180,7 @@ Cante as notas com base nos critérios abaixo:
         // ============================================================
         // 3. CHAMADA AO GROQ
         // ============================================================
-        async function analisarComGroq() {
+       async function analisarComGroq() {
             const apiKey = document.getElementById("groq-key").value.trim();
             const raw = document.getElementById("json-input").value.trim();
             const btn = document.getElementById("analisar-btn");
@@ -188,48 +195,20 @@ Cante as notas com base nos critérios abaixo:
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Processando Algoritmo...`;
-            display.innerHTML = `<p class="text-slate-500 text-sm text-center py-4">Calculando Moneyball Score...</p>`;
-
+            // --- CHECAGEM DE ESPORTE CRUZADO ---
             try {
-                const modulo = MODULES[sportAtivo];
-                const systemPrompt = montarSystemPrompt(modulo.label);
-
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${apiKey}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: raw }
-                        ],
-                        temperature: 0.2,
-                        max_completion_tokens: 6000,
-                        response_format: { type: "json_object" }
-                    })
-                });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errText.slice(0, 200)}`);
+                const jsonParsed = JSON.parse(raw);
+                const checagem = validarDadosMinimos(jsonParsed, sportAtivo);
+                if (!checagem.ok) {
+                    display.innerHTML = alertaErro(checagem.erro);
+                    return;
                 }
+            } catch (e) {
+                // Se não for um JSON válido, a API do Groq vai tratar o erro de parse abaixo
+            }
+            // ------------------------------------
 
-                const data = await response.json();
-                const conteudo = data.choices?.[0]?.message?.content;
-                if (!conteudo) throw new Error("Resposta do Groq veio vazia.");
-
-                const parsed = JSON.parse(conteudo.replace(/```json|```/g, "").trim());
-                renderizarBilhete(parsed);
-            } catch (err) {
-                console.error("Erro na análise Groq:", err);
-                display.innerHTML = alertaErro(`Não consegui completar a análise. ${err.message}`);
-            } finally {
-                btn.disabled = false;
+            btn.disabled = true;
                 btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Analisar com Groq`;
             }
         }
