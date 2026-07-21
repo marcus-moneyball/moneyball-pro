@@ -425,22 +425,48 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais ou te
             if (!Array.isArray(rawTop)) rawTop = [rawTop];
 
             const scoreBilhete = data.score_bilhete ?? data.sb;
-            const resumo = data.resumo || data.p || data.prognostico;
+            const prognostico = data.prognostico || data.p || "";
 
-            const melhor = rawTop[0] || null;
-            const melhorSelecaoTxt = melhor ? (melhor.s || melhor.selecao || "") : "";
-            const melhorTier = melhor ? tierPorItem(melhor) : null;
-
-            const destaqueHtml = melhor ? `
-                <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border-2 border-accent rounded-xl space-y-1">
-                    <div class="flex items-center gap-2 text-accent text-xs font-bold uppercase tracking-wider">
-                        <i class="fa-solid fa-trophy"></i> MELHOR SUGESTÃO QUANTITATIVA
+            const painelTaticoHtml = prognostico ? `
+                <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
+                        <span><i class="fa-solid fa-chess-board mr-1"></i> Prognóstico Tático da Partida</span>
+                        ${scoreBilhete !== undefined && scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score: ${scoreBilhete}</span>` : ""}
                     </div>
-                    <div class="text-white font-black text-xl">${melhorSelecaoTxt}</div>
-                    <div class="text-xs text-slate-400">${melhor.m || ""} · Moneyball Score: <span class="font-bold text-accent">${melhorTier?.score ?? "-"}</span></div>
-                    <div class="text-xs text-slate-300 leading-relaxed pt-1.5">${melhor.w || melhor.motivo || ""}</div>
+                    <p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>
                 </div>
             ` : "";
+
+            display.innerHTML = `
+                <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">2</span>
+                        <h2 class="text-sm font-semibold text-slate-300">Bilhete Sugerido Moneyball</h2>
+                    </div>
+
+                    ${painelTaticoHtml}
+
+                    <div class="space-y-3 pt-2">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Oportunidades</h3>
+                        ${rawTop.length === 0
+                            ? `<p class="text-sm text-slate-500 text-center py-4">Nenhum mercado aprovado na margem de segurança.</p>`
+                            : rawTop.map(item => cardMercado(item)).join("")
+                        }
+                    </div>
+
+                    ${rawAnalise.length > 0 ? `
+                        <details class="pt-2 border-t border-base-border">
+                            <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver análise quantitativa completa (${rawAnalise.length} mercados)</summary>
+                            <div class="space-y-3 mt-3">
+                                ${rawAnalise.map(item => cardMercado(item)).join("")}
+                            </div>
+                        </details>
+                    ` : ""}
+
+                    <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em probabilidade estatística e análise quantitativa.</p>
+                </div>
+            `;
+        }
 
             display.innerHTML = `
                 <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
