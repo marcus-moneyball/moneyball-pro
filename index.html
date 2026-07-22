@@ -28,7 +28,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v14.0
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v14.0 — Strict Mode
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
             <p class="text-xs text-slate-500">Inteligência quantitativa aplicada ao esporte.</p>
@@ -119,7 +119,7 @@
             const nomeAtivo = MODULES[moduloAtivoKey]?.label || moduloAtivoKey;
             return {
                 ok: false,
-                erro: `Você colou um JSON de **${nomeDetectado}**, mas a aba selecionada é **${nomeAtivo}**. Alterne a aba acima para continuar.`
+                erro: `Você colou um JSON de **${nomeDetectado}**,误 a aba selecionada é **${nomeAtivo}**. Alterne a aba acima para continuar.`
             };
         }
 
@@ -141,9 +141,34 @@ Sua saída deve ser exclusivamente JSON válido.
 
 ------------------------------------------------
 
-METODOLOGIA INTERNA DE CÁLCULO (BASE 50 + VETOR DE INÉRCIA)
+[REGRA DE RIGOR E CALIBRAÇÃO PARA SINGLES — MONEYBALL SCORE ($sc)]
 
-Para calcular o 'sc' (Moneyball Score) de cada mercado, faça o cálculo MENTALMENTE partindo da Base 50:
+Sua diretriz primária para Apostas Simples (Singles) é a EXCLUSIVIDADE e a SELETIVIDADE. A Banda Verde ($sc >= 80) é um selo de exceção e deve representar apenas o topo da curva de assimetria.
+
+Para que uma seleção atinja sc >= 80, ela DEVE OBRIGATORIAMENTE atender a 4 critérios sem exceção:
+1. EDGE CLARO: A odd da casa deve oferecer valor real em relação à projeção estática.
+2. CONSISTÊNCIA L5: O histórico recente dos últimos 5 jogos deve ser limpo, sem picos isolados ou dependência de cenários atípicos.
+3. CONTEXTO LIMPO: Ausência total de ruídos (desfalques de última hora, rotação de elenco, desgaste físico extremo ou instabilidade tática).
+4. MOTIVAÇÃO/DNA: O cenário do confronto deve favorecer diretamente o mercado escolhido.
+
+SE QUALQUER UM DOS CRITÉRIOS ACIMA FOR DÚBIO OU PARCIALMENTE NEGATIVO:
+- O score DEVE ser ancorado compulsoriamente na faixa de 65 a 78 (Banda Amarela/Vermelha).
+- Na dúvida ou diante de incertezas táticas, penalize com -10 a -15 pontos.
+
+------------------------------------------------
+
+[MECÂNICA DE CÁLCULO DA STAKE ($St$)]
+
+Você deve sempre calcular e atribuir o campo "st" (Stake Sugerida em Unidades) e "st_txt" atrelados ao score $sc$:
+
+- Se sc >= 85 (Super Edge): "st": 1.5 a 2.0, "st_txt": "1.5u - 2.0u" (Aposta de Alta Vantagem)
+- Se sc entre 80 e 84 (Edge Sólido): "st": 1.0, "st_txt": "1.0u" (Unidade Padrão)
+- Se sc entre 70 e 79 (Margem/Proteção): "st": 0.5, "st_txt": "0.5u" (Meia Unidade)
+- Se sc < 70 (Rejeitado): "st": 0.0, "st_txt": "0.0u" (NÃO APOSTAR)
+
+------------------------------------------------
+
+METODOLOGIA INTERNA DE CÁLCULO (BASE 50 + VETOR DE INÉRCIA)
 
 1. NOTA BASE MENTAL = 50 PONTOS (Neutro).
 
@@ -160,39 +185,13 @@ Para calcular o 'sc' (Moneyball Score) de cada mercado, faça o cálculo MENTALM
 
 ------------------------------------------------
 
-ESPECIFICIDADES POR MERCADO E ESPORTE
-
-• Futebol (Soccer):
-  - Chutes / Chutes a Gol (Finalizações): Avalie a convergência entre o volume recente (L5) do jogador/time e as métricas de xG, posse e PPDA do adversário.
-• Basquete (NBA):
-  - Props de Jogadores (PRA, Pts, 3PT): Considere rigorosamente a projeção de minutos e risco de blowout.
-• Beisebol (MLB):
-  - Pitcher Props (Ks): Valide a K% do lineup adversário contra a mão do pitcher (RHP/LHP) e o uso do bullpen.
-
-------------------------------------------------
-
-REGRAS RÍGIDAS DE DIREÇÃO ÚNICA E NÃO-CONTRADIÇÃO
-
-• É SEVERAMENTE PROIBIDO incluir seleções opostas ou concorrentes para o mesmo atleta ou time no 'top_bilhetes'.
-• Escolha APENAS A MELHOR DIREÇÃO (ou Over OU Under) com maior inércia positiva e delta de valor.
-• Diversifique o 'top_bilhetes' cobrindo diferentes atletas, times ou categorias de mercado.
-
-------------------------------------------------
-
 DISTRIBUIÇÃO DE BANDAS E SELEÇÃO
 
-• 80 a 100 🟢 BANDA VERDE: Oportunidade Real de Valor.
-• 70 a 79 🟡 BANDA AMARELA: Margem de Segurança / Proteção.
+• 80 a 100 🟢 BANDA VERDE: Oportunidade Real de Valor (Singles / Rígido).
+• 70 a 79 🟡 BANDA AMARELA: Margem de Segurança / Proteção (Combinadas).
 • 0 a 69 🔴 REJEITADO: Sem valor real, inércia descendente ou fricção alta.
 
 Regra: Selecione de 3 a 6 bilhetes no 'top_bilhetes'.
-
-------------------------------------------------
-
-REGRAS DE TEXTO E EXPLICAÇÃO (CAMPO "w")
-
-- O campo "w" DEVE conter o MOTIVO TÁTICO E ESTATÍSTICO (mínimo de 30 palavras).
-- NUNCA escreva a fórmula matemática literal no campo "w".
 
 ------------------------------------------------
 
@@ -207,7 +206,9 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "m": "Nome Exato do Mercado",
       "s": "Seleção / Nome do Time ou Atleta",
       "odds": 1.85,
-      "sc": 81,
+      "sc": 82,
+      "st": 1.0,
+      "st_txt": "1.0u",
       "ip": 78,
       "ev": "+4.2%",
       "w": "Parágrafo analítico explicando o MOTIVO técnico do edge."
@@ -218,6 +219,8 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "m": "Nome do Mercado",
       "s": "Seleção",
       "sc": 62,
+      "st": 0.0,
+      "st_txt": "0.0u",
       "filtro": "recusado",
       "motivo": "Motivo da rejeição..."
     }
@@ -250,7 +253,6 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             return;
         }
 
-        // Checagem do JSON e validação do esporte
         try {
             const jsonParsed = JSON.parse(raw);
             const checagem = validarDadosMinimos(jsonParsed, sportAtivo);
@@ -263,14 +265,13 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             return;
         }
 
-        // Estado de carregamento (UX)
         btn.disabled = true;
         btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processando Motor Quantitativo...`;
         display.innerHTML = `
             <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
                 <i class="fa-solid fa-brain text-accent text-3xl"></i>
                 <h3 class="text-sm font-semibold text-slate-300">Processando modelo Moneyball...</h3>
-                <p class="text-xs text-slate-500">Calculando Scores, EV Positivo e gerando o painel tático.</p>
+                <p class="text-xs text-slate-500">Calculando Scores Rígidos, Stakes ($St$) e Painel Tático.</p>
             </div>
         `;
 
@@ -300,12 +301,11 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             const data = await response.json();
             const content = data.choices?.[0]?.message?.content || "";
             
-            // Sanitização para garantir JSON limpo sem markdown
             const cleanJson = content.replace(/```json\n?|```/g, "").trim();
             const parsedResult = JSON.parse(cleanJson);
 
             renderizarBilhete(parsedResult);
-            jsonInput.value = ""; // Limpa a entrada após o envio com sucesso
+            jsonInput.value = ""; 
 
         } catch (error) {
             console.error("Erro na análise:", error);
@@ -321,7 +321,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
     }
 
     // ============================================================
-    // 4. CLASSIFICAÇÃO E RENDERIZAÇÃO ROBUSTA DOS SCORES
+    // 4. CLASSIFICAÇÃO E RENDERIZAÇÃO ROBUSTA DOS SCORES E STAKES
     // ============================================================
     function tierPorItem(item) {
         if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
@@ -333,9 +333,9 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             return { tier: "indefinida", label: "SEM SCORE", score: null };
         }
         
-        if (score >= 75) return { tier: "alta", label: "BANDA VERDE", score };
-        if (score >= 60) return { tier: "media", label: "BANDA AMARELA", score };
-        if (score >= 45) return { tier: "baixa", label: "BANDA VERMELHA", score };
+        if (score >= 80) return { tier: "alta", label: "BANDA VERDE", score };
+        if (score >= 70) return { tier: "media", label: "BANDA AMARELA", score };
+        if (score >= 50) return { tier: "baixa", label: "BANDA VERMELHA", score };
         return { tier: "descartada", label: "DESCARTE", score };
     }
 
@@ -355,12 +355,16 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         const selecaoTxt = item.s || item.selecao || item.l || "Seleção Principal";
         const mercadoTxt = item.m || "Mercado";
         const explicacao = item.w || item.motivo || "";
-        const oddsVal = item.odds !== undefined ? ` · Odds: <span class="text-white font-mono">${item.odds}</span>` : "";
+        const oddsVal = item.odds !== undefined ? `Odds: <span class="text-white font-mono font-bold">${item.odds}</span>` : "";
+        const stakeTxt = item.st_txt || (item.st !== undefined ? `${item.st}u` : null);
         
         const ev = item.ev;
         const ip = item.ip ?? item.ip_ajustado;
         const extras = [];
 
+        if (stakeTxt) {
+            extras.push(`<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent border border-accent/30"><i class="fa-solid fa-coins mr-1"></i>Stake $St$: ${stakeTxt}</span>`);
+        }
         if (ev !== undefined && ev !== null) {
             const evPositivo = !String(ev).includes("-");
             extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}">EV ${ev}</span>`);
@@ -368,7 +372,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         if (ip !== undefined && ip !== null) {
             extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP ${ip}</span>`);
         }
-        const extrasHtml = extras.length ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${extras.join("")}</div>` : "";
+        const extrasHtml = extras.length ? `<div class="flex flex-wrap items-center gap-1.5 mt-2">${extras.join("")}</div>` : "";
 
         return `
             <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
@@ -381,7 +385,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
                     <span class="text-xs font-normal text-slate-400">${oddsVal}</span>
                 </div>
                 ${extrasHtml}
-                ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-1.5 border-t border-slate-800/60">${explicacao}</div>` : ""}
+                ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60 mt-1">${explicacao}</div>` : ""}
             </div>`;
     }
 
@@ -402,7 +406,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
                 <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
                     <span><i class="fa-solid fa-chess-board mr-1"></i> Prognóstico Tático da Partida</span>
-                    ${scoreBilhete !== undefined && scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score: ${scoreBilhete}</span>` : ""}
+                    ${scoreBilhete !== undefined && scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
                 </div>
                 ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
                 ${resumo ? `<div class="text-xs text-slate-400 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-slate-300">Resumo Executivo:</strong> ${resumo}</div>` : ""}
@@ -419,9 +423,9 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
                 ${painelTaticoHtml}
 
                 <div class="space-y-3 pt-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Oportunidades</h3>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Oportunidades (Singles & Base)</h3>
                     ${rawTop.length === 0
-                        ? `<p class="text-sm text-slate-500 text-center py-4">Nenhum mercado aprovado na margem de segurança.</p>`
+                        ? `<p class="text-sm text-slate-500 text-center py-4">Nenhum mercado aprovado na margem de segurança rígida.</p>`
                         : rawTop.map(item => cardMercado(item)).join("")
                     }
                 </div>
@@ -435,7 +439,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
                     </details>
                 ` : ""}
 
-                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em probabilidade estatística e análise quantitativa.</p>
+                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em probabilidade estatística, filtro de rigor e gestão de stake.</p>
             </div>
         `;
     }
@@ -450,18 +454,15 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         const groqInput = document.getElementById("groq-key");
         const btnAnalisar = document.getElementById("analisar-btn");
 
-        // Restaura chave salva no localStorage
         const savedKey = localStorage.getItem("moneyball_groq_key");
         if (savedKey && groqInput) groqInput.value = savedKey;
 
-        // Salva a chave dinamicamente enquanto digita
         if (groqInput) {
             groqInput.addEventListener("input", (e) => {
                 localStorage.setItem("moneyball_groq_key", e.target.value.trim());
             });
         }
 
-        // Listener de clique unificado no botão principal
         if (btnAnalisar) {
             btnAnalisar.addEventListener("click", analisarComGroq);
         }
