@@ -146,14 +146,14 @@ Sua saída deve ser exclusivamente JSON válido.
 Sua diretriz primária para Apostas Simples (Singles) é a EXCLUSIVIDADE e a SELETIVIDADE. A Banda Verde ($sc >= 80) é um selo de exceção e deve representar apenas o topo da curva de assimetria.
 
 Para que uma seleção atinja sc >= 80, ela DEVE OBRIGATORIAMENTE atender a 4 critérios sem exceção:
-1. EDGE CLARO: A odd da casa deve oferecer valor real em relação à projeção estática.
+1. EDGE CLARO: A odd da casa deve oferecer valor real em relação à projeção estatística.
 2. CONSISTÊNCIA L5: O histórico recente dos últimos 5 jogos deve ser limpo, sem picos isolados ou dependência de cenários atípicos.
 3. CONTEXTO LIMPO: Ausência total de ruídos (desfalques de última hora, rotação de elenco, desgaste físico extremo ou instabilidade tática).
 4. MOTIVAÇÃO/DNA: O cenário do confronto deve favorecer diretamente o mercado escolhido.
 
 SE QUALQUER UM DOS CRITÉRIOS ACIMA FOR DÚBIO OU PARCIALMENTE NEGATIVO:
-- O score DEVE ser ancorado compulsoriamente na faixa de 70 a 78 (Banda Amarela/Vermelha).
-- Na dúvida ou diante de incertezas táticas, penalize com -10 a -15 pontos.
+- O score DEVE ser ancorado compulsoriamente na faixa de 70 a 78 (Banda Amarela).
+- Na dúvida ou diante de incertezas táticas/fricções, penalize com -10 a -15 pontos e mantenha o score até no máximo 78.
 
 ------------------------------------------------
 
@@ -162,8 +162,8 @@ SE QUALQUER UM DOS CRITÉRIOS ACIMA FOR DÚBIO OU PARCIALMENTE NEGATIVO:
 Você deve sempre calcular e atribuir o campo "st" (Stake Sugerida em Unidades) e "st_txt" atrelados ao score $sc$:
 
 - Se sc >= 85 (Super Edge): "st": 1.5 a 2.0, "st_txt": "1.5u - 2.0u" (Aposta de Alta Vantagem)
-- Se sc entre 80 e 84 (Edge Sólido): "st": 1.0, "st_txt": "1.0u" (Unidade Padrão)
-- Se sc entre 70 e 79 (Margem/Proteção): "st": 0.5, "st_txt": "0.5u" (Meia Unidade)
+- Se sc entre 80 e 84 (Edge Sólido): "st": 1.0, "st_txt": "1.0u" (Unidade Padrão - Singles)
+- Se sc entre 70 e 79 (Margem/Proteção): "st": 0.5, "st_txt": "0.5u" (Meia Unidade - Criar Aposta)
 - Se sc < 70 (Rejeitado): "st": 0.0, "st_txt": "0.0u" (NÃO APOSTAR)
 
 ------------------------------------------------
@@ -176,20 +176,26 @@ METODOLOGIA INTERNA DE CÁLCULO (BASE 50 + VETOR DE INÉRCIA)
    +10 a +25 pts [Matchup & Edge]: Divergência positiva clara (Delta alto entre Baseline e Projeção).
    +10 a +15 pts [Inércia Ascendente]: O atleta/time vem em trajetória de ALTA nos últimos 3-5 jogos (L5).
 
-3. SUBTRAIA (Penalidades de Risco & Tendência):
-   -10 a -20 pts [Inércia Descendente / Filtro Anti-Hype]: Atleta ou time com reputação alta, mas em queda recente na Janela de Verdade.
-   -10 a -15 pts [Volatilidade Bimodal]: Média alta gerada por picos e vales extremos.
-   -15 a -25 pts [Eficiência de Mercado]: Odds muito baixas ou favoritismo óbvio precificado.
-   -10 a -20 pts [Fricções Externas]: Desfalques cirúrgicos, B2B, desgaste de bullpen, clima adverso.
-   -15 a -25 pts [Sinal Nexus Fraco]: Se 'nivel_confianca' do Nexus for 'baixa' ou 'dna_cenario' for 'caos', desinflacione o score severamente.
+3. SUBTRAIA (As 5 Categorias Rígidas de Penalidade de Risco):
+   -10 a -20 pts [Filtro Anti-Hype]: Atleta ou time com reputação alta, mas em queda recente de produção real na Janela de Verdade.
+   -10 a -15 pts [Volatilidade Bimodal]: Média alta gerada por picos e vales extremos (pouca regularidade).
+   -15 a -25 pts [Eficiência de Mercado]: Odds muito baixas ou favoritismo óbvio precificado sem margem real.
+   -10 a -20 pts [Fricções Externas]: Desfalques cirúrgicos, B2B, desgaste de bullpen, viagens ou clima/ambiente adverso.
+   -15 a -25 pts [Sinal Nexus Fraco]: Ruído estatístico de dados, imprevisibilidade tática, 'nivel_confianca' do Nexus como 'baixa' ou 'dna_cenario' como 'caos'.
+
+------------------------------------------------
+
+ANÁLISE DE CORRELAÇÃO CRUZADA (CRIAR APOSTA / SGP)
+
+Verifique se as seleções ranqueadas possuem dependência do mesmo ponto cego (ex: duas apostas dependendo do mesmo bullpen exausto ou do mesmo armador). Se houver risco de correlação negativa ou gargalo compartilhado, emita uma frase curta de alerta no campo "alertas_correlacao". Se o cenário estiver limpo, retorne [].
 
 ------------------------------------------------
 
 DISTRIBUIÇÃO DE BANDAS E SELEÇÃO
 
-• 80 a 100 🟢 BANDA VERDE: Oportunidade Real de Valor (Singles / Rígido).
-• 70 a 79 🟡 BANDA AMARELA: Margem de Segurança / Proteção (Combinadas).
-• 0 a 69 🔴 REJEITADO: Sem valor real, inércia descendente ou fricção alta.
+• 80 a 100 🟢 BANDA VERDE: Oportunidade Real de Valor (Singles / Exclusivo).
+• 70 a 79 🟡 BANDA AMARELA: Margem de Segurança / Proteção (Criar Aposta / Combinadas).
+• 0 a 69 🔴 BANDA VERMELHA (REJEITADO): Sem valor real, inércia descendente ou fricção alta.
 
 Regra: Selecione de 3 a 6 bilhetes no 'top_bilhetes'.
 
@@ -201,6 +207,9 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
   "prognostico": "Texto descritivo do prognóstico tático alinhado às hipóteses do Nexus...",
   "resumo": "Resumo executivo detalhando o racional macro...",
   "score_bilhete": 76.0,
+  "alertas_correlacao": [
+    "⚠️ Frase curta de alerta se houver dependência cruzada entre as seleções do Criar Aposta, ou array vazio se limpo."
+  ],
   "top_bilhetes": [
     {
       "m": "Nome Exato do Mercado",
@@ -229,7 +238,6 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
 }
-
     // ============================================================
     // 3. CONSUMO DA API DO GROQ
     // ============================================================
