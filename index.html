@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Inteligência Quantitativa Esportiva</title>
+    <title>Moneyball Pro | Conversion Engine v15.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,7 +15,6 @@
                     colors: {
                         base: { bg: '#05070d', panel: '#0d1220', card: '#111827', border: '#1f2937' },
                         accent: { DEFAULT: '#8b5cf6', dim: '#6d28d9' },
-                        conf: { alta: '#10b981', media: '#f59e0b', baixa: '#ef4444' },
                     }
                 }
             }
@@ -28,10 +27,10 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v14.0 — Strict Mode
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.0 — Nexus Conversion Engine
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
-            <p class="text-xs text-slate-500">Inteligência quantitativa aplicada ao esporte.</p>
+            <p class="text-xs text-slate-500">Conversor de Assimetrias e Inteligência Esportiva.</p>
         </div>
 
         <!-- SELETOR DE ESPORTE -->
@@ -49,19 +48,19 @@
             </div>
         </details>
 
-        <!-- ETAPA 1: COLAR JSON DE ODDS -->
+        <!-- ETAPA 1: COLAR JSON DO NEXUS -->
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3">
             <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v1.0</label>
+                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.1 (Pure Intelligence Engine)</label>
             </div>
-            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o MDM JSON aqui...'></textarea>
+            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.1 aqui...'></textarea>
             <button id="analisar-btn" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-bolt"></i> Analisar com Groq
+                <i class="fa-solid fa-bolt"></i> Converter Assimetrias via Groq
             </button>
         </div>
 
-        <!-- ETAPA 2: BILHETE -->
+        <!-- ETAPA 2: DISPLAY DE PAINEL -->
         <div id="display-area"></div>
     </div>
 
@@ -75,7 +74,7 @@
         basquete: { label: "Basquete", icon: "fa-basketball" }
     };
 
-    let sportAtivo = "beisebol";
+    let sportAtivo = "futebol";
 
     function buildSportTabs() {
         const container = document.getElementById("sport-tabs");
@@ -94,8 +93,8 @@
     // ============================================================
     // DETECTOR INTELIGENTE DE ESPORTE
     // ============================================================
-    function validarDadosMinimos(dadosOdds, moduloAtivoKey) {
-        const str = JSON.stringify(dadosOdds).toLowerCase();
+    function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
+        const str = JSON.stringify(dadosNexus).toLowerCase();
         
         const termosEsportes = {
             futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "half time", "gols", "futebol", "corners"],
@@ -119,7 +118,7 @@
             const nomeAtivo = MODULES[moduloAtivoKey]?.label || moduloAtivoKey;
             return {
                 ok: false,
-                erro: `Você colou um JSON de **${nomeDetectado}**,误 a aba selecionada é **${nomeAtivo}**. Alterne a aba acima para continuar.`
+                erro: `Você colou um JSON de **${nomeDetectado}**, mas a aba selecionada é **${nomeAtivo}**. Alterne a aba acima para continuar.`
             };
         }
 
@@ -127,10 +126,10 @@
     }
 
     // ============================================================
-    // 2. Moneyball Bet Builder Engine v15.0 — Nexus Conversion Engine
+    // 2. SYSTEM PROMPT ENGINE V15.0
     // ============================================================
     function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v15.0 — Nexus Conversion Engine para o esporte: ${esporte.toUpperCase()}.
+      return `Você é o Moneyball Bet Builder Engine v15.0 — Nexus Conversion Engine para o esporte: ${esporte.toUpperCase()}.
 
 Sua única função é transformar o mapa de assimetrias, DNA e cenário dominante recebidos do Nexus v2.1 (Pure Intelligence Engine) em oportunidades de mercado eficientes, sem alterar ou reinterpretar a investigação original.
 
@@ -139,11 +138,12 @@ O Nexus NÃO entrega apostas, dicas ou mercados. Ele entrega exclusivamente:
 - DNA da Partida (7 Pilares do Controle);
 - Assimetrias Estatísticas;
 - Evidências e Narrativa;
-- Analise de Precificação / Divergências de Percepção.
+- Análise de Precificação / Divergências de Percepção.
 
 Sua missão é identificar e calcular QUAIS MERCADOS melhor capturam, expressam e monetizam essas assimetrias com o menor nível de ruído possível.
 
-Você NÃO extrai dados adicionais, NÃO pesquisa na web e NÃO cria hipóteses táticas. Você utiliza EXCLUSIVAMENTE os dados e o contexto investigativo presentes no JSON do Nexus v2.1.
+Você NÃO calcula Stake (gestão de banca cabe ao Risk Manager) e NÃO calcula EV probabilístico fictício.
+Você utiliza EXCLUSIVAMENTE os dados e o contexto investigativo presentes no JSON do Nexus v2.1.
 
 Sua saída deve ser exclusivamente JSON válido.
 
@@ -151,7 +151,7 @@ Sua saída deve ser exclusivamente JSON válido.
 
 [VETOR DE CONVERSÃO: NEXUS → MERCADO]
 
-Você deve obrigatoriamente mapear cada assimetria identificada pelo Nexus para os mercados correspondentes que melhor expressam esse comportamento de processo:
+Mapeie cada assimetria identificada pelo Nexus para os mercados correspondentes que melhor expressam esse comportamento de processo:
 
 • volume_ofensivo → Chutes/Finalizações, Escanteios, Gols da Equipe (Team Total), Handicap Ofensivo.
 • fragilidade_defensiva → Gols Sofridos, Over Gols da partida, BTTS (Ambas Marcam), Props Ofensivos do adversário.
@@ -163,59 +163,49 @@ Você deve obrigatoriamente mapear cada assimetria identificada pelo Nexus para 
 
 ------------------------------------------------
 
-[REGRA DE REBAIXAMENTO DO MONEYLINE (ML)]
+[PENALIZAÇÃO AUTOMÁTICA DE MERCADOS DE RESULTADO & CONSENSO]
 
-MONEYLINE NÃO É O MERCADO PADRÃO.
+1. PENALIDADE DE MERCADOS DE RESULTADO:
+   - Mercados de RESULTADO (Moneyline, Vencedor 1X2, Resultado Final) já começam a avaliação com PENALIDADE COMPULSÓRIA de -10 pontos no Score.
+   - Mercados de PROCESSO (Chutes, Cantos, Props, Volume, Handicaps) começam a avaliação neutros (sem penalidade).
+   - O Moneyline só compete se DNA = "dominador", controle_jogo = "alto", controle_conversao = "alto" e a assimetria for indiscutivelmente ligada à vitória.
 
-O Moneyline sofre penalização por alta eficiência de mercado e só deve ser considerado como seleção se TODOS os critérios abaixo forem atendidos simultaneamente:
-1. DNA do jogo = "dominador"
-2. controle_jogo = "alto" (favorito)
-3. controle_conversao = "alto" (eficiência real de transformar volume em resultado)
-4. A assimetria principal for diretamente ligada à vitória e não houver linha de processo (Chutes, Cantos, Handicaps) com melhor retenção de valor.
-
-Caso contrário, os mercados de PROCESSO (Chutes, Cantos, Props, Handicaps) têm prioridade absoluta sobre mercados de RESULTADO (ML).
+2. PENALIDADE DE CONSENSO:
+   - Quando o mercado representar apenas uma narrativa pública óbvia (ex: favorito gigante contra zebra, odd esmagada, consenso absoluto do público), aplique uma PENALIDADE DE CONSENSO de -5 a -20 pontos no Score. Favoritos não recebem bônus apenas por serem favoritos.
 
 ------------------------------------------------
 
-[PENALIDADE DE CONSENSO]
+[AVALIAÇÃO DE DEPENDÊNCIA DE RESULTADO & ENCAIXE]
 
-Quando o mercado representar apenas uma narrativa pública óbvia (ex: favorito gigante contra zebra, odd esmagada, consenso absoluto da mídia/público), aplique uma PENALIDADE DE CONSENSO de -5 a -20 pontos no Score.
-O favorito NÃO recebe bônus ou tolerância apenas por ser favorito.
+Para cada mercado avaliado, meça duas variáveis críticas:
+- "forca_encaixe_nexus" (0 a 100): O quanto este mercado é uma tradução direta e pura da assimetria do Nexus (ex: Domínio territorial → Escanteios = 90-95; ML = 60).
+- "dependencia_resultado" ("baixa" | "media" | "alta"): O quanto este mercado exige que a equipe vença a partida para bater (ex: Chutes/Cantos = baixa; ML = alta). Priorize ativos de dependência baixa ou média.
 
 ------------------------------------------------
 
 [NOVO CÁLCULO DO MONEYBALL SCORE ($sc)]
 
-O Moneyball Score ($sc) mede a capacidade de UM MERCADO capturar uma assimetria real com baixa variância. A pontuação é calculada de 0 a 100 baseada na seguinte ponderação rígida:
+O Moneyball Score ($sc) mede a capacidade de UM MERCADO capturar uma assimetria real com baixa variância (0 a 100):
 
-• 30% — Captura da Assimetria (Grau de encaixe direto entre a assimetria do Nexus e o mercado).
-• 25% — Qualidade das Evidências (Consistência das métricas e dados que sustentam a assimetria).
+• 30% — Captura da Assimetria (Força do Encaixe Nexus).
+• 25% — Qualidade das Evidências (Consistência das métricas do Nexus).
 • 20% — Descolamento da Percepção do Mercado (O quanto a banca está cega para o comportamento real).
-• 15% — Baixa Variância (Inexistência de ruídos, cartões vermelhos, imprevistos ou bimodalidade).
-• 10% — Preço / Edge de Odd (A odd justa vs. odd oferecida pela casa).
+• 15% — Baixa Variância e Baixa Dependência de Resultado.
+• 10% — Preço / Vantagem Relativa da Odd.
 
 DISTRIBUIÇÃO DE BANDAS:
-• 80 a 100 🟢 BANDA VERDE: Oportunidade Real de Valor / Alta Conversão (Singles / Exclusivo).
-• 70 a 79 🟡 BANDA AMARELA: Margem de Segurança / Proteção (Criar Aposta / Combinadas).
-• 0 a 69 🔴 BANDA VERMELHA (REJEITADO): Alta variância, ruído ou falta de conversão direta.
+• 80 a 100 🟢 BANDA VERDE: Elite (Alta Conversão / Baixo Ruído).
+• 70 a 79 🟡 BANDA AMARELA: Qualidade (Criar Aposta / Combinadas).
+• 0 a 69 🔴 BANDA VERMELHA (DESCARTADO): Especulativo, alta variância ou alto ruído.
 
 ------------------------------------------------
 
-[MECÂNICA DE CÁLCULO DA STAKE (St)]
+[DIVERSIFICAÇÃO E RESPOSTA PARA CENÁRIOS SEM CONVERÇÃO]
 
-Atribua o campo "st" (Unidades) e "st_txt" com base exclusivamente no $sc:
-
-- Se sc >= 85 (Super Conversion): "st": 1.5 a 2.0, "st_txt": "1.5u - 2.0u"
-- Se sc entre 80 e 84 (Conversão Sólida): "st": 1.0, "st_txt": "1.0u"
-- Se sc entre 70 e 79 (Proteção/Criar Aposta): "st": 0.5, "st_txt": "0.5u"
-- Se sc < 70 (Rejeitado): "st": 0.0, "st_txt": "0.0u" (NÃO APOSTAR)
-
-------------------------------------------------
-
-[DIVERSIFICAÇÃO E QUALIDADE SOBRE VOLUME]
-
-1. REGRA DE DIVERSIDADE: Proibido retornar múltiplas seleções que representem EXATAMENTE a mesma tese tática (ex: Vitória Corinthians + Primeiro Gol Corinthians + Corinthians Handicap -1.5 na mesma lista). Escolha apenas O REPRESENTANTE MAIS EFICIENTE da assimetria.
-2. RETORNO QUALITATIVO: Retorne APENAS mercados onde exista conversão clara de assimetria. Se nenhuma conversão for eficiente ou o cenário for de alto ruído, a lista 'top_bilhetes' pode e DEVE retornar VAZIA [].
+1. REGRA DE DIVERSIDADE: Proibido retornar múltiplas seleções que representem EXATAMENTE a mesma tese tática. Escolha apenas O REPRESENTANTE MAIS EFICIENTE da assimetria.
+2. TRATAMENTO DE INDISPONIBILIDADE DE CONVERSÃO:
+   Se nenhuma assimetria apresentar conversão segura ($sc < 70), NUNCA retorne um array vazio \`[]\`.
+   Emita obrigatoriamente um objeto de status dentro da estrutura informando "sem_conversao" e explicitando o motivo técnico do travamento no prognóstico.
 
 ------------------------------------------------
 
@@ -224,11 +214,13 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 {
   "prognostico": "Texto descritivo focado no Cenário Dominante e na narrativa comportamental do Nexus...",
   "resumo": "Resumo executivo detalhando como as assimetrias foram traduzidas em mercados...",
+  "status_conversao": "convertido|sem_conversao",
+  "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
   "alertas_correlacao": [
     "⚠️ Alerta curto de dependência cruzada se houver gargalo tático compartilhado, ou array vazio []."
   ],
-  "top_bilhetes": [
+  "top_assimetrias_convertidas": [
     {
       "m": "Nome Exato do Mercado",
       "s": "Seleção / Nome do Time ou Atleta",
@@ -236,30 +228,30 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84,
-      "st": 1.0,
-      "st_txt": "1.0u",
-      "ip": 82,
-      "ev": "+5.4%",
-      "w": "Parágrafo analítico explicando por que este mercado captura a assimetria com menor ruído."
+      "forca_encaixe_nexus": 92,
+      "dependencia_resultado": "baixa",
+      "descolamento_mercado": "forte|moderado|inexistente",
+      "risco_execucao": "baixo|medio|alto",
+      "categoria": "elite|qualidade|especulativo",
+      "w": "Parágrafo analítico explicando por que este mercado captura a assimetria com menor ruído e baixa dependência de resultado."
     }
   ],
-  "analise": [
+  "mercados_descartados": [
     {
       "m": "Nome do Mercado Rejeitado",
       "s": "Seleção",
       "assimetria_capturada": "Assimetria ignorada ou mal traduzida",
       "tipo_de_ativo": "processo|resultado",
       "sc": 62,
-      "st": 0.0,
-      "st_txt": "0.0u",
-      "filtro": "recusado",
-      "motivo": "Motivo técnico do descarte (ex: Penalidade de consenso, alta eficiência de ML, ruído de variância)..."
+      "status": "descartado",
+      "motivo": "Motivo técnico do descarte (ex: Penalização de mercado de resultado, alta dependência de resultado, penalidade de consenso, baixo encaixe Nexus)..."
     }
   ]
 }
 
 Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
-}
+    }
+
     // ============================================================
     // 3. CONSUMO DA API DO GROQ
     // ============================================================
@@ -278,7 +270,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             return;
         }
         if (!raw) {
-            display.innerHTML = alertaErro("Cole o JSON de odds antes de analisar.");
+            display.innerHTML = alertaErro("Cole o JSON do Nexus v2.1 antes de analisar.");
             jsonInput.focus();
             return;
         }
@@ -296,12 +288,12 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         }
 
         btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processando Motor Quantitativo...`;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Mapeando Assimetrias Nexus...`;
         display.innerHTML = `
             <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
-                <i class="fa-solid fa-brain text-accent text-3xl"></i>
-                <h3 class="text-sm font-semibold text-slate-300">Processando modelo Moneyball...</h3>
-                <p class="text-xs text-slate-500">Calculando Scores Rígidos, Stakes (St) e Painel Tático.</p>
+                <i class="fa-solid fa-diagram-project text-accent text-3xl"></i>
+                <h3 class="text-sm font-semibold text-slate-300">Convertendo Assimetrias em Mercados...</h3>
+                <p class="text-xs text-slate-500">Calculando Encaixe Nexus, Dependência de Resultado e Penalidade de Consenso.</p>
             </div>
         `;
 
@@ -334,7 +326,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             const cleanJson = content.replace(/```json\n?|```/g, "").trim();
             const parsedResult = JSON.parse(cleanJson);
 
-            renderizarBilhete(parsedResult);
+            renderizarPainel(parsedResult);
             jsonInput.value = ""; 
 
         } catch (error) {
@@ -342,7 +334,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             display.innerHTML = alertaErro(`Falha na execução: ${error.message}`);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Analisar com Groq`;
+            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Converter Assimetrias via Groq`;
         }
     }
 
@@ -351,95 +343,120 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
     }
 
     // ============================================================
-    // 4. CLASSIFICAÇÃO E RENDERIZAÇÃO ROBUSTA DOS SCORES E STAKES
+    // 4. RENDERIZAÇÃO V15.0 (NEXUS CONVERSION ENGINE)
     // ============================================================
-    function tierPorItem(item) {
-        if (!item || typeof item !== 'object') return { tier: "indefinida", label: "SEM SCORE", score: null };
-        
-        const scoreVal = item.sc !== undefined ? item.sc : (item.score !== undefined ? item.score : item.moneyball_score);
-        const score = Number(scoreVal);
-
-        if (isNaN(score) || scoreVal === null || scoreVal === undefined) {
-            return { tier: "indefinida", label: "SEM SCORE", score: null };
-        }
-        
-        if (score >= 80) return { tier: "alta", label: "BANDA VERDE", score };
-        if (score >= 70) return { tier: "media", label: "BANDA AMARELA", score };
-        if (score >= 50) return { tier: "baixa", label: "BANDA VERMELHA", score };
-        return { tier: "descartada", label: "DESCARTE", score };
-    }
-
-    const CONFIABILIDADE_STYLE = {
-        alta: { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30" },
-        media: { bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/30" },
-        baixa: { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30" },
-        descartada: { bg: "bg-red-500/15", text: "text-red-400", border: "border-red-500/30" },
-        indefinida: { bg: "bg-slate-700/20", text: "text-slate-400", border: "border-slate-700/40" },
-    };
-
-    function cardMercado(item) {
+    function cardAssimetriaConvertida(item) {
         if (!item || typeof item !== 'object') return '';
-        const tier = tierPorItem(item);
-        const v = CONFIABILIDADE_STYLE[tier.tier];
 
-        const selecaoTxt = item.s || item.selecao || item.l || "Seleção Principal";
-        const mercadoTxt = item.m || "Mercado";
-        const explicacao = item.w || item.motivo || "";
-        const oddsVal = item.odds !== undefined ? `Odds: <span class="text-white font-mono font-bold">${item.odds}</span>` : "";
-        const stakeTxt = item.st_txt || (item.st !== undefined ? `${item.st}u` : null);
-        
-        const ev = item.ev;
-        const ip = item.ip ?? item.ip_ajustado;
-        const extras = [];
+        const sc = item.sc ?? '-';
+        const mercado = item.m || "Mercado";
+        const selecao = item.s || "Seleção";
+        const assimetria = item.assimetria_capturada || "Não especificada";
+        const tipoAtivo = item.tipo_de_ativo || "processo";
+        const oddsVal = item.odds ? `Odd: <span class="text-white font-mono font-bold">${item.odds}</span>` : "";
+        const encaixe = item.forca_encaixe_nexus ? `${item.forca_encaixe_nexus}%` : "-";
+        const depResultado = item.dependencia_resultado || "baixa";
+        const explicacao = item.w || "";
 
-        if (stakeTxt) {
-            extras.push(`<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent border border-accent/30"><i class="fa-solid fa-coins mr-1"></i>Stake St: ${stakeTxt}</span>`);
-        }
-        if (ev !== undefined && ev !== null) {
-            const evPositivo = !String(ev).includes("-");
-            extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded ${evPositivo ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'}">EV ${ev}</span>`);
-        }
-        if (ip !== undefined && ip !== null) {
-            extras.push(`<span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-700/40 text-slate-300">IP ${ip}</span>`);
-        }
-        const extrasHtml = extras.length ? `<div class="flex flex-wrap items-center gap-1.5 mt-2">${extras.join("")}</div>` : "";
+        const depStyle = {
+            baixa: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+            media: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+            alta: "bg-red-500/15 text-red-400 border-red-500/30"
+        }[depResultado] || "bg-slate-700/20 text-slate-400 border-slate-700/40";
 
         return `
-            <div class="p-4 bg-base-card rounded-xl border ${v.border} hover:border-accent/40 transition-colors space-y-2">
+            <div class="p-4 bg-base-card rounded-xl border border-accent/30 hover:border-accent/60 transition-colors space-y-3">
                 <div class="flex justify-between items-start gap-2">
-                    <span class="font-bold text-white text-sm">${mercadoTxt}</span>
-                    <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${v.bg} ${v.text} shrink-0">${tier.label} · ${tier.score !== null ? tier.score : "-"}</span>
+                    <div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">${tipoAtivo}</span>
+                        <h4 class="font-bold text-white text-sm mt-1">${mercado}</h4>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Score: ${sc}</span>
+                    </div>
                 </div>
-                <div class="text-accent font-black text-lg flex items-center justify-between">
-                    <span>${selecaoTxt}</span>
+
+                <div class="text-accent font-black text-base flex items-center justify-between">
+                    <span>${selecao}</span>
                     <span class="text-xs font-normal text-slate-400">${oddsVal}</span>
                 </div>
-                ${extrasHtml}
-                ${explicacao ? `<div class="text-xs text-slate-300 leading-relaxed pt-2 border-t border-slate-800/60 mt-1">${explicacao}</div>` : ""}
+
+                <div class="p-2 bg-base-bg rounded-lg border border-base-border text-xs space-y-1">
+                    <div class="text-slate-400"><strong class="text-slate-300">Assimetria Monetizada:</strong> ${assimetria}</div>
+                    <div class="flex flex-wrap gap-2 pt-1 text-[10px]">
+                        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-link text-accent mr-1"></i>Encaixe Nexus: ${encaixe}</span>
+                        <span class="px-2 py-0.5 rounded border ${depStyle} uppercase font-bold">Dep. Resultado: ${depResultado}</span>
+                    </div>
+                </div>
+
+                ${explicacao ? `<p class="text-xs text-slate-300 leading-relaxed pt-1">${explicacao}</p>` : ""}
             </div>`;
     }
 
-    function renderizarBilhete(data) {
+    function cardMercadoDescartado(item) {
+        if (!item || typeof item !== 'object') return '';
+
+        const mercado = item.m || "Mercado";
+        const selecao = item.s || "Seleção";
+        const motivo = item.motivo || "Não especificado";
+        const sc = item.sc ?? '-';
+
+        return `
+            <div class="p-3 bg-base-card/50 rounded-xl border border-red-900/30 text-xs space-y-1.5 opacity-85">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-slate-300">${mercado} (${selecao})</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-900/40 font-mono">Score: ${sc}</span>
+                </div>
+                <p class="text-slate-400 leading-relaxed"><strong class="text-red-400">Motivo do Descarte:</strong> ${motivo}</p>
+            </div>`;
+    }
+
+    function renderizarPainel(data) {
         const display = document.getElementById("display-area");
 
-        let rawAnalise = data.analise || data.a || [];
-        if (!Array.isArray(rawAnalise)) rawAnalise = [rawAnalise];
+        const statusConversao = data.status_conversao || "convertido";
+        const motivoSemConversao = data.motivo_sem_conversao || null;
+        const prognostico = data.prognostico || "";
+        const resumo = data.resumo || "";
+        const scoreBilhete = data.score_bilhete ?? null;
+        const alertas = data.alertas_correlacao || [];
 
-        let rawTop = data.top_bilhetes || data.tb || [];
-        if (!Array.isArray(rawTop)) rawTop = [rawTop];
+        let convertidas = data.top_assimetrias_convertidas || [];
+        if (!Array.isArray(convertidas)) convertidas = [convertidas];
 
-        const scoreBilhete = data.score_bilhete ?? data.sb;
-        const prognostico = data.prognostico || data.p || "";
-        const resumo = data.resumo || data.r || "";
+        let descartados = data.mercados_descartados || [];
+        if (!Array.isArray(descartados)) descartados = [descartados];
+
+        // Painel de Status Sem Conversão
+        if (statusConversao === "sem_conversao") {
+            display.innerHTML = `
+                <div class="bg-base-panel border border-amber-500/30 rounded-2xl p-6 space-y-4">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                        <i class="fa-solid fa-shield-halved text-lg"></i> TRAVAMENTO DE CONVERSÃO EXECUTADO
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>
+                    <div class="p-4 bg-amber-950/20 border border-amber-900/40 rounded-xl text-xs text-amber-200">
+                        <strong>Motivo Técnico:</strong> ${motivoSemConversao || "Nenhuma assimetria possui mercado correspondente com baixa variância."}
+                    </div>
+                </div>
+            `;
+            return;
+        }
 
         const painelTaticoHtml = (prognostico || resumo) ? `
             <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
                 <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
-                    <span><i class="fa-solid fa-chess-board mr-1"></i> Prognóstico Tático da Partida</span>
-                    ${scoreBilhete !== undefined && scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
+                    <span><i class="fa-solid fa-chess-board mr-1"></i> Cenário Dominante & Narrativa</span>
+                    ${scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
                 </div>
                 ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
-                ${resumo ? `<div class="text-xs text-slate-400 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-slate-300">Resumo Executivo:</strong> ${resumo}</div>` : ""}
+                ${resumo ? `<div class="text-xs text-slate-400 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-slate-300">Conversão Executiva:</strong> ${resumo}</div>` : ""}
+            </div>
+        ` : "";
+
+        const alertasHtml = alertas.length > 0 ? `
+            <div class="p-3 bg-amber-950/30 border border-amber-800/40 rounded-xl text-xs text-amber-300 space-y-1">
+                ${alertas.map(a => `<div>${a}</div>`).join("")}
             </div>
         ` : "";
 
@@ -447,39 +464,40 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">2</span>
-                    <h2 class="text-sm font-semibold text-slate-300">Bilhete Sugerido Moneyball</h2>
+                    <h2 class="text-sm font-semibold text-slate-300">Assimetrias Convertidas em Mercados</h2>
                 </div>
 
                 ${painelTaticoHtml}
+                ${alertasHtml}
 
                 <div class="space-y-3 pt-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Oportunidades (Singles & Base)</h3>
-                    ${rawTop.length === 0
-                        ? `<p class="text-sm text-slate-500 text-center py-4">Nenhum mercado aprovado na margem de segurança rígida.</p>`
-                        : rawTop.map(item => cardMercado(item)).join("")
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mercados de Alta Conversão</h3>
+                    ${convertidas.length === 0
+                        ? `<p class="text-xs text-slate-500 text-center py-4">Nenhuma assimetria atendeu aos critérios de conversão.</p>`
+                        : convertidas.map(item => cardAssimetriaConvertida(item)).join("")
                     }
                 </div>
 
-                ${rawAnalise.length > 0 ? `
+                ${descartados.length > 0 ? `
                     <details class="pt-2 border-t border-base-border">
-                        <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver análise quantitativa completa (${rawAnalise.length} mercados)</summary>
-                        <div class="space-y-3 mt-3">
-                            ${rawAnalise.map(item => cardMercado(item)).join("")}
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver mercados descartados (${descartados.length} rejeições)</summary>
+                        <div class="space-y-2 mt-3">
+                            ${descartados.map(item => cardMercadoDescartado(item)).join("")}
                         </div>
                     </details>
                 ` : ""}
 
-                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em probabilidade estatística, filtro de rigor e gestão de stake.</p>
+                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em conversão de assimetrias, eliminação de viés de ML e análise de processo.</p>
             </div>
         `;
     }
 
     // ============================================================
-    // INICIALIZAÇÃO E EVENT LISTENERS UNIFICADOS
+    // INICIALIZAÇÃO
     // ============================================================
     window.addEventListener("DOMContentLoaded", () => {
         buildSportTabs();
-        selecionarSport("beisebol");
+        selecionarSport("futebol");
 
         const groqInput = document.getElementById("groq-key");
         const btnAnalisar = document.getElementById("analisar-btn");
