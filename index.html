@@ -137,10 +137,11 @@ Sua saída deve ser exclusivamente JSON válido.
 
 ------------------------------------------------
 
-[REGRA DE AVALIAÇÃO DE MERCADOS - MODO TESTE DE ESTRESSE]
-• NESTE MODO DE TESTE, OS MERCADOS DE VENCEDOR / MONEYLINE (1X2) NÃO POSSUEM PENALIDADE AUTOMÁTICA DE SCORE.
-• Avalie ML/Vencedor em pé de igualdade com mercados de volume (chutes, cantos, pontos, props).
-• PENALIDADE DE CONSENSO (Ainda Ativa): Se o mercado de ML for apenas favoritismo óbvio sem sustentação tática clara nos dados do Nexus, aplique penalidade de -5 a -15 pontos no Score ($sc).
+[REGRA DE AVALIAÇÃO DE MERCADOS - PUNIÇÃO DINÂMICA DE RESULTADO]
+• MERCADOS DE VOLUME DE JOGO (chutes, escanteios, cartões, pontos, props): Pontuação normal (sem penalização).
+• MERCADOS DE RESULTADO / ML (1X2, Vencedor, Ambas Marcam, Qualificação): Aplique uma PENALIZAÇÃO LEVE de -3 a -6 pontos no Score ($sc).
+  - Justificativa: Mercados de placar/vencedor possuem maior variância e dependem do resultado final.
+  - Exceção: O ML só deve superar os mercados de volume se o favoritismo tático for verdadeiramente avassalador nos dados do Nexus.
 
 ------------------------------------------------
 
