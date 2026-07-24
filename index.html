@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Conversion Engine v15.0</title>
+    <title>Moneyball Pro | Conversion Engine v15.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,7 +27,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.0 — Nexus Conversion Engine
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.1 — Nexus Conversion Engine
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
             <p class="text-xs text-slate-500">Conversor de Assimetrias e Inteligência Esportiva.</p>
@@ -65,9 +65,6 @@
     </div>
 
 <script>
-    // ============================================================
-    // 1. CONFIG — MÓDULOS DE ESPORTE E ABAS
-    // ============================================================
     const MODULES = {
         beisebol: { label: "Beisebol", icon: "fa-baseball" },
         futebol: { label: "Futebol", icon: "fa-futbol" },
@@ -90,12 +87,8 @@
         buildSportTabs();
     }
 
-    // ============================================================
-    // DETECTOR INTELIGENTE DE ESPORTE
-    // ============================================================
     function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
         const str = JSON.stringify(dadosNexus).toLowerCase();
-        
         const termosEsportes = {
             futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "half time", "gols", "futebol", "corners"],
             beisebol: ["pitcher", "era", "whip", "innings", "runs", "strikeouts", "mlb", "home runs", "beisebol"],
@@ -126,105 +119,68 @@
     }
 
     // ============================================================
-    // 2. SYSTEM PROMPT ENGINE V15.0
+    // SYSTEM PROMPT ENGINE V15.1 — LINGUAGEM PRÁTICA E OBJETIVA
     // ============================================================
     function montarSystemPrompt(esporte) {
-      return `Você é o Moneyball Bet Builder Engine v15.0 — Nexus Conversion Engine para o esporte: ${esporte.toUpperCase()}.
+      return `Você é o Moneyball Bet Builder Engine v15.1 — Nexus Conversion Engine para o esporte: ${esporte.toUpperCase()}.
 
-Sua única função é transformar o mapa de assimetrias, DNA e cenário dominante recebidos do Nexus v2.1 (Pure Intelligence Engine) em oportunidades de mercado eficientes, sem alterar ou reinterpretar a investigação original.
+Sua função é transformar o mapa de assimetrias do Nexus v2.1 em oportunidades práticas e diretas de mercado.
 
-O Nexus NÃO entrega apostas, dicas ou mercados. Ele entrega exclusivamente:
-- Cenário Dominante;
-- DNA da Partida (7 Pilares do Controle);
-- Assimetrias Estatísticas;
-- Evidências e Narrativa;
-- Análise de Precificação / Divergências de Percepção.
+NÃO USE LINGUAGEM EXCESSIVAMENTE ACADÊMICA OU COMPLEXA SOBRE ENCAIXES TÁTICOS/DEFENSIVOS.
+A linguagem do "prognostico", "resumo" e explicações ("w") deve ser DIRETAMENTE FOCADA NO APOSTADOR: objetiva, clara, dinâmica e focada em mostrar por que a assimetria gera valor prático no mercado.
 
-Sua missão é identificar e calcular QUAIS MERCADOS melhor capturam, expressam e monetizam essas assimetrias com o menor nível de ruído possível.
-
-Você NÃO calcula Stake (gestão de banca cabe ao Risk Manager) e NÃO calcula EV probabilístico fictício.
-Você utiliza EXCLUSIVAMENTE os dados e o contexto investigativo presentes no JSON do Nexus v2.1.
+Você NÃO calcula Stake e NÃO calcula EV probabilístico fictício. Usa EXCLUSIVAMENTE os dados e o contexto investigativo presentes no JSON do Nexus v2.1.
 
 Sua saída deve ser exclusivamente JSON válido.
 
 ------------------------------------------------
 
+[REGRAS DE COMUNICAÇÃO E RESUMO EXECUTIVO]
+- "prognostico": Descreva o cenário do jogo de forma simples e direta (ex: "Jogo com clara tendência de volume do Time A pressionando a área adversária").
+- "resumo": RESUMO EXECUTIVO. Explique em poucas frases práticas o porquê da escolha das entradas e como elas exploram as falhas da precificação da casa. Sem rodeios acadêmicos.
+- "w" (nos cards): Explicação direta de 2 linhas faturando o motivo do mercado escolhido ser seguro e ter baixo ruído.
+
+------------------------------------------------
+
 [VETOR DE CONVERSÃO: NEXUS → MERCADO]
-
-Mapeie cada assimetria identificada pelo Nexus para os mercados correspondentes que melhor expressam esse comportamento de processo:
-
-• volume_ofensivo → Chutes/Finalizações, Escanteios, Gols da Equipe (Team Total), Handicap Ofensivo.
-• fragilidade_defensiva → Gols Sofridos, Over Gols da partida, BTTS (Ambas Marcam), Props Ofensivos do adversário.
-• controle_territorial → Escanteios (Totals/Handicap), Finalizações no Alvo, Posse de Bola, Pressão no 1º Tempo.
-• dependencia_individual → Props de Atleta (Pontos, K%, Chutes), Under/Queda de produção caso marcado/desgastado.
-• friccao_fisica / ritmo → Mercados de 2º Tempo, Queda de Ritmo, Over Cartões/Faltas, Under Total Gols/Pontos.
-• mismatch_tatico → Handicaps Asiáticos/Spreads, Mercados Específicos do Confronto.
-• ineficiencia_mercado / fragilidade_bola_parada → Linhas Derivadas, Props Específicos, Escanteios.
+• volume_ofensivo → Chutes/Finalizações, Escanteios, Gols da Equipe, Handicap Ofensivo.
+• fragilidade_defensiva → Gols Sofridos, Over Gols, BTTS, Props Ofensivos adversários.
+• controle_territorial → Escanteios, Finalizações no Alvo, Posse, Pressão 1ºT.
+• dependencia_individual → Props de Atleta.
+• friccao_fisica / ritmo → Mercados 2ºT, Over Cartões/Faltas, Under Total Gols/Pontos.
+• mismatch_tatico → Handicaps Asiáticos/Spreads.
 
 ------------------------------------------------
 
-[PENALIZAÇÃO AUTOMÁTICA DE MERCADOS DE RESULTADO & CONSENSO]
-
-1. PENALIDADE DE MERCADOS DE RESULTADO:
-   - Mercados de RESULTADO (Moneyline, Vencedor 1X2, Resultado Final) já começam a avaliação com PENALIDADE COMPULSÓRIA de -10 pontos no Score.
-   - Mercados de PROCESSO (Chutes, Cantos, Props, Volume, Handicaps) começam a avaliação neutros (sem penalidade).
-   - O Moneyline só compete se DNA = "dominador", controle_jogo = "alto", controle_conversao = "alto" e a assimetria for indiscutivelmente ligada à vitória.
-
-2. PENALIDADE DE CONSENSO:
-   - Quando o mercado representar apenas uma narrativa pública óbvia (ex: favorito gigante contra zebra, odd esmagada, consenso absoluto do público), aplique uma PENALIDADE DE CONSENSO de -5 a -20 pontos no Score. Favoritos não recebem bônus apenas por serem favoritos.
+[PENALIZAÇÕES OBRIGATÓRIAS]
+1. PENALIDADE DE MERCADOS DE RESULTADO (ML / Vencedor 1X2): -10 pontos compulsórios no Score. Mercados de Processo (chutes, cantos, props) começam sem penalidade.
+2. PENALIDADE DE CONSENSO: Narrativa pública óbvia ou favorito sem valor real recebe de -5 a -20 pontos.
 
 ------------------------------------------------
 
-[AVALIAÇÃO DE DEPENDÊNCIA DE RESULTADO & ENCAIXE]
-
-Para cada mercado avaliado, meça duas variáveis críticas:
-- "forca_encaixe_nexus" (0 a 100): O quanto este mercado é uma tradução direta e pura da assimetria do Nexus (ex: Domínio territorial → Escanteios = 90-95; ML = 60).
-- "dependencia_resultado" ("baixa" | "media" | "alta"): O quanto este mercado exige que a equipe vença a partida para bater (ex: Chutes/Cantos = baixa; ML = alta). Priorize ativos de dependência baixa ou média.
-
-------------------------------------------------
-
-[NOVO CÁLCULO DO MONEYBALL SCORE ($sc)]
-
-O Moneyball Score ($sc) mede a capacidade de UM MERCADO capturar uma assimetria real com baixa variância (0 a 100):
-
-• 30% — Captura da Assimetria (Força do Encaixe Nexus).
-• 25% — Qualidade das Evidências (Consistência das métricas do Nexus).
-• 20% — Descolamento da Percepção do Mercado (O quanto a banca está cega para o comportamento real).
-• 15% — Baixa Variância e Baixa Dependência de Resultado.
-• 10% — Preço / Vantagem Relativa da Odd.
-
-DISTRIBUIÇÃO DE BANDAS:
-• 80 a 100 🟢 BANDA VERDE: Elite (Alta Conversão / Baixo Ruído).
-• 70 a 79 🟡 BANDA AMARELA: Qualidade (Criar Aposta / Combinadas).
-• 0 a 69 🔴 BANDA VERMELHA (DESCARTADO): Especulativo, alta variância ou alto ruído.
-
-------------------------------------------------
-
-[DIVERSIFICAÇÃO E RESPOSTA PARA CENÁRIOS SEM CONVERÇÃO]
-
-1. REGRA DE DIVERSIDADE: Proibido retornar múltiplas seleções que representem EXATAMENTE a mesma tese tática. Escolha apenas O REPRESENTANTE MAIS EFICIENTE da assimetria.
-2. TRATAMENTO DE INDISPONIBILIDADE DE CONVERSÃO:
-   Se nenhuma assimetria apresentar conversão segura ($sc < 70), NUNCA retorne um array vazio \`[]\`.
-   Emita obrigatoriamente um objeto de status dentro da estrutura informando "sem_conversao" e explicitando o motivo técnico do travamento no prognóstico.
+[MONEYBALL SCORE ($sc) - 0 a 100]
+• 80 a 100 🟢 BANDA VERDE: Elite.
+• 70 a 79 🟡 BANDA AMARELA: Qualidade.
+• 0 a 69 🔴 BANDA VERMELHA: DESCARTADO.
 
 ------------------------------------------------
 
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
-  "prognostico": "Texto descritivo focado no Cenário Dominante e na narrativa comportamental do Nexus...",
-  "resumo": "Resumo executivo detalhando como as assimetrias foram traduzidas em mercados...",
+  "prognostico": "Texto prático e direto sobre o cenário principal da partida...",
+  "resumo": "Resumo executivo claro e sem jargões táticos complexos, focado no valor prático das entradas...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
   "alertas_correlacao": [
-    "⚠️ Alerta curto de dependência cruzada se houver gargalo tático compartilhado, ou array vazio []."
+    "⚠️ Alerta prático de dependência cruzada se houver, ou array vazio []."
   ],
   "top_assimetrias_convertidas": [
     {
       "m": "Nome Exato do Mercado",
       "s": "Seleção / Nome do Time ou Atleta",
-      "assimetria_capturada": "Assimetria do Nexus que este mercado monetiza diretamente",
+      "assimetria_capturada": "Assimetria do Nexus monetizada",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84,
@@ -233,18 +189,18 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "descolamento_mercado": "forte|moderado|inexistente",
       "risco_execucao": "baixo|medio|alto",
       "categoria": "elite|qualidade|especulativo",
-      "w": "Parágrafo analítico explicando por que este mercado captura a assimetria com menor ruído e baixa dependência de resultado."
+      "w": "Explicação objetiva e direta faturando por que esse mercado aproveita a brecha com segurança."
     }
   ],
   "mercados_descartados": [
     {
       "m": "Nome do Mercado Rejeitado",
       "s": "Seleção",
-      "assimetria_capturada": "Assimetria ignorada ou mal traduzida",
+      "assimetria_capturada": "Assimetria ignorada",
       "tipo_de_ativo": "processo|resultado",
       "sc": 62,
       "status": "descartado",
-      "motivo": "Motivo técnico do descarte (ex: Penalização de mercado de resultado, alta dependência de resultado, penalidade de consenso, baixo encaixe Nexus)..."
+      "motivo": "Motivo prático e direto do descarte (ex: Linha muito esticada, dependência alta de vitória, penalidade de consenso)..."
     }
   ]
 }
@@ -252,9 +208,6 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
     }
 
-    // ============================================================
-    // 3. CONSUMO DA API DO GROQ
-    // ============================================================
     async function analisarComGroq() {
         const apiKeyInput = document.getElementById("groq-key");
         const jsonInput = document.getElementById("json-input");
@@ -293,7 +246,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
                 <i class="fa-solid fa-diagram-project text-accent text-3xl"></i>
                 <h3 class="text-sm font-semibold text-slate-300">Convertendo Assimetrias em Mercados...</h3>
-                <p class="text-xs text-slate-500">Calculando Encaixe Nexus, Dependência de Resultado e Penalidade de Consenso.</p>
+                <p class="text-xs text-slate-500">Tradução direta de assimetrias para linguagem prática de mercado.</p>
             </div>
         `;
 
@@ -322,7 +275,6 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
 
             const data = await response.json();
             const content = data.choices?.[0]?.message?.content || "";
-            
             const cleanJson = content.replace(/```json\n?|```/g, "").trim();
             const parsedResult = JSON.parse(cleanJson);
 
@@ -342,9 +294,6 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl">⚠️ ${msg}</div>`;
     }
 
-    // ============================================================
-    // 4. RENDERIZAÇÃO V15.0 (NEXUS CONVERSION ENGINE)
-    // ============================================================
     function cardAssimetriaConvertida(item) {
         if (!item || typeof item !== 'object') return '';
 
@@ -427,7 +376,6 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         let descartados = data.mercados_descartados || [];
         if (!Array.isArray(descartados)) descartados = [descartados];
 
-        // Painel de Status Sem Conversão
         if (statusConversao === "sem_conversao") {
             display.innerHTML = `
                 <div class="bg-base-panel border border-amber-500/30 rounded-2xl p-6 space-y-4">
@@ -446,11 +394,11 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         const painelTaticoHtml = (prognostico || resumo) ? `
             <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
                 <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
-                    <span><i class="fa-solid fa-chess-board mr-1"></i> Cenário Dominante & Narrativa</span>
+                    <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral da Partida</span>
                     ${scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
                 </div>
                 ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
-                ${resumo ? `<div class="text-xs text-slate-400 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-slate-300">Conversão Executiva:</strong> ${resumo}</div>` : ""}
+                ${resumo ? `<div class="text-xs text-slate-300 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-accent uppercase text-[10px] tracking-wider block mb-0.5">Resumo Executivo:</strong> ${resumo}</div>` : ""}
             </div>
         ` : "";
 
@@ -492,9 +440,6 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         `;
     }
 
-    // ============================================================
-    // INICIALIZAÇÃO
-    // ============================================================
     window.addEventListener("DOMContentLoaded", () => {
         buildSportTabs();
         selecionarSport("futebol");
