@@ -137,11 +137,12 @@ Sua saída deve ser exclusivamente JSON válido.
 
 ------------------------------------------------
 
-[REGRA DE AVALIAÇÃO DE MERCADOS - PUNIÇÃO DINÂMICA DE RESULTADO]
-• MERCADOS DE VOLUME DE JOGO (chutes, escanteios, cartões, pontos, props): Pontuação normal (sem penalização).
-• MERCADOS DE RESULTADO / ML (1X2, Vencedor, Ambas Marcam, Qualificação): Aplique uma PENALIZAÇÃO LEVE de -3 a -6 pontos no Score ($sc).
-  - Justificativa: Mercados de placar/vencedor possuem maior variância e dependem do resultado final.
-  - Exceção: O ML só deve superar os mercados de volume se o favoritismo tático for verdadeiramente avassalador nos dados do Nexus.
+[REGRA DE AVALIAÇÃO DE MERCADOS]
+• MERCADOS DE VOLUME E DINÂMICA DE JOGO (Chutes, Cantos, Cartões, Props, Ambas Marcam e Over/Under Gols): Pontuação normal (sem penalização).
+  - Nota: O Ambas Marcam (BTTS) mede a dinâmica e a eficiência ofensiva cruzada, devendo ser avaliado sem travas.
+
+• MERCADOS DE RESULTADO PURO / VENDEDOR (1X2 / ML, Qualificação, Placares Exatos): Aplique uma PENALIZAÇÃO LEVE de -3 a -5 pontos no Score ($sc).
+  - Justificativa: Força o modelo a priorizar a leitura de volume e dinâmica de jogo em vez de optar pelo caminho mais fácil de apontar o vencedor.
 
 ------------------------------------------------
 
