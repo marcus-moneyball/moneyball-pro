@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Conversion Engine v15.1</title>
+    <title>Moneyball Pro | Conversion Engine v15.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,10 +27,10 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.1 — Nexus Conversion Engine
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.2 — Modo Linguagem Clara
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
-            <p class="text-xs text-slate-500">Conversor de Assimetrias e Inteligência Esportiva.</p>
+            <p class="text-xs text-slate-500">Conversor de Oportunidades e Inteligência Esportiva.</p>
         </div>
 
         <!-- SELETOR DE ESPORTE -->
@@ -52,11 +52,11 @@
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3">
             <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.1 (Pure Intelligence Engine)</label>
+                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.1</label>
             </div>
             <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.1 aqui...'></textarea>
             <button id="analisar-btn" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-bolt"></i> Converter Assimetrias via Groq
+                <i class="fa-solid fa-bolt"></i> Analisar Oportunidades via Groq
             </button>
         </div>
 
@@ -119,68 +119,53 @@
     }
 
     // ============================================================
-    // SYSTEM PROMPT ENGINE V15.1 — LINGUAGEM PRÁTICA E OBJETIVA
+    // SYSTEM PROMPT V15.2 — FOCO EM LINGUAGEM PRÁTICA E HUMANA
     // ============================================================
     function montarSystemPrompt(esporte) {
-      return `Você é o Moneyball Bet Builder Engine v15.1 — Nexus Conversion Engine para o esporte: ${esporte.toUpperCase()}.
+      return `Você é o Moneyball Bet Builder Engine v15.2 para o esporte: ${esporte.toUpperCase()}.
 
-Sua função é transformar o mapa de assimetrias do Nexus v2.1 em oportunidades práticas e diretas de mercado.
+Sua função é transformar os dados do Nexus v2.1 em entradas práticas, seguras e lucrativas para apostadores.
 
-NÃO USE LINGUAGEM EXCESSIVAMENTE ACADÊMICA OU COMPLEXA SOBRE ENCAIXES TÁTICOS/DEFENSIVOS.
-A linguagem do "prognostico", "resumo" e explicações ("w") deve ser DIRETAMENTE FOCADA NO APOSTADOR: objetiva, clara, dinâmica e focada em mostrar por que a assimetria gera valor prático no mercado.
+REGRAS DE LINGUAGEM (MUITO IMPORTANTE):
+- NUNCA use jargões acadêmicos ou confusos como "assimetria monetizada", "transição defensiva", "bloco baixo" ou "mismatch estrutural".
+- Fale a LÍNGUA DO APOSTADOR: direta, simples e focada no motivo pelo qual o mercado vale a pena.
+- Foque em explicar as coisas como elas são: "Time A chuta muito em casa", "Defesa do Time B cede muitos cantos", "Aposta segura porque não depende de quem vence o jogo".
 
-Você NÃO calcula Stake e NÃO calcula EV probabilístico fictício. Usa EXCLUSIVAMENTE os dados e o contexto investigativo presentes no JSON do Nexus v2.1.
+Você NÃO calcula Stake e NÃO calcula EV probabilístico fictício. Usa EXCLUSIVAMENTE os dados do Nexus v2.1.
 
 Sua saída deve ser exclusivamente JSON válido.
 
 ------------------------------------------------
 
-[REGRAS DE COMUNICAÇÃO E RESUMO EXECUTIVO]
-- "prognostico": Descreva o cenário do jogo de forma simples e direta (ex: "Jogo com clara tendência de volume do Time A pressionando a área adversária").
-- "resumo": RESUMO EXECUTIVO. Explique em poucas frases práticas o porquê da escolha das entradas e como elas exploram as falhas da precificação da casa. Sem rodeios acadêmicos.
-- "w" (nos cards): Explicação direta de 2 linhas faturando o motivo do mercado escolhido ser seguro e ter baixo ruído.
+[REGRAS DE COMUNICAÇÃO]
+- "prognostico": Breve resumo direto do panorama do jogo (ex: "Jogo com forte tendência de pressão do time da casa desde os primeiros minutos").
+- "resumo": Resumo Executivo simples explicando a lógica de valor do bilhete em 2 ou 3 frases diretas.
+- "w" (nos cards): Explicação de 2 linhas sobre por que essa aposta é segura e tem boa chance de bater.
 
 ------------------------------------------------
 
-[VETOR DE CONVERSÃO: NEXUS → MERCADO]
-• volume_ofensivo → Chutes/Finalizações, Escanteios, Gols da Equipe, Handicap Ofensivo.
-• fragilidade_defensiva → Gols Sofridos, Over Gols, BTTS, Props Ofensivos adversários.
-• controle_territorial → Escanteios, Finalizações no Alvo, Posse, Pressão 1ºT.
-• dependencia_individual → Props de Atleta.
-• friccao_fisica / ritmo → Mercados 2ºT, Over Cartões/Faltas, Under Total Gols/Pontos.
-• mismatch_tatico → Handicaps Asiáticos/Spreads.
-
-------------------------------------------------
-
-[PENALIZAÇÕES OBRIGATÓRIAS]
-1. PENALIDADE DE MERCADOS DE RESULTADO (ML / Vencedor 1X2): -10 pontos compulsórios no Score. Mercados de Processo (chutes, cantos, props) começam sem penalidade.
-2. PENALIDADE DE CONSENSO: Narrativa pública óbvia ou favorito sem valor real recebe de -5 a -20 pontos.
-
-------------------------------------------------
-
-[MONEYBALL SCORE ($sc) - 0 a 100]
-• 80 a 100 🟢 BANDA VERDE: Elite.
-• 70 a 79 🟡 BANDA AMARELA: Qualidade.
-• 0 a 69 🔴 BANDA VERMELHA: DESCARTADO.
+[MERCADOS DE VOLUME VS RESULTADO]
+• Priorize apostas baseadas em VOLUME DE JOGO (chutes, cantos, cartões, pontos, rebotes) pois não dependem do placar final.
+• Se sugerir mercados de VENCEDOR/RESULTADO (ML / 1X2), aplique penalidade compulsória de -10 pontos no Score ($sc).
 
 ------------------------------------------------
 
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
-  "prognostico": "Texto prático e direto sobre o cenário principal da partida...",
-  "resumo": "Resumo executivo claro e sem jargões táticos complexos, focado no valor prático das entradas...",
+  "prognostico": "Texto simples e direto sobre o jogo...",
+  "resumo": "Resumo executivo em português claro sobre por que vale a pena entrar nesses mercados...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
   "alertas_correlacao": [
-    "⚠️ Alerta prático de dependência cruzada se houver, ou array vazio []."
+    "⚠️ Alerta prático se houver risco entre as apostas escolhidas, ou array vazio []."
   ],
   "top_assimetrias_convertidas": [
     {
       "m": "Nome Exato do Mercado",
       "s": "Seleção / Nome do Time ou Atleta",
-      "assimetria_capturada": "Assimetria do Nexus monetizada",
+      "assimetria_capturada": "A brecha/vantagem que estamos aproveitando (ex: Defesa adversária cede muitas finalizações)",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84,
@@ -189,18 +174,18 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "descolamento_mercado": "forte|moderado|inexistente",
       "risco_execucao": "baixo|medio|alto",
       "categoria": "elite|qualidade|especulativo",
-      "w": "Explicação objetiva e direta faturando por que esse mercado aproveita a brecha com segurança."
+      "w": "Motivo direto e prático em 2 linhas de por que essa escolha é vantajosa."
     }
   ],
   "mercados_descartados": [
     {
       "m": "Nome do Mercado Rejeitado",
       "s": "Seleção",
-      "assimetria_capturada": "Assimetria ignorada",
+      "assimetria_capturada": "Abrecha ignorada",
       "tipo_de_ativo": "processo|resultado",
       "sc": 62,
       "status": "descartado",
-      "motivo": "Motivo prático e direto do descarte (ex: Linha muito esticada, dependência alta de vitória, penalidade de consenso)..."
+      "motivo": "Motivo simples do descarte (ex: Depende demais da vitória do time, odd sem valor real, etc)..."
     }
   ]
 }
@@ -241,12 +226,12 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         }
 
         btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Mapeando Assimetrias Nexus...`;
+        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Analisando Brechas do Jogo...`;
         display.innerHTML = `
             <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
-                <i class="fa-solid fa-diagram-project text-accent text-3xl"></i>
-                <h3 class="text-sm font-semibold text-slate-300">Convertendo Assimetrias em Mercados...</h3>
-                <p class="text-xs text-slate-500">Tradução direta de assimetrias para linguagem prática de mercado.</p>
+                <i class="fa-solid fa-magnifying-glass-chart text-accent text-3xl"></i>
+                <h3 class="text-sm font-semibold text-slate-300">Buscando Melhores Oportunidades...</h3>
+                <p class="text-xs text-slate-500">Filtrando apostas com menor risco e maior probabilidade.</p>
             </div>
         `;
 
@@ -286,7 +271,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             display.innerHTML = alertaErro(`Falha na execução: ${error.message}`);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Converter Assimetrias via Groq`;
+            btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Analisar Oportunidades via Groq`;
         }
     }
 
@@ -300,8 +285,12 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         const sc = item.sc ?? '-';
         const mercado = item.m || "Mercado";
         const selecao = item.s || "Seleção";
-        const assimetria = item.assimetria_capturada || "Não especificada";
-        const tipoAtivo = item.tipo_de_ativo || "processo";
+        const brecha = item.assimetria_capturada || "Não especificada";
+        
+        // Tradução visual simples dos termos técnicos
+        const tipoAtivoOriginal = item.tipo_de_ativo || "processo";
+        const tipoAtivoFormatado = tipoAtivoOriginal === "processo" ? "Volume de Jogo" : "Placar / Vencedor";
+        
         const oddsVal = item.odds ? `Odd: <span class="text-white font-mono font-bold">${item.odds}</span>` : "";
         const encaixe = item.forca_encaixe_nexus ? `${item.forca_encaixe_nexus}%` : "-";
         const depResultado = item.dependencia_resultado || "baixa";
@@ -317,7 +306,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             <div class="p-4 bg-base-card rounded-xl border border-accent/30 hover:border-accent/60 transition-colors space-y-3">
                 <div class="flex justify-between items-start gap-2">
                     <div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">${tipoAtivo}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">${tipoAtivoFormatado}</span>
                         <h4 class="font-bold text-white text-sm mt-1">${mercado}</h4>
                     </div>
                     <div class="text-right shrink-0">
@@ -331,10 +320,10 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
                 </div>
 
                 <div class="p-2 bg-base-bg rounded-lg border border-base-border text-xs space-y-1">
-                    <div class="text-slate-400"><strong class="text-slate-300">Assimetria Monetizada:</strong> ${assimetria}</div>
+                    <div class="text-slate-400"><strong class="text-slate-300">Vantagem do Jogo:</strong> ${brecha}</div>
                     <div class="flex flex-wrap gap-2 pt-1 text-[10px]">
-                        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-link text-accent mr-1"></i>Encaixe Nexus: ${encaixe}</span>
-                        <span class="px-2 py-0.5 rounded border ${depStyle} uppercase font-bold">Dep. Resultado: ${depResultado}</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-bullseye text-accent mr-1"></i>Aderência ao Cenario: ${encaixe}</span>
+                        <span class="px-2 py-0.5 rounded border ${depStyle} uppercase font-bold">Risco de Placar: ${depResultado}</span>
                     </div>
                 </div>
 
@@ -356,7 +345,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
                     <span class="font-bold text-slate-300">${mercado} (${selecao})</span>
                     <span class="text-[10px] px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-900/40 font-mono">Score: ${sc}</span>
                 </div>
-                <p class="text-slate-400 leading-relaxed"><strong class="text-red-400">Motivo do Descarte:</strong> ${motivo}</p>
+                <p class="text-slate-400 leading-relaxed"><strong class="text-red-400">Por que foi descartado:</strong> ${motivo}</p>
             </div>`;
     }
 
@@ -380,11 +369,11 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             display.innerHTML = `
                 <div class="bg-base-panel border border-amber-500/30 rounded-2xl p-6 space-y-4">
                     <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                        <i class="fa-solid fa-shield-halved text-lg"></i> TRAVAMENTO DE CONVERSÃO EXECUTADO
+                        <i class="fa-solid fa-shield-halved text-lg"></i> JOGO SEM APOSTAS RECOMENDADAS
                     </div>
                     <p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>
                     <div class="p-4 bg-amber-950/20 border border-amber-900/40 rounded-xl text-xs text-amber-200">
-                        <strong>Motivo Técnico:</strong> ${motivoSemConversao || "Nenhuma assimetria possui mercado correspondente com baixa variância."}
+                        <strong>Motivo:</strong> ${motivoSemConversao || "Nenhum mercado apresentou segurança suficiente para entrada neste confronto."}
                     </div>
                 </div>
             `;
@@ -394,7 +383,7 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
         const painelTaticoHtml = (prognostico || resumo) ? `
             <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
                 <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
-                    <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral da Partida</span>
+                    <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral do Jogo</span>
                     ${scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
                 </div>
                 ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
@@ -412,30 +401,30 @@ Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
             <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">2</span>
-                    <h2 class="text-sm font-semibold text-slate-300">Assimetrias Convertidas em Mercados</h2>
+                    <h2 class="text-sm font-semibold text-slate-300">Oportunidades Selecionadas</h2>
                 </div>
 
                 ${painelTaticoHtml}
                 ${alertasHtml}
 
                 <div class="space-y-3 pt-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Mercados de Alta Conversão</h3>
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Apostas Recomendadas</h3>
                     ${convertidas.length === 0
-                        ? `<p class="text-xs text-slate-500 text-center py-4">Nenhuma assimetria atendeu aos critérios de conversão.</p>`
+                        ? `<p class="text-xs text-slate-500 text-center py-4">Nenhuma oportunidade atendeu aos critérios mínimos de segurança.</p>`
                         : convertidas.map(item => cardAssimetriaConvertida(item)).join("")
                     }
                 </div>
 
                 ${descartados.length > 0 ? `
                     <details class="pt-2 border-t border-base-border">
-                        <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver mercados descartados (${descartados.length} rejeições)</summary>
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver apostas descartadas (${descartados.length} rejeições)</summary>
                         <div class="space-y-2 mt-3">
                             ${descartados.map(item => cardMercadoDescartado(item)).join("")}
                         </div>
                     </details>
                 ` : ""}
 
-                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem baseada em conversão de assimetrias, eliminação de viés de ML e análise de processo.</p>
+                <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem focada em estatísticas de volume de jogo e redução de risco de placar.</p>
             </div>
         `;
     }
