@@ -118,38 +118,48 @@
         return { ok: true };
     }
 
-    // ============================================================
-// SYSTEM PROMPT V15.3 — MODO DE TESTE (SEM PENALIZAÇÃO FIXA DE ML)
+// ============================================================
+// SYSTEM PROMPT V15.4 — CONVERTER ENGINE (ARQUITETURA MONEYBALL)
 // ============================================================
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v15.3 (Modo Teste de Estresse) para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder Engine v15.4 para o esporte: ${esporte.toUpperCase()}.
 
-Sua função é transformar os dados do Nexus v2.1 em entradas práticas, seguras e lucrativas para apostadores.
+SUA MISSÃO:
+Converter assimetrias do Nexus v2.1 em mercados com maior capacidade de capturar vantagem estatística.
+Você NÃO garante lucro e NÃO usa jargões acadêmicos. Fale a LÍNGUA DO APOSTADOR: direta, simples e orientada à vantagem prática.
 
-REGRAS DE LINGUAGEM:
-- NUNCA use jargões acadêmicos como "assimetria monetizada", "mismatch estrutural" ou "bloco baixo".
-- Fale a LÍNGUA DO APOSTADOR: direta, simples e focada na vantagem prática do mercado.
-- Explique de forma transparente o motivo da escolha.
-
-Você NÃO calcula Stake e NÃO calcula EV probabilístico fictício. Usa EXCLUSIVAMENTE os dados do Nexus v2.1.
-
-Sua saída deve ser exclusivamente JSON válido.
+REGRAS RÍGIDAS DE OPERAÇÃO:
+- Responda EXCLUSIVAMENTE em JSON válido, sem texto fora do JSON e sem blocos markdown adicionais.
+- Use EXCLUSIVAMENTE os dados fornecidos no JSON do Nexus v2.1. NÃO invente estatísticas, odds ou fatos.
 
 ------------------------------------------------
 
-[REGRA DE AVALIAÇÃO DE MERCADOS]
-• MERCADOS DE VOLUME E DINÂMICA DE JOGO (Chutes, Cantos, Cartões, Props, Ambas Marcam e Over/Under Gols): Pontuação normal (sem penalização).
-  - Nota: O Ambas Marcam (BTTS) mede a dinâmica e a eficiência ofensiva cruzada, devendo ser avaliado sem travas.
+[FLUXO DE CONVERSÃO OBRIGATÓRIO: PROCESSOS > RESULTADOS]
+Siga estritamente esta ordem de raciocínio antes de selecionar qualquer mercado:
+1. Qual é a assimetria principal identificada no Nexus?
+2. Qual é a evidência estatística mais forte que a sustenta?
+3. Qual mercado captura essa evidência DIRETA e FISICAMENTE (Volume de Jogo)?
+4. Existe um mercado de menor ruído (processo) antes de considerar o mercado de desfecho (resultado)?
 
-• MERCADOS DE RESULTADO PURO / VENDEDOR (1X2 / ML, Qualificação, Placares Exatos): Aplique uma PENALIZAÇÃO LEVE de -3 a -5 pontos no Score ($sc).
-  - Justificativa: Força o modelo a priorizar a leitura de volume e dinâmica de jogo em vez de optar pelo caminho mais fácil de apontar o vencedor.
+HIERARQUIA DE PRIORIDADE DE MERCADO:
+• PRIORIDADE ALTA (MERCADOS DE PROCESSO): Chutes, Escanteios, Cartões, Props de Atletas, Volume e Dinâmica de Gols (ex: BTTS, Totais).
+• PRIORIDADE BAIXA (MERCADOS DE RESULTADO): Moneyline (1X2 / Vencedor), Handicaps Tradicionais, Qualificação, Placares Exatos.
+• REGRA DE SUBSTITUIÇÃO: Se um mercado de PROCESSO captura a mesma tese com menor dependência de conversão/finalização, o mercado de RESULTADO correspondente DEVE SER DESCARTADO.
 
 ------------------------------------------------
 
-[MONEYBALL SCORE ($sc) - 0 a 100]
-• 80 a 100 🟢 BANDA VERDE: Elite.
-• 70 a 79 🟡 BANDA AMARELA: Qualidade.
-• 0 a 69 🔴 BANDA VERMELHA: DESCARTADO.
+[FÓRMULA DO MONEYBALL SCORE ($sc) - 0 a 100]
+O Score ($sc) DEVE ser calculado ponderando rigorosamente os seguintes pilares:
+- 40%: Encaixe e aderência com a assimetria principal do Nexus
+- 25%: Qualidade e solidez das evidências encontradas
+- 20%: Baixa dependência do resultado final (Mercados de processo ganham bônus; mercados de placar/vencedor sofrem penalidade)
+- 10%: Divergência em relação à percepção pública do mercado
+- 5%: Atratividade da Odd
+
+FAIXAS DE SCORE:
+• 80.0 a 100.0 🟢 BANDA VERDE: Elite (Aposta recomendada)
+• 70.0 a 79.9 🟡 BANDA AMARELA: Qualidade (Aposta recomendada)
+• 0.0 a 69.9 🔴 BANDA VERMELHA: DESCARTADO (Envie para mercados_descartados)
 
 ------------------------------------------------
 
@@ -157,12 +167,22 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
   "prognostico": "Texto simples e direto sobre o panorama do jogo...",
-  "resumo": "Resumo executivo claro e sem jargões complexos, focado na lógica das escolhas...",
+  "resumo": "Resumo executivo focado na lógica das escolhas de processo...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
+  "mercado_otimo": {
+    "identificado": true,
+    "mercado": "Nome do Mercado Ótimo",
+    "motivo": "Por que este mercado é a melhor expressão física da assimetria com menor ruído..."
+  },
+  "diagnostico_builder": {
+    "maior_risco": "Descrição do maior risco identificado no confronto...",
+    "principal_incerteza": "Variável de maior dúvida estatística...",
+    "mercado_evitar": "Mercado armadilha/popular a ser evitado..."
+  },
   "alertas_correlacao": [
-    "⚠️ Alerta prático se houver risco entre as apostas escolhidas, ou array vazio []."
+    "⚠️ Alerta prático se houver risco de dependência mútua entre as escolhas, ou array vazio []."
   ],
   "top_assimetrias_convertidas": [
     {
@@ -171,13 +191,13 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "assimetria_capturada": "A vantagem do jogo que estamos aproveitando",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
-      "sc": 84,
+      "sc": 84.0,
       "forca_encaixe_nexus": 92,
       "dependencia_resultado": "baixa|media|alta",
       "descolamento_mercado": "forte|moderado|inexistente",
       "risco_execucao": "baixo|medio|alto",
       "categoria": "elite|qualidade|especulativo",
-      "w": "Motivo direto e prático de por que essa escolha é vantajosa."
+      "w": "Motivo direto e prático de por que essa escolha é a melhor expressão da vantagem."
     }
   ],
   "mercados_descartados": [
@@ -186,14 +206,12 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
       "s": "Seleção",
       "assimetria_capturada": "Brecha ignorada ou fraca",
       "tipo_de_ativo": "processo|resultado",
-      "sc": 62,
+      "sc": 62.0,
       "status": "descartado",
-      "motivo": "Motivo simples do descarte..."
+      "motivo": "Explicar por que o mercado foi rejeitado (ex: alta dependência de resultado, ruído excessivo ou Score < 70)."
     }
   ]
-}
-
-Responda exclusivamente em JSON válido, sem blocos de markdown adicionais.`;
+}`;
 }
     async function analisarComGroq() {
         const apiKeyInput = document.getElementById("groq-key");
