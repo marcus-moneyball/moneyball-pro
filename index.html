@@ -486,8 +486,11 @@ function renderizarPainel(data) {
 // ============================================================
 function initApp() {
     buildSportTabs();
+    selecionarSport("futebol");
 
     const groqInput = document.getElementById("groq-key");
+    const btnAnalisar = document.getElementById("analisar-btn");
+
     const savedKey = localStorage.getItem("moneyball_groq_key");
     if (savedKey && groqInput) groqInput.value = savedKey;
 
@@ -496,13 +499,16 @@ function initApp() {
             localStorage.setItem("moneyball_groq_key", e.target.value.trim());
         });
     }
+
+    if (btnAnalisar) {
+        btnAnalisar.addEventListener("click", analisarComGroq);
+    }
 }
 
-// Inicializa com segurança após o carregamento do DOM
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initApp);
-} else {
+if (document.readyState === "complete" || document.readyState === "interactive") {
     initApp();
+} else {
+    document.addEventListener("DOMContentLoaded", initApp);
 }
 </script>
 </body>
