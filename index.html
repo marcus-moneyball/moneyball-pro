@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Conversion Engine v15.4</title>
+    <title>Moneyball Pro | Conversion Engine v15.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,10 +27,10 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.4 — Leitura & Análise Esportiva
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.5 — Inteligência Esportiva
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
-            <p class="text-xs text-slate-500">Conversor de Oportunidades e Inteligência Esportiva.</p>
+            <p class="text-xs text-slate-500">Análise de Assimetrias e Leitura Precisa de Mercado.</p>
         </div>
 
         <!-- SELETOR DE ESPORTE -->
@@ -94,7 +94,7 @@ window.selecionarSport = selecionarSport;
 
 
 // ============================================================
-// PARTE 2: VALIDADOR DE DADOS MINIMOS DO NEXUS
+// PARTE 2: VALIDADOR DE DADOS
 // ============================================================
 function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
     const str = JSON.stringify(dadosNexus).toLowerCase();
@@ -129,90 +129,66 @@ function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
 
 
 // ============================================================
-// PARTE 3: SYSTEM PROMPT V15.4 (ENGENHARIA NEXUS + MONEYBALL)
+// PARTE 3: SYSTEM PROMPT V15.5 (PRECISÃO DE LINHAS + GAME SCRIPT)
 // ============================================================
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v15.4 para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder Engine v15.5 para o esporte: ${esporte.toUpperCase()}.
 
 SUA MISSÃO:
-Converter assimetrias do Nexus v2.1 em mercados com maior capacidade de capturar vantagem estatística.
-Mapear o Roteiro do Confronto (Game Script) e as relações de causa e efeito entre as estatísticas do jogo.
-Você NÃO garante lucro e NÃO usa jargões acadêmicos. Fale a LÍNGUA DO APOSTADOR: direta, simples e orientada à vantagem prática.
+Converter assimetrias do Nexus v2.1 em mercados práticos.
+Mapear com clareza o PERFIL DE JOGO (Game Script) e garantir que NENHUMA linha fique genérica.
 
-REGRAS RÍGIDAS DE OPERAÇÃO:
-- Responda EXCLUSIVAMENTE em JSON válido, sem texto fora do JSON e sem blocos markdown adicionais.
-- Use EXCLUSIVAMENTE os dados fornecidos no JSON do Nexus v2.1. NÃO invente estatísticas, odds ou fatos.
-
-------------------------------------------------
-
-[FLUXO DE CONVERSÃO OBRIGATÓRIO: PROCESSOS > RESULTADOS]
-Siga estritamente esta ordem de raciocínio antes de selecionar qualquer mercado:
-1. Mapeie o Game Script (Perfil de Jogo): Qual é a dinâmica tática física esperada no confronto?
-2. Qual é a assimetria principal e a evidência estatística mais forte?
-3. Qual mercado captura essa evidência DIRETA e FISICAMENTE (Volume de Jogo)?
-4. Existe um mercado de menor ruído (processo) antes de considerar o mercado de desfecho (resultado)?
-
-HIERARQUIA DE PRIORIDADE DE MERCADO:
-• PRIORIDADE ALTA (MERCADOS DE PROCESSO): Chutes, Escanteios, Cartões, Props de Atletas, Volume e Dinâmica de Gols (ex: BTTS, Totais).
-• PRIORIDADE BAIXA (MERCADOS DE RESULTADO): Moneyline (1X2 / Vencedor), Handicaps Tradicionais, Qualificação, Placares Exatos.
-• REGRA DE SUBSTITUIÇÃO: Se um mercado de PROCESSO captura a mesma tese com menor dependência de conversão/finalização, o mercado de RESULTADO correspondente DEVE SER DESCARTADO.
-• RISCO DE EMPATE NO 1X2 (FUTEBOL): 
-  - Lembre-se que no futebol o empate absorve cerca de 25-30% das probabilidades.
-  - Se a leitura indicar equilíbrio, favoritismo moderado ou risco de retranca do adversário, o mercado de ML (Vencedor) DEVE ser penalizado e enviado para descartados, citando expressamente o "Risco de Empate (1X2)" como motivo.
-  - Se a tese de vitória for mantida, avalie se mercados de proteção (Handicap Asiático 0.0 / DNB) ou de PROCESSO não capturam a intenção com menor ruído.
+REGRAS RÍGIDAS DE NOMENCLATURA E ESPECIFICAÇÃO DE MERCADOS:
+1. NUNCA USE TERMOS GENÉRICOS OU INCOMPLETOS:
+   - PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXACTA (ex: "Mais de 2.5 Gols", "Mais de 9.5 Escanteios", "Mais de 214.5 Pontos").
+   - PROIBIDO usar jargões em inglês sem explicação clara se houver equivalente em português. Em vez de "Run Line", use "Handicap de Corridas / Vencedor (-1.5 / +1.5)".
+2. SELEÇÃO E NOME DO MERCADO:
+   - "m" (Mercado): Deve ser o nome completo e exato do mercado (ex: "Total de Escanteios na Partida", "Handicap Asiático de Gols", "Apostas em Jogadores - Pontos").
+   - "s" (Seleção): Deve trazer a escolha E a linha numérica exata (ex: "Mais de 9.5 Escanteios", "Flamengo -0.5 Handicap Asiático", "LeBron James Mais de 24.5 Pontos").
 
 ------------------------------------------------
 
-[FÓRMULA DO MONEYBALL SCORE ($sc) - 0 a 100]
-O Score ($sc) DEVE ser calculado ponderando rigorosamente:
-- 40%: Encaixe e aderência com a assimetria principal do Nexus
-- 25%: Qualidade e solidez das evidências encontradas
-- 20%: Baixa dependência do resultado final (Mercados de processo ganham bônus; mercados de resultado sofrem penalidade)
-- 10%: Divergência em relação à percepção pública do mercado
-- 5%: Atratividade da Odd
-
-FAIXAS DE SCORE:
-• 80.0 a 100.0 🟢 BANDA VERDE: Elite (Aposta recomendada)
-• 70.0 a 79.9 🟡 BANDA AMARELA: Qualidade (Aposta recomendada)
-• 0.0 a 69.9 🔴 BANDA VERMELHA: DESCARTADO (Envie para mercados_descartados)
+[PERFIL DE JOGO OBRIGATÓRIO (perfil_de_jogo)]
+Defina em 1 ou 2 frases curtas a dinâmica tática e o roteiro provável do jogo (ex: "Jogo aberto com ataque forte nas pontas e alta pressão defensiva no 1º tempo").
 
 ------------------------------------------------
 
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
-  "prognostico": "Texto simples e direto sobre o panorama do jogo...",
-  "resumo": "Resumo executivo focado na lógica das escolhas de processo...",
+  "perfil_de_jogo": "Descrição curta e clara do roteiro do confronto (Game Script)...",
+  "prognostico": "Panorama tático direto...",
+  "resumo": "Resumo focado nas escolhas de processo e volume...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
   "mercado_otimo": {
     "identificado": true,
-    "mercado": "Nome do Mercado Ótimo",
-    "motivo": "Por que este mercado é a melhor expressão física da assimetria com menor ruído..."
+    "mercado": "Nome do Mercado Ótimo com Linha Clara",
+    "motivo": "Por que este mercado captura a assimetria com menor ruído..."
   },
   "top_assimetrias_convertidas": [
     {
-      "m": "Nome Exato do Mercado",
-      "s": "Seleção / Nome do Time ou Atleta",
-      "assimetria_capturada": "A vantagem do jogo que estamos aproveitando",
+      "m": "Nome do Mercado (ex: Total de Escanteios)",
+      "s": "Seleção Exata com Linha (ex: Mais de 9.5 Escanteios)",
+      "assimetria_capturada": "A vantagem do jogo aproveitada",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84.0,
       "forca_encaixe_nexus": 92,
       "dependencia_resultado": "baixa|media|alta",
-      "w": "Motivo direto e prático de por que essa escolha é a melhor expressão da vantagem."
+      "w": "Explicação direta da escolha baseada no perfil do jogo."
     }
   ],
   "mercados_descartados": [
     {
       "m": "Nome do Mercado Rejeitado",
-      "s": "Seleção",
-      "assimetria_capturada": "Brecha ignorada ou fraca",
+      "s": "Seleção com Linha Exata",
+      "assimetria_capturada": "Brecha ignorada",
       "tipo_de_ativo": "processo|resultado",
       "sc": 62.0,
       "status": "descartado",
-      "motivo": "Explicar por que o mercado foi rejeitado (ex: risco de empate no 1X2, ruído de placar ou Score < 70)."
+      "motivo": "Motivo do descarte (ex: risco de empate no 1X2, linha esticada, ruído de placar)."
     }
   ]
 }`;
@@ -220,7 +196,7 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 
 // ============================================================
-// PARTE 4: CHAMADA DA API GROQ (EXECUÇÃO DA ENGINE)
+// PARTE 4: CHAMADA DA API GROQ
 // ============================================================
 async function analisarComGroq() {
     const apiKeyInput = document.getElementById("groq-key");
@@ -261,7 +237,7 @@ async function analisarComGroq() {
     display.innerHTML = `
         <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
             <i class="fa-solid fa-magnifying-glass-chart text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Construindo Roteiro do Jogo & Mapeando Brechas...</h3>
+            <h3 class="text-sm font-semibold text-slate-300">Construindo Perfil de Jogo & Mapeando Linhas...</h3>
             <p class="text-xs text-slate-500">Filtrando apostas com menor risco e calibrando o Score.</p>
         </div>
     `;
@@ -359,19 +335,20 @@ function cardAssimetriaConvertida(item) {
             <div class="flex justify-between items-start gap-2">
                 <div>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">${tipoAtivoFormatado}</span>
-                    <h4 class="font-bold text-white text-sm mt-1">${mercado}</h4>
+                    <h4 class="font-bold text-slate-300 text-xs mt-1">${mercado}</h4>
                 </div>
                 <div class="text-right shrink-0">
                     <span class="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Score: ${sc}</span>
                 </div>
             </div>
 
-            <div class="text-accent font-black text-base flex items-center justify-between">
-                <span>${selecao}</span>
-                <span class="text-xs font-normal text-slate-400">${oddsVal}</span>
+            <!-- SELEÇÃO EM DESTAQUE COM LINHA DEFINIDA -->
+            <div class="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between">
+                <span class="text-accent font-extrabold text-base">${selecao}</span>
+                <span class="text-xs text-slate-300">${oddsVal}</span>
             </div>
 
-            <div class="p-2 bg-base-bg rounded-lg border border-base-border text-xs space-y-1">
+            <div class="p-2.5 bg-base-bg rounded-lg border border-base-border text-xs space-y-1.5">
                 <div class="text-slate-400"><strong class="text-slate-300">Vantagem do Jogo:</strong> ${brecha}</div>
                 <div class="flex flex-wrap gap-2 pt-1 text-[10px]">
                     <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-bullseye text-accent mr-1"></i>Aderência ao Cenário: ${encaixe}</span>
@@ -411,6 +388,7 @@ function renderizarPainel(data) {
 
     const statusConversao = data.status_conversao || "convertido";
     const motivoSemConversao = data.motivo_sem_conversao || null;
+    const perfilJogo = data.perfil_de_jogo || "";
     const prognostico = data.prognostico || "";
     const resumo = data.resumo || "";
     const scoreBilhete = data.score_bilhete ?? null;
@@ -428,6 +406,7 @@ function renderizarPainel(data) {
                 <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
                     <i class="fa-solid fa-shield-halved text-lg"></i> JOGO SEM APOSTAS RECOMENDADAS
                 </div>
+                ${perfilJogo ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
                 <p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>
                 <div class="p-4 bg-amber-950/20 border border-amber-900/40 rounded-xl text-xs text-amber-200">
                     <strong>Motivo:</strong> ${motivoSemConversao || "Nenhum mercado apresentou segurança suficiente para entrada neste confronto."}
@@ -437,16 +416,24 @@ function renderizarPainel(data) {
         return;
     }
 
-    const painelResumoHtml = (prognostico || resumo) ? `
+    const painelResumoHtml = `
         <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
             <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
-                <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral do Jogo</span>
+                <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral & Perfil do Jogo</span>
                 ${scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
             </div>
+            
+            ${perfilJogo ? `
+                <div class="p-3 bg-base-bg/80 rounded-lg border border-accent/20 text-xs text-slate-200">
+                    <span class="text-accent font-bold uppercase text-[10px] tracking-widest block mb-1"><i class="fa-solid fa-gamepad mr-1"></i> Perfil do Jogo (Game Script):</span>
+                    ${perfilJogo}
+                </div>
+            ` : ""}
+
             ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
             ${resumo ? `<div class="text-xs text-slate-300 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-accent uppercase text-[10px] tracking-wider block mb-0.5">Resumo Executivo:</strong> ${resumo}</div>` : ""}
         </div>
-    ` : "";
+    `;
 
     display.innerHTML = `
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
@@ -482,15 +469,12 @@ function renderizarPainel(data) {
 
 
 // ============================================================
-// PARTE 7: INICIALIZAÇÃO SEGURA DA APLICAÇÃO
+// PARTE 7: INICIALIZAÇÃO SEGURA
 // ============================================================
 function initApp() {
     buildSportTabs();
-    selecionarSport("futebol");
 
     const groqInput = document.getElementById("groq-key");
-    const btnAnalisar = document.getElementById("analisar-btn");
-
     const savedKey = localStorage.getItem("moneyball_groq_key");
     if (savedKey && groqInput) groqInput.value = savedKey;
 
@@ -499,16 +483,12 @@ function initApp() {
             localStorage.setItem("moneyball_groq_key", e.target.value.trim());
         });
     }
-
-    if (btnAnalisar) {
-        btnAnalisar.addEventListener("click", analisarComGroq);
-    }
 }
 
-if (document.readyState === "complete" || document.readyState === "interactive") {
-    initApp();
-} else {
+if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initApp);
+} else {
+    initApp();
 }
 </script>
 </body>
