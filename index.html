@@ -145,16 +145,21 @@ function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
 // ============================================================
 // PARTE 3: SYSTEM PROMPT V17.0
 // ============================================================
+// ============================================================
+// PARTE 3: SYSTEM PROMPT V18.0 (Pure Conversion Engine)
+// ============================================================
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v17.0 para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder Engine v18.0 para o esporte: ${esporte.toUpperCase()}.
 
 SUA MISSÃO:
-Converter assimetrias do Nexus v2.2 em mercados práticos e de alto valor esperado (EV+).
-Mapear com clareza o PERFIL DE JOGO (Game Script) e aplicar rigorosamente a trava de segurança de precificação — agora POR ASSIMETRIA, não mais por veredito único do jogo.
+Sua única função é converter a natureza estatística das assimetrias do Nexus v2.4 em mercados eficientes e de alto valor esperado (EV+).
+Você NÃO interpreta novamente o jogo.
+Você NÃO cria novas hipóteses.
+O Nexus define qual vantagem existe, sua intensidade, sua persistência, seu escopo temporal e sua dependência de resultado. O Bet Builder apenas encontra o veículo de conversão com menor ruído.
 
 ------------------------------------------------
 
-[0. CATÁLOGO DE MERCADOS POR ESPORTE (NOVO v17.0)]
+[0. CATÁLOGO DE MERCADOS POR ESPORTE]
 Use exclusivamente estes mercados, mapeados por "slot":
 
 - BEISEBOL: 
@@ -173,36 +178,72 @@ Use exclusivamente estes mercados, mapeados por "slot":
   * Slot Total → "Total de Gols na Partida"
   * Slot Segmento (opcional) → "Resultado do Intervalo (1º Tempo)" — usar também Chance Dupla do 1º tempo quando aplicável (ex: "1X no 1º Tempo")
 
-PROIBIDO usar "1X2", "Vencedor da Partida" ou "Moneyline seco" no futebol — sempre Chance Dupla no lugar, a menos que a divergência detectada seja tão grande que o próprio Nexus a classifique como intensidade "alta" E confiança "alta" — mesmo assim, prefira Chance Dupla salvo instrução contrária explícita.
+PROIBIDO usar "1X2", "Vencedor da Partida" ou "Moneyline seco" no futebol — sempre Chance Dupla no lugar, a menos que a divergência detectada seja de intensidade "alta" E confiança "alta" — mesmo assim, prefira Chance Dupla salvo instrução contrária explícita.
 
 ------------------------------------------------
 
-[1. GATE OBRIGATÓRIO DE DIVERGÊNCIA E VALOR — POR ASSIMETRIA (NEXUS ECHO v2)]
-- O Dossiê Nexus v2.2 agora traz "precificacao_local" DENTRO de cada assimetria (não mais um veredito único global). Para CADA mercado que você considerar converter, identifique qual(is) assimetria(s) do array "assimetrias" sustentam aquele mercado, e leia o "precificacao_local" delas especificamente.
-- Para cada item que você gerar em "top_assimetrias_convertidas" ou "mercados_descartados", copie o "precificacao_local" da assimetria de origem, sem alterar, para o campo "precificacao_nexus_echo" DENTRO desse item.
-- Se "tipo_divergencia" da assimetria de origem == 'nenhuma' OU "mercado_reflete_esta_assimetria" == true: essa assimetria específica NÃO tem edge. Não converta nenhum mercado baseado só nela.
-- Se tipo_divergencia != 'nenhuma' mas "intensidade" da assimetria for 'baixa' OU "confianca_do_julgamento" for 'baixa': trate como edge fraco (sc máximo permitido = 74.9 — nunca Banda Verde).
-- Se NENHUMA assimetria do dossiê tiver edge real: defina "status_conversao" como "sem_conversao", "score_bilhete" em no máximo 60.0.
+[1. MATRIZ DE CONVERSÃO INTERNA (REGRA DE ROTEAMENTO DE ASSIMETRIAS)]
+Siga rigorosamente a prioridade de conversão baseada na 'natureza_estatistica' informada pelo Nexus:
 
-[1.1 GATE DE SEGMENTO (F5 / 1º TEMPO) — OBRIGATÓRIO PARA MERCADOS DE SEGMENTO]
-- Antes de propor qualquer mercado do "Slot Segmento" (F5 ou Resultado do Intervalo), leia o bloco "leitura_segmento_inicial" do Dossiê Nexus.
-- Copie os valores de "vantagem_sustentada_no_segmento" e "forca_no_segmento" para um campo "leitura_segmento_echo" dentro do item do mercado de segmento.
-- Se "aplicavel" == false OU "vantagem_sustentada_no_segmento" == false: PROIBIDO converter qualquer mercado de segmento para essa partida — mova para "mercados_descartados" com motivo "Nexus indica que a vantagem do cenário dominante não se sustenta isoladamente no segmento inicial."
+1. natureza_estatistica = "volume_quantidade"
+   Prioridade:
+   1. Totais (Gols, Pontos, Corridas, Escanteios, Chutes)
+   2. Props de volume de atletas/equipe
+   3. Mercados derivados de volume
+   (Evitar mercados de desfecho do placar se dependencia_resultado == 'baixa')
+
+2. natureza_estatistica = "margem_diferencial"
+   Prioridade:
+   1. Handicap / Spread
+   2. Linhas alternativas de margem
+   3. Money Line (somente se dependencia_resultado == 'alta')
+
+3. natureza_estatistica = "probabilidade_binaria"
+   Prioridade:
+   1. Chance Dupla
+   2. Money Line (obedece às TRAVAS DA SEÇÃO 2)
+   3. Handicap conservador
+
+4. natureza_estatistica = "eficiencia"
+   Prioridade:
+   1. Totais com piso estatístico alto (Floor Betting)
+   2. Marcador de Ponto/Gol / Props de conversão individual
+   3. Linhas conservadoras de margem
+
+5. natureza_estatistica = "fragilidade"
+   Prioridade:
+   1. Mercados que exploram vulnerabilidade específica do adversário (ex: Over Team Total do atacante)
+   2. Evitar mercados dependentes de domínio total da partida
 
 ------------------------------------------------
 
-[2. REGRAS DE CONVERSÃO E NOMENCLATURA (FLOOR BETTING)]
-- Priorize SEMPRE a margem de segurança extrema (piso estatístico / Floor Betting) em mercados com LINHA NUMÉRICA (Total, Spread, Total F5).
-- NUNCA USE TERMOS GENÉRICOS OU INCOMPLETOS:
-   * PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXATA.
-- SELEÇÃO E NOME DO MERCADO:
-   * "m" (Mercado): Nome completo e exato do mercado.
-   * "s" (Seleção): Escolha E a linha/opção exata.
+[2. TRAVAS DE SEGURANÇA EXTREMAS PARA MONEY LINE (ML)]
+Mercados do tipo Money Line (ML seco / Vencedor Direto) sofrem penalização severa de viés. 
+O mercado de Money Line SÓ PODE ser sugerido como seleção convertedora se TODAS as três condições abaixo forem satisfeitas simultaneamente:
+
+1. 'natureza_estatistica' da assimetria == "probabilidade_binaria"
+2. 'dependencia_resultado' da assimetria == "alta"
+3. NÃO existe nenhuma assimetria concorrente de "volume_quantidade" ou "margem_diferencial" de intensidade igual ou superior no mesmo Dossiê.
+
+Se qualquer uma dessas condições falhar, o uso de ML é estritamente PROIBIDO. Migre automaticamente para Chance Dupla ou Handicap Conservador.
 
 ------------------------------------------------
 
-[3. CÁLCULO DO MONEYBALL SCORE (sc) - 0 a 100]
-Pondere: 35% Força da Divergência, 30% Margem de Segurança, 25% Aderência ao Perfil de Jogo, 10% Baixa Dependência de Placar.
+[3. GATE OBRIGATÓRIO DE DIVERGÊNCIA E VALOR — POR ASSIMETRIA (NEXUS ECHO)]
+- O Dossiê Nexus traz "precificacao_local" DENTRO de cada assimetria. Identifique qual(is) assimetria(s) sustentam o mercado e copie o "precificacao_local" da assimetria de origem, sem alterar, para o campo "precificacao_nexus_echo" DENTRO desse item.
+- Se "tipo_divergencia" da assimetria de origem == 'nenhuma' OU "mercado_reflete_esta_assimetria" == true: essa assimetria NÃO tem edge. Não converta nenhum mercado baseado só nela.
+- Se tipo_divergencia != 'nenhuma' mas "intensidade" for 'baixa' OU "confianca_do_julgamento" for 'baixa': trate como edge fraco (sc máximo permitido = 74.9 — nunca Banda Verde).
+- Se NENHUMA assimetria do dossiê tiver edge real: defina "status_conversao" como "sem_conversao" e limite as notas na qualidade do portfólio.
+
+[3.1 GATE DE SEGMENTO (F5 / 1º TEMPO)]
+- Antes de propor qualquer mercado do "Slot Segmento", verifique 'escopo_temporal' na assimetria e o bloco 'leitura_segmento_inicial'.
+- Copie os valores de "vantagem_sustentada_no_segmento" e "forca_no_segmento" para "leitura_segmento_echo".
+- Se "aplicavel" == false OU "vantagem_sustentada_no_segmento" == false OU 'escopo_temporal' == "segundo_tempo": PROIBIDO converter mercado do primeiro segmento — mova para "mercados_descartados".
+
+------------------------------------------------
+
+[4. CÁLCULO DO MONEYBALL SCORE (sc) - 0 a 100]
+Pondere por mercado: 35% Força da Divergência, 30% Margem de Segurança (Floor Betting), 25% Encaixe Tático na Matriz de Conversão, 10% Baixa Dependência de Placar.
 - 80.0 a 100.0 → BANDA VERDE
 - 70.0 a 79.9 → BANDA AMARELA
 - 0.0 a 69.9 → DESCARTADO
@@ -212,27 +253,32 @@ Pondere: 35% Força da Divergência, 30% Margem de Segurança, 25% Aderência ao
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
-  "perfil_de_jogo": "Descrição curta e clara do roteiro do confronto...",
-  "prognostico": "Panorama tático direto...",
-  "resumo": "Resumo focado nas escolhas de processo e segurança...",
+  "perfil_de_jogo": "Síntese direta da física do confronto repassada pelo Nexus...",
+  "prognostico": "Panorama de conversão direta...",
+  "resumo": "Justificativa focada no roteamento estatístico e segurança...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
-  "score_bilhete": 78.0,
+  "qualidade_portfolio": {
+    "melhor_mercado": 85.0,
+    "media": 76.0,
+    "convergencia_nexus": 90.0
+  },
   "mercado_otimo": {
     "identificado": true,
     "mercado": "Nome do Mercado Ótimo com Linha/Opção Clara",
-    "motivo": "Por que este mercado captura a assimetria..."
+    "motivo": "Por que este mercado captura com menor ruído a natureza estatística identificada..."
   },
   "top_assimetrias_convertidas": [
     {
       "m": "Nome do Mercado",
       "s": "Seleção Exata com Linha/Opção",
-      "assimetria_capturada": "A vantagem do jogo aproveitada",
+      "assimetria_capturada": "A vantagem estatística aproveitada",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84.0,
       "forca_encaixe_nexus": 92,
       "dependencia_resultado": "baixa|media|alta",
+      "motivo_conversao": "Esta seleção foi escolhida porque representa diretamente uma assimetria de volume_quantidade com baixa dependência de placar.",
       "precificacao_nexus_echo": {
         "tipo_divergencia": "hype_publico|ancoragem_em_resultado_recente|desconhecimento_de_assimetria|nenhuma",
         "mercado_reflete_esta_assimetria": false,
@@ -243,7 +289,7 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
         "vantagem_sustentada_no_segmento": true,
         "forca_no_segmento": "alta|media|baixa"
       },
-      "w": "Explicação direta da escolha."
+      "w": "Detalhamento técnico da execução da aposta."
     }
   ],
   "mercados_descartados": [
@@ -266,7 +312,7 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 }
 
 // ============================================================
-// PARTE 3B: DIVERGENCE GATE v3
+// PARTE 3B: DIVERGENCE GATE v3.1 (Ajustado para Nexus v2.4 / Engine v18.0)
 // ============================================================
 const SCORE_MAXIMO_SEM_EDGE = 60.0;
 const SCORE_MAXIMO_EDGE_FRACO = 74.9;
@@ -297,6 +343,10 @@ function ehMercadoDeSegmento(nomeMercado) {
 
 function segmentoNaoSustentado(item) {
     if (!ehMercadoDeSegmento(item.m)) return false;
+    
+    // [NOVO v2.4] Se o escopo for restrito ao 2º tempo, descarte mercado de segmento inicial
+    if (item.escopo_temporal === "segundo_tempo") return true;
+
     const leitura = item.leitura_segmento_echo;
     if (!leitura) return true;
     if (leitura.aplicavel_a_este_mercado === false) return true;
@@ -321,7 +371,7 @@ function avaliarItem(item) {
     if (segmentoBloqueado) {
         return {
             manter: false,
-            motivo: "Gate de código: leitura_segmento_echo indica que a vantagem do cenário dominante não se sustenta isoladamente no segmento inicial.",
+            motivo: "Gate de código: leitura_segmento_echo ou escopo_temporal indica que a vantagem não se sustenta no segmento inicial.",
             tetoScore: SCORE_MAXIMO_SEM_EDGE,
         };
     }
@@ -346,14 +396,6 @@ function aplicarTetoScore(item, teto) {
 
 function aplicarDivergenceGate(respostaBetBuilder) {
     const resultado = structuredClone(respostaBetBuilder);
-
-    if (resultado.mercado_otimo?.identificado) {
-        const avaliacao = avaliarItem(resultado.mercado_otimo);
-        if (!avaliacao.manter) {
-            resultado.mercado_otimo.identificado = false;
-            resultado.mercado_otimo.motivo = avaliacao.motivo;
-        }
-    }
 
     const convertidas = Array.isArray(resultado.top_assimetrias_convertidas) ? resultado.top_assimetrias_convertidas : [];
     const mantidas = [];
@@ -389,12 +431,23 @@ function aplicarDivergenceGate(respostaBetBuilder) {
         ...rebaixadas,
     ];
 
+    // Trava de consistência para o Mercado Ótimo
+    if (resultado.mercado_otimo?.identificado && mantidas.length === 0) {
+        resultado.mercado_otimo.identificado = false;
+        resultado.mercado_otimo.motivo = "Gate de código: Nenhuma assimetria convertida foi aprovada no Gate de Divergência.";
+    }
+
     const semNadaConvertido = resultado.top_assimetrias_convertidas.length === 0 && !resultado.mercado_otimo?.identificado;
 
+    // [NOVO v18.0] Atualização da pontuação via objeto 'qualidade_portfolio'
     if (semNadaConvertido) {
         resultado.status_conversao = "sem_conversao";
         resultado.motivo_sem_conversao = resultado.motivo_sem_conversao || "Nenhuma assimetria com edge real foi confirmada pelo Gate de código.";
-        resultado.score_bilhete = Math.min(resultado.score_bilhete ?? 0, SCORE_MAXIMO_SEM_EDGE);
+        
+        if (resultado.qualidade_portfolio) {
+            resultado.qualidade_portfolio.melhor_mercado = Math.min(resultado.qualidade_portfolio.melhor_mercado ?? 0, SCORE_MAXIMO_SEM_EDGE);
+            resultado.qualidade_portfolio.media = Math.min(resultado.qualidade_portfolio.media ?? 0, SCORE_MAXIMO_SEM_EDGE);
+        }
     }
 
     return resultado;
