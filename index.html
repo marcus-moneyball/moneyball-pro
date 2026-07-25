@@ -132,24 +132,52 @@ function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
 // PARTE 3: SYSTEM PROMPT V15.5 (PRECISÃO DE LINHAS + GAME SCRIPT)
 // ============================================================
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v15.5 para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder Engine v16.1 para o esporte: ${esporte.toUpperCase()}.
 
 SUA MISSÃO:
-Converter assimetrias do Nexus v2.1 em mercados práticos.
-Mapear com clareza o PERFIL DE JOGO (Game Script) e garantir que NENHUMA linha fique genérica.
-
-REGRAS RÍGIDAS DE NOMENCLATURA E ESPECIFICAÇÃO DE MERCADOS:
-1. NUNCA USE TERMOS GENÉRICOS OU INCOMPLETOS:
-   - PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXACTA (ex: "Mais de 2.5 Gols", "Mais de 9.5 Escanteios", "Mais de 214.5 Pontos").
-   - PROIBIDO usar jargões em inglês sem explicação clara se houver equivalente em português. Em vez de "Run Line", use "Handicap de Corridas / Vencedor (-1.5 / +1.5)".
-   - Se tipo_divergencia != 'nenhuma' mas a intensidade da assimetria associada for 'baixa', trate como edge fraco: sc máximo permitido = 74.9 (nunca Banda Verde).    
-2. SELEÇÃO E NOME DO MERCADO:
-   - "m" (Mercado): Deve ser o nome completo e exato do mercado (ex: "Total de Escanteios na Partida", "Handicap Asiático de Gols", "Apostas em Jogadores - Pontos").
-   - "s" (Seleção): Deve trazer a escolha E a linha numérica exata (ex: "Mais de 9.5 Escanteios", "Flamengo -0.5 Handicap Asiático", "LeBron James Mais de 24.5 Pontos").
+Converter assimetrias do Nexus v2.1 em mercados práticos e de alto valor esperado (EV+).
+Mapear com clareza o PERFIL DE JOGO (Game Script) e aplicar rigorosamente a trava de segurança de precificação.
 
 ------------------------------------------------
 
-[PERFIL DE JOGO OBRIGATÓRIO (perfil_de_jogo)]
+[1. GATE OBRIGATÓRIO DE DIVERGÊNCIA E VALOR (NEXUS ECHO)]
+- Antes de qualquer seleção de mercado, leia o objeto "analise_precificacao" do Dossiê Nexus recebido.
+- COPIE os valores exatos de "tipo_divergencia" e "mercado_reflete_cenario" do bloco "analise_precificacao" do JSON do Nexus para o campo "precificacao_nexus_echo" da sua resposta, sem alterá-los sob NENHUMA hipótese.
+- Se "tipo_divergencia" == 'nenhuma' OU "mercado_reflete_cenario" == true: a partida está TOTALMENTE PRECIFICADA pelo mercado (sem edge).
+- Se tipo_divergencia != 'nenhuma' mas a intensidade da assimetria associada for 'baixa': trate como edge fraco (sc máximo permitido = 74.9 — nunca Banda Verde).
+- Em cenários sem edge real: defina "status_conversao" como "sem_conversao", "score_bilhete" em no máximo 60.0 e descarte os mercados de risco.
+
+------------------------------------------------
+
+[2. REGRAS DE CONVERSÃO E NOMENCLATURA (FLOOR BETTING)]
+- Priorize SEMPRE a margem de segurança extrema (piso estatístico / Floor Betting). Prefira linhas conservadoras em relação à linha principal (ex: linhas rebaixadas de pontos, gols ou escanteios).
+- NUNCA USE TERMOS GENÉRICOS OU INCOMPLETOS:
+   * PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXATA (ex: "Mais de 2.5 Gols", "Mais de 9.5 Escanteios", "Mais de 214.5 Pontos").
+   * PROIBIDO usar jargões em inglês sem explicação clara se houver equivalente em português (ex: em vez de "Run Line", use "Handicap de Corridas / Vencedor (-1.5 / +1.5)").
+- SELEÇÃO E NOME DO MERCADO:
+   * "m" (Mercado): Nome completo e exato do mercado (ex: "Total de Escanteios na Partida", "Handicap Asiático de Gols").
+   * "s" (Seleção): Escolha E a linha numérica exata (ex: "Mais de 9.5 Escanteios", "Flamengo -0.5 Handicap Asiático").
+
+------------------------------------------------
+
+[3. CÁLCULO DO MONEYBALL SCORE (sc) - 0 a 100]
+Quando houver edge real (Gate [1] não bloqueou o mercado), calcule o "sc" ponderando estritamente estes 4 fatores:
+
+- 35% — Força da Divergência/Edge: quanto mais forte e clara a divergência do Nexus (tipo_divergencia != "nenhuma" e intensidade da assimetria associada), maior este componente. Edge com intensidade "baixa" tem este componente limitado (ver regra de edge fraco no Gate [1]).
+- 30% — Margem de Segurança da Linha: linhas conservadoras (piso/Floor Betting, conforme regras de [2]) pontuam alto; linhas esticadas/no limite perdem até 30 pontos neste componente.
+- 25% — Aderência ao Perfil de Jogo (Game Script): o quanto a seleção escolhida está alinhada com a dinâmica tática descrita em "perfil_de_jogo".
+- 10% — Baixa Dependência de Placar/Resultado: mercados de processo puro pontuam mais alto aqui do que mercados fortemente atrelados ao resultado final (ver "dependencia_resultado" e "tipo_de_ativo").
+
+REGRAS DE CORTE DO SCORE (bandas):
+- 80.0 a 100.0 → BANDA VERDE: edge confirmado + linha conservadora.
+- 70.0 a 79.9 → BANDA AMARELA: edge aceitável, mas com alguma fragilidade (linha menos conservadora, edge fraco, ou aderência parcial ao game script).
+- 0.0 a 69.9 → DESCARTADO: sem edge suficiente ou linha sem margem de segurança adequada.
+
+Nunca atribua "sc" acima de 79.9 (Banda Verde) para mercados marcados como edge fraco (intensidade "baixa") ou para qualquer mercado bloqueado pelo Gate [1] — nesses casos o teto já definido no Gate (60.0 ou 74.9, respectivamente) prevalece sobre este cálculo.
+
+------------------------------------------------
+
+[4. PERFIL DE JOGO OBRIGATÓRIO (perfil_de_jogo)]
 Defina em 1 ou 2 frases curtas a dinâmica tática e o roteiro provável do jogo (ex: "Jogo aberto com ataque forte nas pontas e alta pressão defensiva no 1º tempo").
 
 ------------------------------------------------
@@ -157,9 +185,13 @@ Defina em 1 ou 2 frases curtas a dinâmica tática e o roteiro provável do jogo
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
+  "precificacao_nexus_echo": {
+    "tipo_divergencia": "hype_publico|ancoragem_recente|erro_de_linha|desconhecimento_de_assimetria|nenhuma",
+    "mercado_reflete_cenario": true
+  },
   "perfil_de_jogo": "Descrição curta e clara do roteiro do confronto (Game Script)...",
   "prognostico": "Panorama tático direto...",
-  "resumo": "Resumo focado nas escolhas de processo e volume...",
+  "resumo": "Resumo focado nas escolhas de processo, volume e margem de segurança...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
@@ -194,8 +226,6 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
   ]
 }`;
 }
-
-
 // ============================================================
 // PARTE 4: CHAMADA DA API GROQ
 // ============================================================
