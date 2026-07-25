@@ -94,7 +94,42 @@ window.selecionarSport = selecionarSport;
 
 
 // ============================================================
-// PARTE 3: SYSTEM PROMPT V15.5
+// PARTE 2: VALIDADOR DE DADOS
+// ============================================================
+function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
+    const str = JSON.stringify(dadosNexus).toLowerCase();
+    const termosEsportes = {
+        futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "half time", "gols", "futebol", "corners"],
+        beisebol: ["pitcher", "era", "whip", "innings", "runs", "strikeouts", "mlb", "home runs", "beisebol"],
+        basquete: ["rebotes", "assistencias", "pontos", "nba", "quarto", "triplos", "basquete", "handicap"]
+    };
+
+    let esporteDetectado = null;
+    let maxHits = 0;
+
+    for (const [esporte, termos] of Object.entries(termosEsportes)) {
+        const hits = termos.filter(t => str.includes(t)).length;
+        if (hits > maxHits && hits >= 2) {
+            maxHits = hits;
+            esporteDetectado = esporte;
+        }
+    }
+
+    if (esporteDetectado && esporteDetectado !== moduloAtivoKey) {
+        const nomeDetectado = MODULES[esporteDetectado]?.label || esporteDetectado;
+        const nomeAtivo = MODULES[moduloAtivoKey]?.label || moduloAtivoKey;
+        return {
+            ok: false,
+            erro: `Você colou um JSON de <b>${nomeDetectado}</b>, mas a aba selecionada é <b>${nomeAtivo}</b>. Alterne a aba acima para continuar.`
+        };
+    }
+
+    return { ok: true };
+}
+
+
+// ============================================================
+// PARTE 3: SYSTEM PROMPT V15.5 (PRECISÃO DE LINHAS + GAME SCRIPT)
 // ============================================================
 function montarSystemPrompt(esporte) {
   return `Você é o Moneyball Bet Builder Engine v15.5 para o esporte: ${esporte.toUpperCase()}.
@@ -158,6 +193,7 @@ SCHEMA JSON OBRIGATÓRIO (SAÍDA)
   ]
 }`;
 }
+
 
 // ============================================================
 // PARTE 4: CHAMADA DA API GROQ
