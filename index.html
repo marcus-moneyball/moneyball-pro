@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Pro | Conversion Engine v15.5</title>
+    <title>Moneyball Pro | Conversion Engine v17.0</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -27,7 +27,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v15.5 — Inteligência Esportiva
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v17.0 — Inteligência Esportiva
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
             <p class="text-xs text-slate-500">Análise de Assimetrias e Leitura Precisa de Mercado.</p>
@@ -43,7 +43,7 @@
             </summary>
             <div class="mt-4 space-y-2">
                 <label class="text-[10px] text-slate-500 font-bold tracking-widest">GROQ API KEY (Salva no navegador)</label>
-                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono">
+                <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
                 <p class="text-[11px] text-slate-600">A chave é salva de forma privada no armazenamento local do seu navegador (localStorage).</p>
             </div>
         </details>
@@ -52,9 +52,9 @@
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3">
             <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.1</label>
+                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.2</label>
             </div>
-            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.1 aqui...'></textarea>
+            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.2 aqui...'></textarea>
             <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-bolt"></i> Analisar Oportunidades via Groq
             </button>
@@ -65,6 +65,22 @@
     </div>
 
 <script>
+// ============================================================
+// INICIALIZAÇÃO & LOCALSTORAGE
+// ============================================================
+function salvarKey(val) {
+    if (val) localStorage.setItem("moneyball_groq_key", val.trim());
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    buildSportTabs();
+    const savedKey = localStorage.getItem("moneyball_groq_key");
+    if (savedKey) {
+        const input = document.getElementById("groq-key");
+        if (input) input.value = savedKey;
+    }
+});
+
 // ============================================================
 // PARTE 1: MÓDULOS DE ESPORTE E GERENCIADOR DE ABAS
 // ============================================================
@@ -92,14 +108,13 @@ function selecionarSport(key) {
 }
 window.selecionarSport = selecionarSport;
 
-
 // ============================================================
 // PARTE 2: VALIDADOR DE DADOS
 // ============================================================
 function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
     const str = JSON.stringify(dadosNexus).toLowerCase();
     const termosEsportes = {
-        futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "half time", "gols", "futebol", "corners"],
+        futebol: ["xg", "xga", "escanteios", "cartoes", "1x2", "chance dupla", "dupla hipotese", "half time", "gols", "futebol", "corners"],
         beisebol: ["pitcher", "era", "whip", "innings", "runs", "strikeouts", "mlb", "home runs", "beisebol"],
         basquete: ["rebotes", "assistencias", "pontos", "nba", "quarto", "triplos", "basquete", "handicap"]
     };
@@ -127,105 +142,264 @@ function validarDadosMinimos(dadosNexus, moduloAtivoKey) {
     return { ok: true };
 }
 
-
 // ============================================================
-// PARTE 3: SYSTEM PROMPT V15.5 (PRECISÃO DE LINHAS + GAME SCRIPT)
+// PARTE 3: SYSTEM PROMPT V17.0
 // ============================================================
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder Engine v16.1 para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder Engine v17.0 para o esporte: ${esporte.toUpperCase()}.
 
 SUA MISSÃO:
-Converter assimetrias do Nexus v2.1 em mercados práticos e de alto valor esperado (EV+).
-Mapear com clareza o PERFIL DE JOGO (Game Script) e aplicar rigorosamente a trava de segurança de precificação.
+Converter assimetrias do Nexus v2.2 em mercados práticos e de alto valor esperado (EV+).
+Mapear com clareza o PERFIL DE JOGO (Game Script) e aplicar rigorosamente a trava de segurança de precificação — agora POR ASSIMETRIA, não mais por veredito único do jogo.
 
 ------------------------------------------------
 
-[1. GATE OBRIGATÓRIO DE DIVERGÊNCIA E VALOR (NEXUS ECHO)]
-- Antes de qualquer seleção de mercado, leia o objeto "analise_precificacao" do Dossiê Nexus recebido.
-- COPIE os valores exatos de "tipo_divergencia" e "mercado_reflete_cenario" do bloco "analise_precificacao" do JSON do Nexus para o campo "precificacao_nexus_echo" da sua resposta, sem alterá-los sob NENHUMA hipótese.
-- Se "tipo_divergencia" == 'nenhuma' OU "mercado_reflete_cenario" == true: a partida está TOTALMENTE PRECIFICADA pelo mercado (sem edge).
-- Se tipo_divergencia != 'nenhuma' mas a intensidade da assimetria associada for 'baixa': trate como edge fraco (sc máximo permitido = 74.9 — nunca Banda Verde).
-- Em cenários sem edge real: defina "status_conversao" como "sem_conversao", "score_bilhete" em no máximo 60.0 e descarte os mercados de risco.
+[0. CATÁLOGO DE MERCADOS POR ESPORTE (NOVO v17.0)]
+Use exclusivamente estes mercados, mapeados por "slot":
+
+- BEISEBOL: 
+  * Slot ML → "Money Line"
+  * Slot Spread → "Handicap de Corridas / Vencedor (Run Line)"
+  * Slot Total → "Total de Corridas na Partida"
+  * Slot Segmento (opcional) → "Money Line F5 (Primeiras 5 Entradas)" e/ou "Total de Corridas F5"
+- BASQUETE:
+  * Slot ML → "Money Line"
+  * Slot Spread → "Handicap de Pontos"
+  * Slot Total → "Total de Pontos"
+  * (sem slot de Segmento nesta versão)
+- FUTEBOL:
+  * Slot ML → "Chance Dupla" (substitui 1X2/Vencedor seco — opções: "1X", "2X", "12")
+  * Slot Spread → "Handicap Asiático/Europeu de Gols"
+  * Slot Total → "Total de Gols na Partida"
+  * Slot Segmento (opcional) → "Resultado do Intervalo (1º Tempo)" — usar também Chance Dupla do 1º tempo quando aplicável (ex: "1X no 1º Tempo")
+
+PROIBIDO usar "1X2", "Vencedor da Partida" ou "Moneyline seco" no futebol — sempre Chance Dupla no lugar, a menos que a divergência detectada seja tão grande que o próprio Nexus a classifique como intensidade "alta" E confiança "alta" — mesmo assim, prefira Chance Dupla salvo instrução contrária explícita.
+
+------------------------------------------------
+
+[1. GATE OBRIGATÓRIO DE DIVERGÊNCIA E VALOR — POR ASSIMETRIA (NEXUS ECHO v2)]
+- O Dossiê Nexus v2.2 agora traz "precificacao_local" DENTRO de cada assimetria (não mais um veredito único global). Para CADA mercado que você considerar converter, identifique qual(is) assimetria(s) do array "assimetrias" sustentam aquele mercado, e leia o "precificacao_local" delas especificamente.
+- Para cada item que você gerar em "top_assimetrias_convertidas" ou "mercados_descartados", copie o "precificacao_local" da assimetria de origem, sem alterar, para o campo "precificacao_nexus_echo" DENTRO desse item.
+- Se "tipo_divergencia" da assimetria de origem == 'nenhuma' OU "mercado_reflete_esta_assimetria" == true: essa assimetria específica NÃO tem edge. Não converta nenhum mercado baseado só nela.
+- Se tipo_divergencia != 'nenhuma' mas "intensidade" da assimetria for 'baixa' OU "confianca_do_julgamento" for 'baixa': trate como edge fraco (sc máximo permitido = 74.9 — nunca Banda Verde).
+- Se NENHUMA assimetria do dossiê tiver edge real: defina "status_conversao" como "sem_conversao", "score_bilhete" em no máximo 60.0.
+
+[1.1 GATE DE SEGMENTO (F5 / 1º TEMPO) — OBRIGATÓRIO PARA MERCADOS DE SEGMENTO]
+- Antes de propor qualquer mercado do "Slot Segmento" (F5 ou Resultado do Intervalo), leia o bloco "leitura_segmento_inicial" do Dossiê Nexus.
+- Copie os valores de "vantagem_sustentada_no_segmento" e "forca_no_segmento" para um campo "leitura_segmento_echo" dentro do item do mercado de segmento.
+- Se "aplicavel" == false OU "vantagem_sustentada_no_segmento" == false: PROIBIDO converter qualquer mercado de segmento para essa partida — mova para "mercados_descartados" com motivo "Nexus indica que a vantagem do cenário dominante não se sustenta isoladamente no segmento inicial."
 
 ------------------------------------------------
 
 [2. REGRAS DE CONVERSÃO E NOMENCLATURA (FLOOR BETTING)]
-- Priorize SEMPRE a margem de segurança extrema (piso estatístico / Floor Betting). Prefira linhas conservadoras em relação à linha principal (ex: linhas rebaixadas de pontos, gols ou escanteios).
+- Priorize SEMPRE a margem de segurança extrema (piso estatístico / Floor Betting) em mercados com LINHA NUMÉRICA (Total, Spread, Total F5).
 - NUNCA USE TERMOS GENÉRICOS OU INCOMPLETOS:
-   * PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXATA (ex: "Mais de 2.5 Gols", "Mais de 9.5 Escanteios", "Mais de 214.5 Pontos").
-   * PROIBIDO usar jargões em inglês sem explicação clara se houver equivalente em português (ex: em vez de "Run Line", use "Handicap de Corridas / Vencedor (-1.5 / +1.5)").
+   * PROIBIDO escrever apenas "Over", "Under", "Mais de" ou "Menos de". VOCÊ DEVE ESPECIFICAR A LINHA EXATA.
 - SELEÇÃO E NOME DO MERCADO:
-   * "m" (Mercado): Nome completo e exato do mercado (ex: "Total de Escanteios na Partida", "Handicap Asiático de Gols").
-   * "s" (Seleção): Escolha E a linha numérica exata (ex: "Mais de 9.5 Escanteios", "Flamengo -0.5 Handicap Asiático").
+   * "m" (Mercado): Nome completo e exato do mercado.
+   * "s" (Seleção): Escolha E a linha/opção exata.
 
 ------------------------------------------------
 
 [3. CÁLCULO DO MONEYBALL SCORE (sc) - 0 a 100]
-Quando houver edge real (Gate [1] não bloqueou o mercado), calcule o "sc" ponderando estritamente estes 4 fatores:
-
-- 35% — Força da Divergência/Edge: quanto mais forte e clara a divergência do Nexus (tipo_divergencia != "nenhuma" e intensidade da assimetria associada), maior este componente. Edge com intensidade "baixa" tem este componente limitado (ver regra de edge fraco no Gate [1]).
-- 30% — Margem de Segurança da Linha: linhas conservadoras (piso/Floor Betting, conforme regras de [2]) pontuam alto; linhas esticadas/no limite perdem até 30 pontos neste componente.
-- 25% — Aderência ao Perfil de Jogo (Game Script): o quanto a seleção escolhida está alinhada com a dinâmica tática descrita em "perfil_de_jogo".
-- 10% — Baixa Dependência de Placar/Resultado: mercados de processo puro pontuam mais alto aqui do que mercados fortemente atrelados ao resultado final (ver "dependencia_resultado" e "tipo_de_ativo").
-
-REGRAS DE CORTE DO SCORE (bandas):
-- 80.0 a 100.0 → BANDA VERDE: edge confirmado + linha conservadora.
-- 70.0 a 79.9 → BANDA AMARELA: edge aceitável, mas com alguma fragilidade (linha menos conservadora, edge fraco, ou aderência parcial ao game script).
-- 0.0 a 69.9 → DESCARTADO: sem edge suficiente ou linha sem margem de segurança adequada.
-
-Nunca atribua "sc" acima de 79.9 (Banda Verde) para mercados marcados como edge fraco (intensidade "baixa") ou para qualquer mercado bloqueado pelo Gate [1] — nesses casos o teto já definido no Gate (60.0 ou 74.9, respectivamente) prevalece sobre este cálculo.
-
-------------------------------------------------
-
-[4. PERFIL DE JOGO OBRIGATÓRIO (perfil_de_jogo)]
-Defina em 1 ou 2 frases curtas a dinâmica tática e o roteiro provável do jogo (ex: "Jogo aberto com ataque forte nas pontas e alta pressão defensiva no 1º tempo").
+Pondere: 35% Força da Divergência, 30% Margem de Segurança, 25% Aderência ao Perfil de Jogo, 10% Baixa Dependência de Placar.
+- 80.0 a 100.0 → BANDA VERDE
+- 70.0 a 79.9 → BANDA AMARELA
+- 0.0 a 69.9 → DESCARTADO
 
 ------------------------------------------------
 
 SCHEMA JSON OBRIGATÓRIO (SAÍDA)
 
 {
-  "precificacao_nexus_echo": {
-    "tipo_divergencia": "hype_publico|ancoragem_recente|erro_de_linha|desconhecimento_de_assimetria|nenhuma",
-    "mercado_reflete_cenario": true
-  },
-  "perfil_de_jogo": "Descrição curta e clara do roteiro do confronto (Game Script)...",
+  "perfil_de_jogo": "Descrição curta e clara do roteiro do confronto...",
   "prognostico": "Panorama tático direto...",
-  "resumo": "Resumo focado nas escolhas de processo, volume e margem de segurança...",
+  "resumo": "Resumo focado nas escolhas de processo e segurança...",
   "status_conversao": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "score_bilhete": 78.0,
   "mercado_otimo": {
     "identificado": true,
-    "mercado": "Nome do Mercado Ótimo com Linha Clara",
-    "motivo": "Por que este mercado captura a assimetria com menor ruído..."
+    "mercado": "Nome do Mercado Ótimo com Linha/Opção Clara",
+    "motivo": "Por que este mercado captura a assimetria..."
   },
   "top_assimetrias_convertidas": [
     {
-      "m": "Nome do Mercado (ex: Total de Escanteios)",
-      "s": "Seleção Exata com Linha (ex: Mais de 9.5 Escanteios)",
+      "m": "Nome do Mercado",
+      "s": "Seleção Exata com Linha/Opção",
       "assimetria_capturada": "A vantagem do jogo aproveitada",
       "tipo_de_ativo": "processo|resultado",
       "odds": 1.85,
       "sc": 84.0,
       "forca_encaixe_nexus": 92,
       "dependencia_resultado": "baixa|media|alta",
-      "w": "Explicação direta da escolha baseada no perfil do jogo."
+      "precificacao_nexus_echo": {
+        "tipo_divergencia": "hype_publico|ancoragem_em_resultado_recente|desconhecimento_de_assimetria|nenhuma",
+        "mercado_reflete_esta_assimetria": false,
+        "confianca_do_julgamento": "alta|media|baixa"
+      },
+      "leitura_segmento_echo": {
+        "aplicavel_a_este_mercado": true,
+        "vantagem_sustentada_no_segmento": true,
+        "forca_no_segmento": "alta|media|baixa"
+      },
+      "w": "Explicação direta da escolha."
     }
   ],
   "mercados_descartados": [
     {
       "m": "Nome do Mercado Rejeitado",
-      "s": "Seleção com Linha Exata",
+      "s": "Seleção com Linha/Opção Exata",
       "assimetria_capturada": "Brecha ignorada",
       "tipo_de_ativo": "processo|resultado",
       "sc": 62.0,
       "status": "descartado",
-      "motivo": "Motivo do descarte (ex: risco de empate no 1X2, linha esticada, ruído de placar)."
+      "precificacao_nexus_echo": {
+        "tipo_divergencia": "nenhuma",
+        "mercado_reflete_esta_assimetria": true,
+        "confianca_do_julgamento": "alta"
+      },
+      "motivo": "Motivo do descarte."
     }
   ]
 }`;
 }
+
+// ============================================================
+// PARTE 3B: DIVERGENCE GATE v3
+// ============================================================
+const SCORE_MAXIMO_SEM_EDGE = 60.0;
+const SCORE_MAXIMO_EDGE_FRACO = 74.9;
+
+function semEdgeDetectado(echo) {
+    if (!echo) return true;
+    return (
+        echo.tipo_divergencia === "nenhuma" ||
+        echo.mercado_reflete_esta_assimetria === true
+    );
+}
+
+function edgeFraco(echo) {
+    if (!echo) return true;
+    return echo.confianca_do_julgamento === "baixa";
+}
+
+const MERCADOS_DE_SEGMENTO = [
+    "money line f5", "total de corridas f5", "resultado do intervalo", 
+    "chance dupla no 1º tempo", "1x no 1º tempo", "2x no 1º tempo"
+];
+
+function ehMercadoDeSegmento(nomeMercado) {
+    const nome = (nomeMercado || "").toLowerCase();
+    return MERCADOS_DE_SEGMENTO.some((termo) => nome.includes(termo)) ||
+           nome.includes("f5") || nome.includes("intervalo") || nome.includes("1º tempo");
+}
+
+function segmentoNaoSustentado(item) {
+    if (!ehMercadoDeSegmento(item.m)) return false;
+    const leitura = item.leitura_segmento_echo;
+    if (!leitura) return true;
+    if (leitura.aplicavel_a_este_mercado === false) return true;
+    if (leitura.vantagem_sustentada_no_segmento === false) return true;
+    return false;
+}
+
+function avaliarItem(item) {
+    const echo = item.precificacao_nexus_echo;
+    const semEdge = semEdgeDetectado(echo);
+    const fraco = edgeFraco(echo);
+    const segmentoBloqueado = segmentoNaoSustentado(item);
+
+    if (semEdge) {
+        return {
+            manter: false,
+            motivo: "Gate de código: precificacao_nexus_echo indica tipo_divergencia 'nenhuma' (ou mercado_reflete_esta_assimetria=true) — sem edge nesta assimetria.",
+            tetoScore: SCORE_MAXIMO_SEM_EDGE,
+        };
+    }
+
+    if (segmentoBloqueado) {
+        return {
+            manter: false,
+            motivo: "Gate de código: leitura_segmento_echo indica que a vantagem do cenário dominante não se sustenta isoladamente no segmento inicial.",
+            tetoScore: SCORE_MAXIMO_SEM_EDGE,
+        };
+    }
+
+    if (fraco) {
+        return {
+            manter: true,
+            motivo: null,
+            tetoScore: SCORE_MAXIMO_EDGE_FRACO,
+        };
+    }
+
+    return { manter: true, motivo: null, tetoScore: null };
+}
+
+function aplicarTetoScore(item, teto) {
+    if (typeof item.sc === "number" && item.sc > teto) {
+        item.sc = teto;
+    }
+    return item;
+}
+
+function aplicarDivergenceGate(respostaBetBuilder) {
+    const resultado = structuredClone(respostaBetBuilder);
+
+    if (resultado.mercado_otimo?.identificado) {
+        const avaliacao = avaliarItem(resultado.mercado_otimo);
+        if (!avaliacao.manter) {
+            resultado.mercado_otimo.identificado = false;
+            resultado.mercado_otimo.motivo = avaliacao.motivo;
+        }
+    }
+
+    const convertidas = Array.isArray(resultado.top_assimetrias_convertidas) ? resultado.top_assimetrias_convertidas : [];
+    const mantidas = [];
+    const rebaixadas = [];
+
+    for (const item of convertidas) {
+        const avaliacao = avaliarItem(item);
+
+        if (!avaliacao.manter) {
+            rebaixadas.push({
+                m: item.m,
+                s: item.s,
+                assimetria_capturada: item.assimetria_capturada,
+                tipo_de_ativo: item.tipo_de_ativo,
+                sc: Math.min(item.sc ?? 0, avaliacao.tetoScore),
+                status: "descartado",
+                precificacao_nexus_echo: item.precificacao_nexus_echo,
+                leitura_segmento_echo: item.leitura_segmento_echo,
+                motivo: avaliacao.motivo,
+            });
+            continue;
+        }
+
+        if (avaliacao.tetoScore !== null) {
+            aplicarTetoScore(item, avaliacao.tetoScore);
+        }
+        mantidas.push(item);
+    }
+
+    resultado.top_assimetrias_convertidas = mantidas;
+    resultado.mercados_descartados = [
+        ...(Array.isArray(resultado.mercados_descartados) ? resultado.mercados_descartados : []),
+        ...rebaixadas,
+    ];
+
+    const semNadaConvertido = resultado.top_assimetrias_convertidas.length === 0 && !resultado.mercado_otimo?.identificado;
+
+    if (semNadaConvertido) {
+        resultado.status_conversao = "sem_conversao";
+        resultado.motivo_sem_conversao = resultado.motivo_sem_conversao || "Nenhuma assimetria com edge real foi confirmada pelo Gate de código.";
+        resultado.score_bilhete = Math.min(resultado.score_bilhete ?? 0, SCORE_MAXIMO_SEM_EDGE);
+    }
+
+    return resultado;
+}
+
 // ============================================================
 // PARTE 4: CHAMADA DA API GROQ
 // ============================================================
@@ -246,7 +420,7 @@ async function analisarComGroq() {
         return;
     }
     if (!raw) {
-        display.innerHTML = alertaErro("Cole o JSON do Nexus v2.1 antes de analisar.");
+        display.innerHTML = alertaErro("Cole o JSON do Nexus v2.2 antes de analisar.");
         jsonInput.focus();
         return;
     }
@@ -301,8 +475,8 @@ async function analisarComGroq() {
         const cleanJson = content.replace(/```json\n?|```/g, "").trim();
         const parsedResult = JSON.parse(cleanJson);
 
-        renderizarPainel(parsedResult);
-        jsonInput.value = ""; 
+        const resultadoValidado = aplicarDivergenceGate(parsedResult);
+        renderizarPainel(resultadoValidado);
 
     } catch (error) {
         console.error("Erro na análise:", error);
@@ -318,11 +492,9 @@ function alertaErro(msg) {
     return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl">⚠️ ${msg}</div>`;
 }
 
-
 // ============================================================
 // PARTE 5: COMPONENTES DE RENDERIZAÇÃO
 // ============================================================
-
 function cardMercadoOtimo(mercadoOtimo) {
     if (!mercadoOtimo || !mercadoOtimo.identificado) return '';
 
@@ -373,7 +545,6 @@ function cardAssimetriaConvertida(item) {
                 </div>
             </div>
 
-            <!-- SELEÇÃO EM DESTAQUE COM LINHA DEFINIDA -->
             <div class="bg-accent/10 border border-accent/30 rounded-lg p-2.5 flex items-center justify-between">
                 <span class="text-accent font-extrabold text-base">${selecao}</span>
                 <span class="text-xs text-slate-300">${oddsVal}</span>
@@ -409,9 +580,8 @@ function cardMercadoDescartado(item) {
         </div>`;
 }
 
-
 // ============================================================
-// PARTE 6: RENDERIZAÇÃO DO PAINEL PRINCIPAL
+// PARTE 6: RENDERIZAÇÃO DO PAINEL PRINCIPAL (COMPLETA E CORRIGIDA)
 // ============================================================
 function renderizarPainel(data) {
     const display = document.getElementById("display-area");
@@ -438,7 +608,7 @@ function renderizarPainel(data) {
                     <i class="fa-solid fa-shield-halved text-lg"></i> JOGO SEM APOSTAS RECOMENDADAS
                 </div>
                 ${perfilJogo ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
-                <p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>
+                ${prognostico ? `<p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>` : ""}
                 <div class="p-4 bg-amber-950/20 border border-amber-900/40 rounded-xl text-xs text-amber-200">
                     <strong>Motivo:</strong> ${motivoSemConversao || "Nenhum mercado apresentou segurança suficiente para entrada neste confronto."}
                 </div>
@@ -449,77 +619,46 @@ function renderizarPainel(data) {
 
     const painelResumoHtml = `
         <div class="p-4 bg-gradient-to-br from-accent/15 to-accent/5 border border-accent/30 rounded-xl space-y-3">
-            <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-accent">
-                <span><i class="fa-solid fa-compass mr-1"></i> Visão Geral & Perfil do Jogo</span>
-                ${scoreBilhete !== null ? `<span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono">Score Médio: ${scoreBilhete}</span>` : ""}
+            <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">
+                    <i class="fa-solid fa-chart-line mr-1"></i> Resumo Tático & Moneyball
+                </span>
+                ${scoreBilhete !== null ? `<span class="text-xs font-black px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30">Score Geral: ${scoreBilhete}</span>` : ""}
             </div>
-            
-            ${perfilJogo ? `
-                <div class="p-3 bg-base-bg/80 rounded-lg border border-accent/20 text-xs text-slate-200">
-                    <span class="text-accent font-bold uppercase text-[10px] tracking-widest block mb-1"><i class="fa-solid fa-gamepad mr-1"></i> Perfil do Jogo (Game Script):</span>
-                    ${perfilJogo}
-                </div>
-            ` : ""}
-
-            ${prognostico ? `<p class="text-xs text-slate-200 leading-relaxed">${prognostico}</p>` : ""}
-            ${resumo ? `<div class="text-xs text-slate-300 border-t border-accent/20 pt-2 leading-relaxed"><strong class="text-accent uppercase text-[10px] tracking-wider block mb-0.5">Resumo Executivo:</strong> ${resumo}</div>` : ""}
+            ${perfilJogo ? `<div class="p-2.5 bg-base-bg/60 rounded-lg border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
+            ${prognostico ? `<p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>` : ""}
+            ${resumo ? `<p class="text-xs text-slate-400 leading-relaxed border-t border-base-border/50 pt-2">${resumo}</p>` : ""}
         </div>
     `;
 
-    display.innerHTML = `
-        <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4 animate-in fade-in duration-300">
-            <div class="flex items-center gap-2">
-                <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">2</span>
-                <h2 class="text-sm font-semibold text-slate-300">Oportunidades Selecionadas</h2>
-            </div>
+    const htmlConvertidas = convertidas.map(cardAssimetriaConvertida).join("");
+    const htmlDescartadas = descartados.map(cardMercadoDescartado).join("");
 
+    display.innerHTML = `
+        <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-6">
             ${painelResumoHtml}
             ${cardMercadoOtimo(mercadoOtimo)}
 
-            <div class="space-y-3 pt-2">
-                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Apostas Recomendadas</h3>
-                ${convertidas.length === 0
-                    ? `<p class="text-xs text-slate-500 text-center py-4">Nenhuma oportunidade atendeu aos critérios mínimos de segurança.</p>`
-                    : convertidas.map(item => cardAssimetriaConvertida(item)).join("")
-                }
-            </div>
-
-            ${descartados.length > 0 ? `
-                <details class="pt-2 border-t border-base-border">
-                    <summary class="cursor-pointer text-xs font-semibold text-slate-400">Ver apostas descartadas (${descartados.length} rejeições)</summary>
-                    <div class="space-y-2 mt-3">
-                        ${descartados.map(item => cardMercadoDescartado(item)).join("")}
-                    </div>
-                </details>
+            ${convertidas.length > 0 ? `
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Oportunidades Convertidas (${convertidas.length})
+                    </h3>
+                    <div class="space-y-3">${htmlConvertidas}</div>
+                </div>
             ` : ""}
 
-            <p class="text-[10px] text-slate-600 pt-2 border-t border-base-border">Modelagem focada em estatísticas de volume de jogo e redução de risco de placar.</p>
+            ${descartados.length > 0 ? `
+                <details class="group pt-2">
+                    <summary class="cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-400 transition-colors flex items-center gap-2">
+                        <i class="fa-solid fa-circle-xmark text-red-400"></i> Mercados Descartados (${descartados.length})
+                        <i class="fa-solid fa-chevron-down text-[10px] ml-auto transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <div class="space-y-2 mt-3">${htmlDescartadas}</div>
+                </details>
+            ` : ""}
         </div>
     `;
-}
-
-
-// ============================================================
-// PARTE 7: INICIALIZAÇÃO SEGURA
-// ============================================================
-function initApp() {
-    buildSportTabs();
-
-    const groqInput = document.getElementById("groq-key");
-    const savedKey = localStorage.getItem("moneyball_groq_key");
-    if (savedKey && groqInput) groqInput.value = savedKey;
-
-    if (groqInput) {
-        groqInput.addEventListener("input", (e) => {
-            localStorage.setItem("moneyball_groq_key", e.target.value.trim());
-        });
-    }
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initApp);
-} else {
-    initApp();
 }
 </script>
 </body>
