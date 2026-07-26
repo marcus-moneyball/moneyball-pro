@@ -27,7 +27,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v17.0 — Inteligência Esportiva
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v19.0 — Inteligência Esportiva
             </div>
             <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Pro</h1>
             <p class="text-xs text-slate-500">Análise e Leitura esportiva de alto valor.</p>
@@ -52,9 +52,9 @@
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3">
             <div class="flex items-center gap-2">
                 <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.2</label>
+                <label class="text-sm font-semibold text-slate-300">Cole o JSON do Nexus v2.4</label>
             </div>
-            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.2 aqui...'></textarea>
+            <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o JSON investigativo do Nexus v2.4 aqui...'></textarea>
             <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <i class="fa-solid fa-bolt"></i> Analisar Oportunidades via Groq
             </button>
@@ -232,99 +232,10 @@ Sua resposta DEVE ser EXCLUSIVAMENTE o objeto JSON válido abaixo. Sem Markdown 
     }
   ]
 }`;
-}// ============================================================
-// PARTE 3: SYSTEM PROMPT V19.0 (Nexus Pure Inference Engine)
-// ============================================================
-function montarSystemPrompt(esporte) {
-  return `Você é o Nexus Bet Builder Engine v19.0 (Pipeline de Conversão e Governança) para: ${esporte.toUpperCase()}.
-
-SUA MISSÃO:
-Sua função é converter as assimetrias investigadas pelo Nexus em mercados de alto Valor Esperado (EV+), aplicando governança de risco, checagem de conflito, controle de saturação e auditoria de conversão.
-
-------------------------------------------------
-
-[1. REGRAS DE CONFLITO, SATURAÇÃO E PERSISTÊNCIA]
-- CONFLITO DE TESES: Se o Dossiê Nexus trouxer assimetrias que se anulam semanticamente (ex: alto volume x baixo ritmo), priorize a assimetria de maior 'criticidade' (alta > media > baixa) e anule a secundária, movendo-a para 'mercados_descartados'.
-- SATURAÇÃO DE RISCO: É ESTRITAMENTE PROIBIDO selecionar mais de 2 mercados derivados da MESMA assimetria principal. Diversifique os slots ou limite as entradas para evitar super-correlação.
-- PERSISTÊNCIA TEMPORAL:
-  * Assimetria com persistência "baixa" ou "sprint" DEVE ser convertida exclusivamente no Slot Segmento (1º Tempo / F5). Proibido aplicar no jogo completo.
-  * Assimetria com persistência "alta" pode ser convertida no jogo todo.
-
-------------------------------------------------
-
-[2. MATRIZ DE ROTEAMENTO E GRAU DE CONVERSÃO]
-Ao avaliar um mercado para uma assimetria, determine o 'grau_de_conversao' (0% a 100%):
-- 90% - 100%: Captura perfeita da física da assimetria com margem de segurança (piso estatístico).
-- 70% - 89%: Captura boa, mas com exposição leve a ruído.
-- < 70%: Captura ineficiente (mover para 'mercados_considerados' como rejeitado ou descartado).
-
-------------------------------------------------
-
-[3. AUDITORIA E DESCARTE DIDÁTICO]
-- Para cada mercado convertido, liste em 'mercados_considerados' os veículos alternativos que foram avaliados e o motivo de terem sido preteridos.
-- Mapeie no array 'mercados_descartados' de 2 a 4 mercados populares rejeitados, explicando pedagogicamente a falha de tese, a falta de edge ou o conflito tático.
-
-------------------------------------------------
-
-[4. FORMATO DE SAÍDA - RIGOR ABSOLUTO]
-Sua resposta DEVE ser EXCLUSIVAMENTE o objeto JSON válido abaixo. Sem Markdown (\`\`\`json), sem textos prévios ou posteriores.
-
-{
-  "perfil_de_jogo": "Síntese da física do confronto...",
-  "prognostico": "Panorama de conversão...",
-  "resumo": "Justificativa tática focada na governança de risco...",
-  "status_conversao": "convertido|sem_conversao",
-  "motivo_sem_conversao": null,
-  "qualidade_portfolio": {
-    "melhor_mercado": 88.0,
-    "media": 82.5,
-    "convergencia_nexus": 91.0
-  },
-  "mercado_principal": {
-    "identificado": true,
-    "mercado": "Nome e Linha do Mercado Espinha-Dorsal",
-    "motivo": "Por que esta é a principal entrada do confronto..."
-  },
-  "top_assimetrias_convertidas": [
-    {
-      "m": "Nome do Mercado",
-      "s": "Seleção Exata",
-      "assimetria_origem": "Descrição da assimetria base do Nexus",
-      "criticidade_assimetria": "alta|media|baixa",
-      "tipo_de_ativo": "processo|resultado",
-      "odds": 1.80,
-      "sc": 86.0,
-      "grau_de_conversao": "95%",
-      "dependencia_resultado": "baixa|media|alta",
-      "motivo_conversao": "Explicação técnica da conversão...",
-      "mercados_considerados": [
-        {
-          "veiculo": "Money Line Seco",
-          "status": "rejeitado",
-          "motivo": "Exposição excessiva a ruído do placar. O Handicap +0.25 possui grau de conversão superior (95% vs 60%)."
-        }
-      ],
-      "precificacao_nexus_echo": {
-        "tipo_divergencia": "ancoragem_em_resultado_recente",
-        "mercado_reflete_esta_assimetria": false,
-        "confianca_do_julgamento": "alta"
-      },
-      "w": "Detalhamento da execução."
-    }
-  ],
-  "mercados_descartados": [
-    {
-      "m": "Nome do Mercado Descartado",
-      "s": "Seleção Descartada",
-      "motivo_descarte": "Anulado por conflito tático / Saturação de risco / Ruído de mercado",
-      "sc": 65.0,
-      "motivo": "Explicação pedagógica transparente do porquê o mercado foi rejeitado..."
-    }
-  ]
-}`;
 }
+
 // ============================================================
-// PARTE 3B: DIVERGENCE GATE v3.1 (Ajustado para Nexus v2.4 / Engine v18.0)
+// PARTE 3B: DIVERGENCE GATE v3.1 (Ajustado para Nexus v2.4 / Engine v19.0)
 // ============================================================
 const SCORE_MAXIMO_SEM_EDGE = 60.0;
 const SCORE_MAXIMO_EDGE_FRACO = 74.9;
@@ -356,11 +267,10 @@ function ehMercadoDeSegmento(nomeMercado) {
 function segmentoNaoSustentado(item) {
     if (!ehMercadoDeSegmento(item.m)) return false;
     
-    // [NOVO v2.4] Se o escopo for restrito ao 2º tempo, descarte mercado de segmento inicial
     if (item.escopo_temporal === "segundo_tempo") return true;
 
     const leitura = item.leitura_segmento_echo;
-    if (!leitura) return true;
+    if (!leitura) return false; // Se a propriedade for omitida pelo modelo, segue o fluxo
     if (leitura.aplicavel_a_este_mercado === false) return true;
     if (leitura.vantagem_sustentada_no_segmento === false) return true;
     return false;
@@ -420,7 +330,7 @@ function aplicarDivergenceGate(respostaBetBuilder) {
             rebaixadas.push({
                 m: item.m,
                 s: item.s,
-                assimetria_capturada: item.assimetria_capturada,
+                assimetria_origem: item.assimetria_origem || item.assimetria_capturada,
                 tipo_de_ativo: item.tipo_de_ativo,
                 sc: Math.min(item.sc ?? 0, avaliacao.tetoScore),
                 status: "descartado",
@@ -443,15 +353,13 @@ function aplicarDivergenceGate(respostaBetBuilder) {
         ...rebaixadas,
     ];
 
-    // Trava de consistência para o Mercado Ótimo
-    if (resultado.mercado_otimo?.identificado && mantidas.length === 0) {
-        resultado.mercado_otimo.identificado = false;
-        resultado.mercado_otimo.motivo = "Gate de código: Nenhuma assimetria convertida foi aprovada no Gate de Divergência.";
+    if (resultado.mercado_principal?.identificado && mantidas.length === 0) {
+        resultado.mercado_principal.identificado = false;
+        resultado.mercado_principal.motivo = "Gate de código: Nenhuma assimetria convertida foi aprovada no Gate de Divergência.";
     }
 
-    const semNadaConvertido = resultado.top_assimetrias_convertidas.length === 0 && !resultado.mercado_otimo?.identificado;
+    const semNadaConvertido = resultado.top_assimetrias_convertidas.length === 0 && !resultado.mercado_principal?.identificado;
 
-    // [NOVO v18.0] Atualização da pontuação via objeto 'qualidade_portfolio'
     if (semNadaConvertido) {
         resultado.status_conversao = "sem_conversao";
         resultado.motivo_sem_conversao = resultado.motivo_sem_conversao || "Nenhuma assimetria com edge real foi confirmada pelo Gate de código.";
@@ -485,7 +393,7 @@ async function analisarComGroq() {
         return;
     }
     if (!raw) {
-        display.innerHTML = alertaErro("Cole o JSON do Nexus v2.2 antes de analisar.");
+        display.innerHTML = alertaErro("Cole o JSON do Nexus v2.4 antes de analisar.");
         jsonInput.focus();
         return;
     }
@@ -560,18 +468,18 @@ function alertaErro(msg) {
 // ============================================================
 // PARTE 5: COMPONENTES DE RENDERIZAÇÃO
 // ============================================================
-function cardMercadoOtimo(mercadoOtimo) {
-    if (!mercadoOtimo || !mercadoOtimo.identificado) return '';
+function cardMercadoPrincipal(mercadoPrincipal) {
+    if (!mercadoPrincipal || !mercadoPrincipal.identificado) return '';
 
     return `
         <div class="p-4 bg-gradient-to-r from-emerald-950/40 via-base-card to-base-card border border-emerald-500/40 rounded-xl space-y-2">
             <div class="flex items-center justify-between">
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 uppercase tracking-wider">
-                    <i class="fa-solid fa-star mr-1"></i> Mercado Ótimo Identificado
+                    <i class="fa-solid fa-star mr-1"></i> Mercado Espinha-Dorsal
                 </span>
             </div>
-            <h3 class="font-extrabold text-white text-base text-emerald-400">${mercadoOtimo.mercado || "Mercado não especificado"}</h3>
-            <p class="text-xs text-slate-300 leading-relaxed">${mercadoOtimo.motivo || ""}</p>
+            <h3 class="font-extrabold text-white text-base text-emerald-400">${mercadoPrincipal.mercado || "Mercado não especificado"}</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">${mercadoPrincipal.motivo || ""}</p>
         </div>
     `;
 }
@@ -582,15 +490,15 @@ function cardAssimetriaConvertida(item) {
     const sc = item.sc ?? '-';
     const mercado = item.m || "Mercado";
     const selecao = item.s || "Seleção";
-    const brecha = item.assimetria_capturada || "Não especificada";
+    const assimetria = item.assimetria_origem || "Não especificada";
     
     const tipoAtivoOriginal = item.tipo_de_ativo || "processo";
-    const tipoAtivoFormatado = tipoAtivoOriginal === "processo" ? "Volume de Jogo" : "Placar / Vencedor";
+    const tipoAtivoFormatado = tipoAtivoOriginal === "processo" ? "Volume / Processo" : "Placar / Resultado";
     
     const oddsVal = item.odds ? `Odd: <span class="text-white font-mono font-bold">${item.odds}</span>` : "";
-    const encaixe = item.forca_encaixe_nexus ? `${item.forca_encaixe_nexus}%` : "-";
+    const grauConversao = item.grau_de_conversao || "-";
     const depResultado = item.dependencia_resultado || "baixa";
-    const explicacao = item.w || "";
+    const explicacao = item.motivo_conversao || item.w || "";
 
     const depStyle = {
         baixa: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -603,7 +511,7 @@ function cardAssimetriaConvertida(item) {
             <div class="flex justify-between items-start gap-2">
                 <div>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">${tipoAtivoFormatado}</span>
-                    <h4 class="font-bold text-slate-300 text-xs mt-1">${mercado}</h4>
+                    <h4 class="font-bold text-slate-200 text-sm mt-1">${mercado}</h4>
                 </div>
                 <div class="text-right shrink-0">
                     <span class="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Score: ${sc}</span>
@@ -616,9 +524,9 @@ function cardAssimetriaConvertida(item) {
             </div>
 
             <div class="p-2.5 bg-base-bg rounded-lg border border-base-border text-xs space-y-1.5">
-                <div class="text-slate-400"><strong class="text-slate-300">Vantagem do Jogo:</strong> ${brecha}</div>
+                <div class="text-slate-400"><strong class="text-slate-300">Assimetria Origem:</strong> ${assimetria}</div>
                 <div class="flex flex-wrap gap-2 pt-1 text-[10px]">
-                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-bullseye text-accent mr-1"></i>Aderência ao Cenário: ${encaixe}</span>
+                    <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700"><i class="fa-solid fa-bullseye text-accent mr-1"></i>Conversão: ${grauConversao}</span>
                     <span class="px-2 py-0.5 rounded border ${depStyle} uppercase font-bold">Risco de Placar: ${depResultado}</span>
                 </div>
             </div>
@@ -632,7 +540,7 @@ function cardMercadoDescartado(item) {
 
     const mercado = item.m || "Mercado";
     const selecao = item.s || "Seleção";
-    const motivo = item.motivo || "Não especificado";
+    const motivo = item.motivo || item.motivo_descarte || "Não especificado";
     const sc = item.sc ?? '-';
 
     return `
@@ -646,7 +554,7 @@ function cardMercadoDescartado(item) {
 }
 
 // ============================================================
-// PARTE 6: RENDERIZAÇÃO DO PAINEL PRINCIPAL (COMPLETA E CORRIGIDA)
+// PARTE 6: RENDERIZAÇÃO DO PAINEL PRINCIPAL
 // ============================================================
 function renderizarPainel(data) {
     const display = document.getElementById("display-area");
@@ -657,8 +565,8 @@ function renderizarPainel(data) {
     const perfilJogo = data.perfil_de_jogo || "";
     const prognostico = data.prognostico || "";
     const resumo = data.resumo || "";
-    const scoreBilhete = data.score_bilhete ?? null;
-    const mercadoOtimo = data.mercado_otimo || null;
+    const qualidade = data.qualidade_portfolio || {};
+    const mercadoPrincipal = data.mercado_principal || null;
 
     let convertidas = data.top_assimetrias_convertidas || [];
     if (!Array.isArray(convertidas)) convertidas = [convertidas];
@@ -688,39 +596,39 @@ function renderizarPainel(data) {
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">
                     <i class="fa-solid fa-chart-line mr-1"></i> Resumo Tático & Moneyball
                 </span>
-                ${scoreBilhete !== null ? `<span class="text-xs font-black px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30">Score Geral: ${scoreBilhete}</span>` : ""}
+                ${qualidade.melhor_mercado ? `<span class="text-xs font-black px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30">Top Score: ${qualidade.melhor_mercado}</span>` : ""}
             </div>
             ${perfilJogo ? `<div class="p-2.5 bg-base-bg/60 rounded-lg border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
             ${prognostico ? `<p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>` : ""}
-            ${resumo ? `<p class="text-xs text-slate-400 leading-relaxed border-t border-base-border/50 pt-2">${resumo}</p>` : ""}
+            ${resumo ? `<p class="text-xs text-slate-400 leading-relaxed italic border-t border-accent/20 pt-2">${resumo}</p>` : ""}
         </div>
     `;
-
-    const htmlConvertidas = convertidas.map(cardAssimetriaConvertida).join("");
-    const htmlDescartadas = descartados.map(cardMercadoDescartado).join("");
 
     display.innerHTML = `
         <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-6">
             ${painelResumoHtml}
-            ${cardMercadoOtimo(mercadoOtimo)}
+            ${cardMercadoPrincipal(mercadoPrincipal)}
 
             ${convertidas.length > 0 ? `
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Oportunidades Convertidas (${convertidas.length})
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Assimetrias Convertidas (${convertidas.length})
                     </h3>
-                    <div class="space-y-3">${htmlConvertidas}</div>
+                    <div class="space-y-3">
+                        ${convertidas.map(cardAssimetriaConvertida).join("")}
+                    </div>
                 </div>
             ` : ""}
 
             ${descartados.length > 0 ? `
-                <details class="group pt-2">
-                    <summary class="cursor-pointer text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-400 transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-circle-xmark text-red-400"></i> Mercados Descartados (${descartados.length})
-                        <i class="fa-solid fa-chevron-down text-[10px] ml-auto transition-transform group-open:rotate-180"></i>
-                    </summary>
-                    <div class="space-y-2 mt-3">${htmlDescartadas}</div>
-                </details>
+                <div class="space-y-3 pt-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                        <i class="fa-solid fa-ban text-red-400"></i> Filtro de Descarte / Ruído (${descartados.length})
+                    </h3>
+                    <div class="space-y-2">
+                        ${descartados.map(cardMercadoDescartado).join("")}
+                    </div>
+                </div>
             ` : ""}
         </div>
     `;
