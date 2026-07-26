@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Bet Builder v2.2 | Catálogo de Veículos</title>
+    <title>Moneyball Bet Builder v22.0 | Catálogo de Veículos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -232,4 +232,169 @@ async function analisarComGroq() {
 
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || "";
-        const parsed = JSON.parse(content.replace(/```json\n?|
+        const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
+
+        if (inputContainer) inputContainer.classList.add("hidden");
+        renderizarPainelPortfolio(parsed);
+
+    } catch (error) {
+        console.error(error);
+        display.innerHTML = `<div class="p-4 bg-red-950/40 border border-red-900 text-red-300 text-sm rounded-xl">⚠️ Falha na tradução: ${error.message}</div>`;
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Extrair Catálogo de Veículos`;
+    }
+}
+window.analisarComGroq = analisarComGroq;
+
+function renderizarPainelPortfolio(data) {
+    const display = document.getElementById("display-area");
+    if (!display) return;
+
+    const grupos = data.grupos_de_assimetria || [];
+    const descartados = data.veiculos_descartados || [];
+    const destaque = data.veiculo_destaque || null;
+
+    const getCriticidadeBadge = (crit) => {
+        const c = (crit || 'media').toLowerCase();
+        if (c === 'alta') return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-red-500/20 text-red-400 border border-red-500/30"><i class="fa-solid fa-fire mr-1"></i>Criticidade Alta</span>`;
+        if (c === 'media') return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-gauge-high mr-1"></i>Criticidade Média</span>`;
+        return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Criticidade Baixa</span>`;
+    };
+
+    const getConfiancaBadge = (conf) => {
+        const c = (conf || 'alta').toLowerCase();
+        if (c === 'alta') return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Confiança de Conversão">Alta</span>`;
+        if (c === 'media') return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Confiança de Conversão">Média</span>`;
+        return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20" title="Confiança de Conversão">Baixa</span>`;
+    };
+
+    const getPerfilStyle = (perfil) => {
+        const p = (perfil || 'principal').toLowerCase();
+        if (p === 'principal') return 'bg-accent/20 text-accent border border-accent/30';
+        if (p === 'alternativo') return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+        if (p === 'protecao') return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        if (p === 'valor') return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        if (p === 'piso') return 'bg-slate-700/50 text-slate-300 border border-slate-600';
+        return 'bg-slate-800 text-slate-400 border border-slate-700';
+    };
+
+    let htmlGrupos = grupos.map((g) => {
+        const veiculos = (g.catalogo_de_veiculos || []);
+
+        const htmlVeiculos = veiculos.map(v => `
+            <div class="p-3.5 bg-base-card rounded-xl border border-accent/20 space-y-2.5 hover:border-accent/50 transition-all relative">
+                <div class="flex justify-between items-start gap-2">
+                    <div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${getPerfilStyle(v.perfil_veiculo)}">${v.perfil_veiculo || 'Veículo'}</span>
+                            <span class="text-[9px] font-semibold px-2 py-0.5 rounded ${v.grau_dependencia === 'correlacionado' ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'} uppercase" title="Grau de Dependência">
+                                ${v.grau_dependencia || 'independente'}
+                            </span>
+                            ${getConfiancaBadge(v.confianca_da_conversao)}
+                        </div>
+                        <h5 class="font-bold text-slate-100 text-xs mt-1.5">${v.tipo_veiculo}</h5>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span class="text-xs font-black px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 inline-block">
+                            <i class="fa-solid fa-chart-line mr-1 text-[10px]"></i>Score: ${v.moneyball_score ?? '-'}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center bg-base-bg p-2 rounded-lg border border-base-border text-xs">
+                    <span class="text-accent font-black">${v.selecao}</span>
+                    ${v.odd ? `<span class="text-slate-400 text-[11px]">Odd: <b class="text-white">${v.odd}</b></span>` : '<span class="text-slate-600 text-[10px]">Odd não informada</span>'}
+                </div>
+
+                ${v.porque_este_veiculo ? `<p class="text-[11px] text-slate-400 leading-relaxed"><i class="fa-solid fa-bullseye text-accent/50 mr-1"></i>${v.porque_este_veiculo}</p>` : ''}
+
+                ${(v.assimetrias_relacionadas && v.assimetrias_relacionadas.length > 1) ? `
+                    <div class="text-[10px] text-slate-500 pt-1 flex items-center gap-1 border-t border-base-border/50">
+                        <i class="fa-solid fa-link text-accent"></i> Captura simultânea: <b class="text-slate-300 font-mono">${v.assimetrias_relacionadas.join(", ")}</b>
+                    </div>
+                ` : ''}
+            </div>
+        `).join("");
+
+        return `
+            <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-4">
+                <div class="border-b border-base-border pb-3 flex justify-between items-start gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono text-xs font-black">${g.id_assimetria || 'A'}</span>
+                            <h4 class="font-bold text-white text-sm">${g.titulo_original_nexus}</h4>
+                            ${g.natureza ? `<span class="text-[9px] font-mono text-slate-400 bg-base-bg px-2 py-0.5 rounded border border-base-border">${g.natureza}</span>` : ''}
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">${g.descricao_nexus}</p>
+                    </div>
+                    <div class="shrink-0">${getCriticidadeBadge(g.criticidade)}</div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${htmlVeiculos}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    display.innerHTML = `
+        <div class="space-y-6">
+            <!-- BARRA DE TOPO & VEÍCULO DESTAQUE -->
+            <div class="p-5 bg-gradient-to-r from-accent/20 via-base-panel to-base-panel border border-accent/30 rounded-2xl space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold tracking-widest text-accent uppercase"><i class="fa-solid fa-car-side mr-1"></i> Catálogo de Veículos (Cortex-Ready)</span>
+                        <h3 class="font-extrabold text-white text-base mt-1">${data.perfil_de_jogo || "Catálogo de conversão extraído."}</h3>
+                    </div>
+                    <button type="button" onclick="reexibirInput()" class="px-3 py-1.5 bg-base-card hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-base-border transition-all cursor-pointer">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Nova Extração
+                    </button>
+                </div>
+
+                ${destaque ? `
+                    <div class="mt-2 p-3.5 bg-base-bg/90 border border-emerald-500/40 rounded-xl space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-xs font-black">${destaque.id_assimetria_origem || 'A1'}</span>
+                                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-trophy mr-1"></i> Veículo Alpha — Dominância por Score</span>
+                            </div>
+                            <span class="text-xs font-black px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                Score: ${destaque.moneyball_score}
+                            </span>
+                        </div>
+                        <div class="text-xs">
+                            <span class="text-slate-400">${destaque.titulo_assimetria_origem || 'Assimetria Dominante'} ➔ </span>
+                            <b class="text-white">${destaque.tipo_veiculo}</b> (<span class="text-accent font-bold">${destaque.selecao}</span>)
+                        </div>
+                        ${destaque.justificativa_destaque ? `<p class="text-[11px] text-slate-400/90">${destaque.justificativa_destaque}</p>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+
+            <!-- GRUPOS DE ASSIMETRIA -->
+            ${htmlGrupos}
+
+            <!-- DESCARTES PADRONIZADOS -->
+            ${descartados.length > 0 ? `
+                <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-3 opacity-80">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-shield-halved text-amber-400 mr-1.5"></i> Filtro de Redundância & Descartes</h4>
+                    <div class="space-y-2">
+                        ${descartados.map(d => `
+                            <div class="p-2.5 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border flex justify-between items-start gap-2">
+                                <div>
+                                    <b class="text-slate-300">${d.tipo_veiculo} (${d.selecao}):</b> ${d.motivo}
+                                </div>
+                                <span class="text-[9px] font-mono text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase whitespace-nowrap shrink-0">
+                                    ${(d.categoria_descarte || 'descartado').replace('_', ' ')}
+                                </span>
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            ` : ""}
+        </div>
+    `;
+}
+</script>
+</body>
+</html>
