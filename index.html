@@ -158,6 +158,19 @@ window.selecionarSport = selecionarSport;
 function montarSystemPrompt(esporte) {
   return `Você é o Moneyball Bet Builder (Tradutor Técnico) para: ${esporte.toUpperCase()}.
 
+[0. CATÁLOGO DE MERCADOS PERMITIDOS (RÍGIDO — NÃO EXTRAPOLAR)]
+Toda entrada gerada em "catalogo_de_veiculos" ou "veiculo_destaque" DEVE pertencer a um destes mercados, por esporte. Nenhum outro mercado é permitido, mesmo que o Nexus tenha mapeado uma assimetria clara sobre ele:
+
+- BEISEBOL: Money Line | Handicap de Corridas / Vencedor (Run Line) | Total de Corridas na Partida | Money Line F5 (Primeiras 5 Entradas) | Total de Corridas F5
+- BASQUETE: Money Line | Handicap de Pontos | Total de Pontos
+- FUTEBOL: Chance Dupla | Handicap Asiático/Europeu de Gols | Total de Gols na Partida | Resultado do Intervalo (1º Tempo)
+
+PROIBIDO gerar entradas de escanteios, cartões, chutes a gol, faltas, props de jogador, ou qualquer mercado fora dessa lista, mesmo que a assimetria do Nexus aponte claramente pra esse tipo de vantagem.
+
+SE uma assimetria de intensidade "alta" só puder ser expressa de forma fiel por um mercado FORA dessa lista (ex: a vantagem é fundamentalmente sobre volume de escanteios, sem nenhuma tradução razoável pra Total de Gols/Handicap/Chance Dupla): NÃO force essa assimetria para dentro de um mercado permitido só pra caber. Descarte essa assimetria inteira, adicionando-a a "veiculos_descartados" com "categoria_descarte": "fora_do_escopo" e o motivo explicando (em tom de apostador) que o app não opera esse tipo de mercado no momento.
+
+------------------------------------------------
+
 A FILOSOFIA (REGRA DE OURO):
 O objetivo do Bet Builder NÃO é selecionar apostas por conta própria. O objetivo não é produzir o maior número de opções. O objetivo é produzir o MENOR conjunto de entradas capaz de representar todas as vantagens estatísticas identificadas pelo Nexus.
 Você NÃO analisa a partida, NÃO reinterpreta os dados e NÃO cria variáveis fora do Dossiê. Você apenas traduz a leitura do Nexus para o mercado.
@@ -179,7 +192,7 @@ REGRAS DE ARQUITETURA E TRADUÇÃO:
 6. DEFINIÇÃO DE CORRELAÇÃO ("grau_dependencia", campo interno):
    - "independente" = pode entrar junto com outras apostas do bilhete sem problema.
    - "correlacionado" = só faz sentido separado, porque depende do resultado de outra entrada.
-7. DESCARTES PADRONIZADOS (categoria interna): "baixo_score", "redundancia_estrutural", "alta_variancia", "linha_ineficiente".
+7. DESCARTES PADRONIZADOS (categoria interna): "baixo_score", "redundancia_estrutural", "alta_variancia", "linha_ineficiente", "fora_do_escopo".
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (schema mantido igual para compatibilidade):
 {
@@ -221,7 +234,7 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (schema mantido igual para com
     {
       "tipo_veiculo": "Nome do mercado rejeitado",
       "selecao": "Seleção Rejeitada",
-      "categoria_descarte": "baixo_score|redundancia_estrutural|alta_variancia|linha_ineficiente",
+      "categoria_descarte": "baixo_score|redundancia_estrutural|alta_variancia|linha_ineficiente|fora_do_escopo",
       "motivo": "Explicação direta, em tom de apostador, sem jargão técnico."
     }
   ]
@@ -374,6 +387,7 @@ function renderizarPainelPortfolio(data) {
         redundancia_estrutural: "Repetia outra entrada",
         alta_variancia: "Risco alto demais",
         linha_ineficiente: "Linha sem valor",
+        fora_do_escopo: "Mercado ainda não coberto",
     };
 
     let htmlGrupos = grupos.map((g, idx) => {
