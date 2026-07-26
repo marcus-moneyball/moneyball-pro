@@ -33,13 +33,13 @@
             <p class="text-xs text-slate-500">Análise e Leitura esportiva de alto valor.</p>
         </div>
 
-        <!-- ÁREA DE ENTRADA -->
+        <!-- ÁREA DE ENTRADA (OCULTADA APÓS A ANÁLISE) -->
         <div id="input-container" class="space-y-6">
             <!-- SELETOR DE ESPORTE -->
             <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
             <!-- CONFIG DA API -->
-            <details class="bg-base-panel border border-base-border rounded-2xl p-4">
+            <details class="bg-base-panel border border-base-border rounded-2xl p-4" open>
                 <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <i class="fa-solid fa-key text-accent"></i> Configuração da API Groq
                 </summary>
@@ -83,6 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (input) input.value = savedKey;
     }
 });
+
+function reexibirInput() {
+    const inputContainer = document.getElementById("input-container");
+    const display = document.getElementById("display-area");
+    if (inputContainer) inputContainer.classList.remove("hidden");
+    if (display) display.innerHTML = "";
+}
+window.reexibirInput = reexibirInput;
 
 // ============================================================
 // PARTE 1: MÓDULOS DE ESPORTE E GERENCIADOR DE ABAS
@@ -384,6 +392,7 @@ async function analisarComGroq() {
     const jsonInput = document.getElementById("json-input");
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
+    const inputContainer = document.getElementById("input-container");
 
     if (!apiKeyInput || !jsonInput || !btn || !display) return;
 
@@ -453,9 +462,9 @@ async function analisarComGroq() {
 
         const resultadoValidado = aplicarDivergenceGate(parsedResult);
         
-        // ESVAZIA A TEXTAREA IMEDIATAMENTE APÓS PROCESSAR O JSON COM SUCESSO
-        jsonInput.value = "";
-
+        // OCULTA O FORMULÁRIO DE ENTRADA PARA FOCAR APENAS NOS RESULTADOS
+        if (inputContainer) inputContainer.classList.add("hidden");
+        
         renderizarPainel(resultadoValidado);
 
     } catch (error) {
@@ -572,7 +581,6 @@ function renderizarPainel(data) {
     const perfilJogo = data.perfil_de_jogo || "";
     const prognostico = data.prognostico || "";
     const resumo = data.resumo || "";
-    const qualidade = data.qualidade_portfolio || {};
     const mercadoPrincipal = data.mercado_principal || null;
 
     let convertidas = data.top_assimetrias_convertidas || [];
@@ -581,21 +589,16 @@ function renderizarPainel(data) {
     let descartados = data.mercados_descartados || [];
     if (!Array.isArray(descartados)) descartados = [descartados];
 
-    // FILTRO ANTI-REDUNDÂNCIA:
-    // Se o mercado principal está preenchido, removemos ele das assimetrias convertidas secundárias
-    if (mercadoPrincipal && mercadoPrincipal.identificado && mercadoPrincipal.mercado) {
-        const nomePrincipalClean = mercadoPrincipal.mercado.toLowerCase().replace(/[^a-z0-9]/g, '');
-        convertidas = convertidas.filter(item => {
-            const nomeItemClean = (item.m || "").toLowerCase().replace(/[^a-z0-9]/g, '');
-            return !nomeItemClean.includes(nomePrincipalClean) && !nomePrincipalClean.includes(nomeItemClean);
-        });
-    }
-
     if (statusConversao === "sem_conversao") {
         display.innerHTML = `
             <div class="bg-base-panel border border-amber-500/30 rounded-2xl p-6 space-y-4">
-                <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                    <i class="fa-solid fa-shield-halved text-lg"></i> JOGO SEM APOSTAS RECOMENDADAS
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                        <i class="fa-solid fa-shield-halved text-lg"></i> JOGO SEM APOSTAS RECOMENDADAS
+                    </div>
+                    <button type="button" onclick="reexibirInput()" class="px-3 py-1.5 bg-base-card hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-base-border transition-all cursor-pointer">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Nova Análise
+                    </button>
                 </div>
                 ${perfilJogo ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
                 ${prognostico ? `<p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>` : ""}
@@ -613,7 +616,9 @@ function renderizarPainel(data) {
                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-accent/20 text-accent uppercase tracking-wider">
                     <i class="fa-solid fa-chart-line mr-1"></i> Resumo Tático & Moneyball
                 </span>
-                ${qualidade.melhor_mercado ? `<span class="text-xs font-black px-2.5 py-1 rounded-lg bg-accent/20 text-accent border border-accent/30">Top Score: ${qualidade.melhor_mercado}</span>` : ""}
+                <button type="button" onclick="reexibirInput()" class="px-3 py-1.5 bg-base-card hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-base-border transition-all cursor-pointer">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> Nova Análise
+                </button>
             </div>
             ${perfilJogo ? `<div class="p-2.5 bg-base-bg/60 rounded-lg border border-base-border text-xs text-slate-300"><strong>Perfil do Jogo:</strong> ${perfilJogo}</div>` : ""}
             ${prognostico ? `<p class="text-xs text-slate-300 leading-relaxed">${prognostico}</p>` : ""}
@@ -629,7 +634,7 @@ function renderizarPainel(data) {
             ${convertidas.length > 0 ? `
                 <div class="space-y-3">
                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Outras Assimetrias Complementares (${convertidas.length})
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Assimetrias Convertidas (${convertidas.length})
                     </h3>
                     <div class="space-y-3">
                         ${convertidas.map(cardAssimetriaConvertida).join("")}
