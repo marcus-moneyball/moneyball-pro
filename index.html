@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Bet Builder v2.21 | Catálogo Limpo</title>
+    <title>Moneyball Bet Builder v2.22 | UI Balanceada</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,15 +13,14 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
                     colors: {
-                        base: { bg: '#09090b', panel: '#18181b', card: '#27272a', border: '#3f3f46' },
-                        accent: { DEFAULT: '#3b82f6', dim: '#2563eb' },
+                        base: { bg: '#05070d', panel: '#0d1220', card: '#111827', border: '#1f2937' },
+                        accent: { DEFAULT: '#8b5cf6', dim: '#6d28d9' },
                     }
                 }
             }
         }
     </script>
     <style>
-        /* Utilitário para truncar textos longos */
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -30,32 +29,38 @@
         }
     </style>
 </head>
-<body class="bg-base-bg text-slate-300 font-sans min-h-screen selection:bg-accent selection:text-white">
+<body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.08), transparent 60%);">
     <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
 
-        <!-- HEADER MINIMALISTA -->
-        <div class="flex items-center justify-between border-b border-base-border pb-4">
-            <div>
-                <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group text-accent"></i> Moneyball Bet Builder
-                </h1>
-                <p class="text-[11px] text-slate-500 font-mono mt-1">v2.21 :: Cortex-Ready :: UI Refined</p>
+        <!-- HEADER -->
+        <div class="text-center space-y-2 pt-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder v2.22 — Cortex-Ready
             </div>
+            <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Bet Builder</h1>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
-        <div id="input-container" class="space-y-5">
-            <div id="sport-tabs" class="flex gap-2"></div>
+        <div id="input-container" class="space-y-6">
+            <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
-            <div class="bg-base-panel border border-base-border rounded-xl p-4 space-y-3">
-                <div class="flex justify-between items-center mb-2">
-                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wide">Dossiê do Nexus</label>
-                    <input type="password" id="groq-key" placeholder="Groq API Key (gsk_...)" class="w-48 bg-base-bg px-2 py-1 rounded border border-base-border text-slate-400 text-[10px] font-mono focus:border-accent outline-none" onchange="salvarKey(this.value)">
+            <details class="bg-base-panel border border-base-border rounded-2xl p-4" open>
+                <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-accent"></i> Configuração da API Groq
+                </summary>
+                <div class="mt-4 space-y-2">
+                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
                 </div>
-                <textarea id="json-input" class="w-full h-32 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-[11px] text-slate-400 focus:text-slate-200 focus:border-accent outline-none transition-colors" placeholder='Cole o JSON do Nexus aqui...'></textarea>
-                
-                <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-2.5 bg-white hover:bg-slate-200 text-black font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
-                    Gerar Catálogo de Veículos
+            </details>
+
+            <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3 shadow-xl shadow-black/20">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
+                    <label class="text-sm font-semibold text-slate-300">Cole o Dossiê do Nexus</label>
+                </div>
+                <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400 focus:border-accent outline-none" placeholder='Cole o Dossiê investigativo do Nexus aqui...'></textarea>
+                <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-bolt"></i> Extrair Catálogo de Veículos
                 </button>
             </div>
         </div>
@@ -98,7 +103,7 @@ function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
     if (!container) return;
     container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
-        <button type="button" onclick="selecionarSport('${key}')" class="px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-white text-black' : 'bg-base-panel text-slate-400 hover:text-slate-200 border border-base-border'}">
+        <button type="button" onclick="selecionarSport('${key}')" class="py-3 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
         </button>
     `).join("");
@@ -111,23 +116,23 @@ function selecionarSport(key) {
 window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder v2.21 (Tradutor Técnico) para: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder v2.22 (Tradutor Técnico) para: ${esporte.toUpperCase()}.
 
 A FILOSOFIA (REGRA DE OURO):
 O objetivo do Bet Builder NÃO é selecionar apostas. O objetivo não é produzir o maior número de veículos. O objetivo é produzir o MENOR conjunto de veículos capaz de representar todas as vantagens estatísticas identificadas pelo Nexus. 
 Você NÃO analisa a partida, NÃO reinterpreta os dados e NÃO cria variáveis fora do Dossiê.
 
 REGRAS DE ARQUITETURA E TRADUÇÃO:
-1. VOLUME INTELIGENTE: Se nenhum segundo veículo possuir qualidade mecânica semelhante ao principal, retorne APENAS UM veículo.
+1. VOLUME INTELIGENTE: Se nenhum segundo veículo possuir qualidade semelhante ao principal, retorne APENAS UM veículo.
 2. PROIBIDO REDUNDÂNCIA: Nunca gere dois veículos que representem versões mais agressivas da mesma linha.
 3. REDUNDÂNCIA CRUZADA (ENTRE ASSIMETRIAS): Sempre que múltiplas assimetrias gerarem veículos altamente correlacionados entre si, priorize o veículo de maior Moneyball Score e descarte os demais por "redundancia_estrutural".
 4. ORIGEM DOS DADOS: 'criticidade' e 'Moneyball Score' devem refletir EXCLUSIVAMENTE os dados do Dossiê Nexus.
-5. DOMÍNIO DO SCORE: O ranking é dominado pelo Moneyball Score. Ordene grupos por criticidade, e veículos pelo Score.
+5. DOMÍNIO DO SCORE: Ordene grupos por criticidade, e veículos pelo Score (do maior para o menor).
 6. DESCARTES PADRONIZADOS: "baixo_score", "redundancia_estrutural", "alta_variancia" ou "linha_ineficiente".
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_de_jogo": "Síntese textual...",
+  "perfil_de_jogo": "Síntese textual vinda estritamente do Nexus...",
   "status_conversao": "convertido|sem_conversao",
   "veiculo_destaque": {
     "id_assimetria_origem": "A1",
@@ -145,12 +150,13 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
       "descricao_nexus": "Resumo da tese",
       "catalogo_de_veiculos": [
         {
-          "tipo_veiculo": "Mercado (ex: Team Total)",
-          "selecao": "Linha (ex: Over 1.5)",
+          "tipo_veiculo": "Mercado",
+          "selecao": "Linha Exata",
           "moneyball_score": 89.0,
+          "odd": "1.85",
           "perfil_veiculo": "principal|alternativo|protecao|valor|piso",
           "grau_dependencia": "independente|correlacionado",
-          "porque_este_veiculo": "Justificativa direta."
+          "porque_este_veiculo": "Justificativa mecânica."
         }
       ]
     }
@@ -159,7 +165,7 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
     {
       "tipo_veiculo": "Veículo Rejeitado",
       "selecao": "Seleção Rejeitada",
-      "categoria_descarte": "baixo_score",
+      "categoria_descarte": "baixo_score|redundancia_estrutural",
       "motivo": "Motivo limpo."
     }
   ]
@@ -180,12 +186,12 @@ async function analisarComGroq() {
     if (!raw) { alert("Cole o Dossiê do Nexus."); return; }
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...`;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Estruturando Grafo...`;
     
     display.innerHTML = `
-        <div class="py-10 text-center space-y-3 opacity-50">
-            <i class="fa-solid fa-code-merge text-2xl animate-pulse"></i>
-            <p class="text-xs font-mono">Catalogando veículos...</p>
+        <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
+            <i class="fa-solid fa-network-wired text-accent text-3xl"></i>
+            <h3 class="text-sm font-semibold text-slate-300">Catalogando Veículos...</h3>
         </div>
     `;
 
@@ -214,10 +220,10 @@ async function analisarComGroq() {
         renderizarPainelPortfolio(parsed);
 
     } catch (error) {
-        display.innerHTML = `<div class="p-3 bg-red-950/30 text-red-400 text-xs rounded border border-red-900/50">Erro: ${error.message}</div>`;
+        display.innerHTML = `<div class="p-4 bg-red-950/40 border border-red-900 text-red-300 text-sm rounded-xl">⚠️ Erro: ${error.message}</div>`;
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `Gerar Catálogo de Veículos`;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Extrair Catálogo de Veículos`;
     }
 }
 window.analisarComGroq = analisarComGroq;
@@ -230,68 +236,73 @@ function renderizarPainelPortfolio(data) {
     const descartados = data.veiculos_descartados || [];
     const destaque = data.veiculo_destaque || null;
 
-    // Design minimalista da criticidade (Ponto de cor + texto)
-    const renderCriticidade = (crit) => {
+    // Badges de Criticidade (Design restaurado, mas para ser alinhado no fluxo)
+    const getCriticidadeBadge = (crit) => {
         const c = (crit || 'media').toLowerCase();
-        if (c === 'alta') return `<span class="flex items-center gap-1.5 text-[10px] text-red-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Alta Criticidade</span>`;
-        if (c === 'media') return `<span class="flex items-center gap-1.5 text-[10px] text-amber-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Média Criticidade</span>`;
-        return `<span class="flex items-center gap-1.5 text-[10px] text-blue-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Baixa Criticidade</span>`;
+        if (c === 'alta') return `<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-red-500/20 text-red-400 border border-red-500/30"><i class="fa-solid fa-fire mr-1"></i>Alta</span>`;
+        if (c === 'media') return `<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-gauge-high mr-1"></i>Média</span>`;
+        return `<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Baixa</span>`;
     };
 
-    // Cores sutis para o perfil
+    // Cores de Perfil
     const getPerfilColor = (perfil) => {
         const p = (perfil || '').toLowerCase();
-        if (p === 'principal') return 'text-white font-bold';
-        if (p === 'protecao') return 'text-amber-300';
-        if (p === 'valor') return 'text-emerald-300';
-        return 'text-slate-400';
+        if (p === 'principal') return 'text-accent font-bold';
+        if (p === 'protecao') return 'text-amber-400';
+        if (p === 'valor') return 'text-emerald-400';
+        return 'text-blue-400';
     };
 
     let htmlGrupos = grupos.map((g) => {
         const veiculos = (g.catalogo_de_veiculos || []);
 
         const htmlVeiculos = veiculos.map(v => `
-            <div class="bg-base-panel border border-base-border rounded-lg p-4 hover:border-slate-500 transition-colors flex flex-col justify-between space-y-3">
+            <div class="bg-base-card border border-base-border hover:border-accent/50 rounded-xl p-4 flex flex-col justify-between space-y-3 transition-all relative overflow-hidden group">
                 
-                <!-- Topo: Mercado e Score -->
-                <div class="flex justify-between items-start">
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">${v.tipo_veiculo}</span>
-                    <span class="text-[10px] font-mono text-slate-300 bg-base-card px-1.5 py-0.5 rounded border border-base-border">
-                        Score: <span class="text-white font-bold">${v.moneyball_score ?? '-'}</span>
+                <!-- Destaque visual sutil no topo do card -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-base-border group-hover:via-accent/50 to-transparent"></div>
+
+                <!-- Header do Card: Mercado e Score -->
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">${v.tipo_veiculo}</span>
+                    <span class="text-xs font-black px-2 py-0.5 rounded bg-base-bg text-emerald-400 border border-emerald-500/20 shadow-inner">
+                        Score: ${v.moneyball_score ?? '-'}
                     </span>
                 </div>
 
-                <!-- Meio: Seleção principal (Clean) -->
-                <div>
-                    <h5 class="text-base font-bold text-accent tracking-tight">${v.selecao}</h5>
-                    <div class="flex items-center gap-2 mt-1 text-[9px] uppercase tracking-wider font-mono">
-                        <span class="${getPerfilColor(v.perfil_veiculo)}">${v.perfil_veiculo || 'Veículo'}</span>
-                        <span class="text-slate-600">•</span>
-                        <span class="text-slate-500">${v.grau_dependencia || 'independente'}</span>
-                    </div>
+                <!-- Corpo do Card: A Aposta (Bilhete Style) -->
+                <div class="py-1">
+                    <div class="text-lg font-extrabold text-white tracking-tight">${v.selecao}</div>
+                    ${v.odd ? `<div class="text-[10px] text-slate-500 mt-0.5">Odd Ref: <span class="text-slate-300 font-mono">${v.odd}</span></div>` : ''}
                 </div>
 
-                <!-- Rodapé: Resumo do motivo truncado -->
-                ${v.porque_este_veiculo ? `<p class="text-[10px] text-slate-500 line-clamp-2 leading-relaxed border-t border-base-border/50 pt-2 mt-1">${v.porque_este_veiculo}</p>` : ''}
+                <!-- Footer do Card: Metadados Limpos -->
+                <div class="pt-2 border-t border-base-border/60 flex items-center justify-between text-[10px] uppercase font-mono">
+                    <span class="${getPerfilColor(v.perfil_veiculo)}">${v.perfil_veiculo || 'Veículo'}</span>
+                    <span class="${v.grau_dependencia === 'correlacionado' ? 'text-purple-400' : 'text-slate-500'}">
+                        ${v.grau_dependencia || 'independente'}
+                    </span>
+                </div>
             </div>
         `).join("");
 
         return `
-            <div class="space-y-3 mb-8">
-                <!-- Cabeçalho do Grupo (Alinhado e compacto) -->
-                <div class="space-y-1">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs font-mono font-bold text-slate-500">${g.id_assimetria || '#'}</span>
-                        <h4 class="text-sm font-semibold text-white">${g.titulo_original_nexus}</h4>
-                        <span class="text-slate-600">|</span>
-                        ${renderCriticidade(g.criticidade)}
+            <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-4 shadow-lg shadow-black/20">
+                <!-- Header da Assimetria (Alinhado e no Esquadro) -->
+                <div class="border-b border-base-border pb-3 space-y-2">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono text-xs font-black">${g.id_assimetria || 'A'}</span>
+                        <h4 class="font-bold text-white text-sm">${g.titulo_original_nexus}</h4>
+                        <div class="ml-auto"> <!-- Empurra a criticidade pro lado sem quebrar a altura -->
+                            ${getCriticidadeBadge(g.criticidade)}
+                        </div>
                     </div>
-                    <!-- line-clamp-2 reduz o texto gigante -->
-                    <p class="text-[11px] text-slate-400 line-clamp-2 pl-6" title="${g.descricao_nexus}">${g.descricao_nexus}</p>
+                    <!-- Resumo com line-clamp-2 para não poluir -->
+                    <p class="text-[11px] text-slate-400 leading-relaxed line-clamp-2" title="${g.descricao_nexus}">${g.descricao_nexus}</p>
                 </div>
-
-                <!-- Grid de Veículos (Bilhetes Limpos) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+                
+                <!-- Grid de Veículos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     ${htmlVeiculos}
                 </div>
             </div>
@@ -300,50 +311,48 @@ function renderizarPainelPortfolio(data) {
 
     display.innerHTML = `
         <div class="space-y-6">
-            
-            <!-- CONTROLES SUPERIORES -->
-            <div class="flex items-center justify-between">
-                <div class="text-xs text-slate-500 flex items-center gap-2">
-                    <i class="fa-solid fa-check-circle text-emerald-500"></i> Catálogo estruturado com sucesso.
-                </div>
-                <button type="button" onclick="reexibirInput()" class="text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-white transition-colors">
-                    <i class="fa-solid fa-arrow-left mr-1"></i> Nova Extração
-                </button>
-            </div>
-
-            <!-- VEÍCULO DESTAQUE (BANNER LIMPO) -->
-            ${destaque ? `
-                <div class="bg-base-panel border-l-2 border-accent p-4 rounded-r-lg flex justify-between items-center">
+            <!-- BARRA DE TOPO & VEÍCULO DESTAQUE -->
+            <div class="p-5 bg-gradient-to-r from-accent/20 via-base-panel to-base-panel border border-accent/30 rounded-2xl space-y-4">
+                <div class="flex items-center justify-between">
                     <div>
-                        <span class="text-[9px] text-accent font-bold uppercase tracking-widest block mb-1">Veículo Alpha (${destaque.id_assimetria_origem || 'A1'})</span>
-                        <div class="flex items-baseline gap-2">
-                            <span class="text-sm font-semibold text-slate-300">${destaque.tipo_veiculo}:</span>
-                            <span class="text-lg font-bold text-white">${destaque.selecao}</span>
+                        <span class="text-[10px] font-bold tracking-widest text-accent uppercase"><i class="fa-solid fa-car-side mr-1"></i> Catálogo Cortex-Ready</span>
+                    </div>
+                    <button type="button" onclick="reexibirInput()" class="px-3 py-1.5 bg-base-card hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-base-border transition-all cursor-pointer">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Nova Extração
+                    </button>
+                </div>
+
+                ${destaque ? `
+                    <div class="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-black">${destaque.id_assimetria_origem || 'A1'}</span>
+                                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-trophy mr-1"></i> Veículo Alpha</span>
+                            </div>
+                            <div class="text-sm">
+                                <span class="text-slate-400">${destaque.tipo_veiculo} ➔ </span>
+                                <b class="text-white text-base">${destaque.selecao}</b>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-black text-emerald-400 font-mono drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">${destaque.moneyball_score}</span>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <span class="block text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Moneyball Score</span>
-                        <span class="text-xl font-black text-white font-mono">${destaque.moneyball_score}</span>
-                    </div>
-                </div>
-            ` : ''}
-
-            <div class="w-full h-px bg-base-border my-6"></div>
-
-            <!-- LISTAGEM DOS GRUPOS -->
-            <div class="space-y-2">
-                ${htmlGrupos}
+                ` : ''}
             </div>
 
-            <!-- DESCARTES (Lista super discreta) -->
+            <!-- GRUPOS DE ASSIMETRIA -->
+            ${htmlGrupos}
+
+            <!-- DESCARTES PADRONIZADOS (Mais discretos) -->
             ${descartados.length > 0 ? `
-                <div class="mt-8 pt-4 border-t border-base-border border-dashed space-y-3">
-                    <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Veículos Descartados (Filtro)</h4>
-                    <div class="space-y-1.5">
+                <div class="bg-base-panel/50 border border-base-border border-dashed rounded-xl p-4 space-y-2">
+                    <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"><i class="fa-solid fa-filter text-amber-500/70 mr-1.5"></i> Veículos Filtrados (Redundância/Score)</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                         ${descartados.map(d => `
-                            <div class="flex items-start gap-2 text-[10px]">
-                                <i class="fa-solid fa-xmark text-slate-600 mt-0.5"></i>
-                                <span class="text-slate-400"><b class="text-slate-300">${d.selecao}</b> — ${d.motivo}</span>
+                            <div class="text-[10px] text-slate-400 flex items-start gap-1.5">
+                                <i class="fa-solid fa-xmark text-red-400/70 mt-0.5"></i>
+                                <span><b class="text-slate-300">${d.selecao}</b>: ${d.motivo}</span>
                             </div>
                         `).join("")}
                     </div>
