@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Bet Builder v22.0 | Catálogo de Veículos</title>
+    <title>Moneyball Bet Builder v2.21 | Catálogo Limpo</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,48 +13,49 @@
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
                     colors: {
-                        base: { bg: '#05070d', panel: '#0d1220', card: '#111827', border: '#1f2937' },
-                        accent: { DEFAULT: '#8b5cf6', dim: '#6d28d9' },
+                        base: { bg: '#09090b', panel: '#18181b', card: '#27272a', border: '#3f3f46' },
+                        accent: { DEFAULT: '#3b82f6', dim: '#2563eb' },
                     }
                 }
             }
         }
     </script>
+    <style>
+        /* Utilitário para truncar textos longos */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+    </style>
 </head>
-<body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% 0%, rgba(139,92,246,0.08), transparent 60%);">
+<body class="bg-base-bg text-slate-300 font-sans min-h-screen selection:bg-accent selection:text-white">
     <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
 
-        <!-- HEADER -->
-        <div class="text-center space-y-2 pt-2">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder v22.0 — Cortex-Ready
+        <!-- HEADER MINIMALISTA -->
+        <div class="flex items-center justify-between border-b border-base-border pb-4">
+            <div>
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-accent"></i> Moneyball Bet Builder
+                </h1>
+                <p class="text-[11px] text-slate-500 font-mono mt-1">v2.21 :: Cortex-Ready :: UI Refined</p>
             </div>
-            <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">🚀 Moneyball Bet Builder</h1>
-            <p class="text-xs text-slate-500">Catálogo de veículos estruturados para decisão do Cortex.</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
-        <div id="input-container" class="space-y-6">
-            <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
+        <div id="input-container" class="space-y-5">
+            <div id="sport-tabs" class="flex gap-2"></div>
 
-            <details class="bg-base-panel border border-base-border rounded-2xl p-4" open>
-                <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-accent"></i> Configuração da API Groq
-                </summary>
-                <div class="mt-4 space-y-2">
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">GROQ API KEY (Salva no navegador)</label>
-                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
+            <div class="bg-base-panel border border-base-border rounded-xl p-4 space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="text-xs font-semibold text-slate-300 uppercase tracking-wide">Dossiê do Nexus</label>
+                    <input type="password" id="groq-key" placeholder="Groq API Key (gsk_...)" class="w-48 bg-base-bg px-2 py-1 rounded border border-base-border text-slate-400 text-[10px] font-mono focus:border-accent outline-none" onchange="salvarKey(this.value)">
                 </div>
-            </details>
-
-            <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-3">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                    <label class="text-sm font-semibold text-slate-300">Cole o Dossiê do Nexus</label>
-                </div>
-                <textarea id="json-input" class="w-full h-40 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-emerald-400" placeholder='Cole o Dossiê investigativo do Nexus aqui...'></textarea>
-                <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-white shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-bolt"></i> Extrair Catálogo de Veículos
+                <textarea id="json-input" class="w-full h-32 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-[11px] text-slate-400 focus:text-slate-200 focus:border-accent outline-none transition-colors" placeholder='Cole o JSON do Nexus aqui...'></textarea>
+                
+                <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-2.5 bg-white hover:bg-slate-200 text-black font-bold text-sm rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                    Gerar Catálogo de Veículos
                 </button>
             </div>
         </div>
@@ -86,9 +87,9 @@ function reexibirInput() {
 window.reexibirInput = reexibirInput;
 
 const MODULES = {
-    beisebol: { label: "Beisebol", icon: "fa-baseball" },
     futebol: { label: "Futebol", icon: "fa-futbol" },
-    basquete: { label: "Basquete", icon: "fa-basketball" }
+    basquete: { label: "Basquete", icon: "fa-basketball" },
+    beisebol: { label: "Beisebol", icon: "fa-baseball" }
 };
 
 let sportAtivo = "futebol";
@@ -97,7 +98,7 @@ function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
     if (!container) return;
     container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
-        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+        <button type="button" onclick="selecionarSport('${key}')" class="px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-white text-black' : 'bg-base-panel text-slate-400 hover:text-slate-200 border border-base-border'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
         </button>
     `).join("");
@@ -110,60 +111,46 @@ function selecionarSport(key) {
 window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
-  return `Você é o Moneyball Bet Builder v22.0 (Tradutor Técnico) para: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder v2.21 (Tradutor Técnico) para: ${esporte.toUpperCase()}.
 
 A FILOSOFIA (REGRA DE OURO):
 O objetivo do Bet Builder NÃO é selecionar apostas. O objetivo não é produzir o maior número de veículos. O objetivo é produzir o MENOR conjunto de veículos capaz de representar todas as vantagens estatísticas identificadas pelo Nexus. 
-Você NÃO analisa a partida, NÃO reinterpreta os dados e NÃO cria variáveis fora do Dossiê. Você apenas traduz.
-
-CONCEITO DE VEÍCULO:
-Um veículo é uma forma específica de capturar uma mesma vantagem estatística. Veículos diferentes podem pertencer ao mesmo "mercado" macro, desde que capturem a vantagem por mecanismos distintos.
+Você NÃO analisa a partida, NÃO reinterpreta os dados e NÃO cria variáveis fora do Dossiê.
 
 REGRAS DE ARQUITETURA E TRADUÇÃO:
-1. VOLUME INTELIGENTE: Se nenhum segundo veículo possuir qualidade mecânica e estatística semelhante ao principal, retorne APENAS UM veículo. LLMs tendem a forçar listas, evite isso.
-2. PROIBIDO REDUNDÂNCIA: Nunca gere dois veículos que representem versões mais agressivas da mesma linha (Ex: NUNCA gere Over 2.5 e Over 3.5 para a mesma tese). 
-3. REDUNDÂNCIA CRUZADA (ENTRE ASSIMETRIAS): Sempre que múltiplas assimetrias gerarem veículos altamente correlacionados entre si (ex: Over 2.5 em A1 e BTTS em A2), priorize o veículo de maior Moneyball Score e descarte os demais por "redundancia_estrutural".
-4. ORIGEM DOS DADOS: 
-   - A 'criticidade' deve refletir EXCLUSIVAMENTE a importância estatística atribuída pelo Nexus. 
-   - O 'Moneyball Score' deve ser calculado EXCLUSIVAMENTE com base nas informações presentes no Dossiê Nexus. Nunca introduza fatores externos.
-5. DOMÍNIO DO SCORE E ORDENAÇÃO: Todo o ranking deve ser determinado EXCLUSIVAMENTE pelo Moneyball Score. Ordene primeiro os grupos de assimetria pela criticidade (Alta > Média > Baixa) e, dentro de cada grupo, ordene os veículos pelo Moneyball Score, do maior para o menor.
-6. DEFINIÇÃO DE CORRELAÇÃO (grau_dependencia):
-   - "independente" = pode coexistir no mesmo portfólio.
-   - "correlacionado" = depende diretamente do sucesso do outro veículo.
-7. DESCARTES PADRONIZADOS: "baixo_score", "redundancia_estrutural", "alta_variancia" ou "linha_ineficiente".
+1. VOLUME INTELIGENTE: Se nenhum segundo veículo possuir qualidade mecânica semelhante ao principal, retorne APENAS UM veículo.
+2. PROIBIDO REDUNDÂNCIA: Nunca gere dois veículos que representem versões mais agressivas da mesma linha.
+3. REDUNDÂNCIA CRUZADA (ENTRE ASSIMETRIAS): Sempre que múltiplas assimetrias gerarem veículos altamente correlacionados entre si, priorize o veículo de maior Moneyball Score e descarte os demais por "redundancia_estrutural".
+4. ORIGEM DOS DADOS: 'criticidade' e 'Moneyball Score' devem refletir EXCLUSIVAMENTE os dados do Dossiê Nexus.
+5. DOMÍNIO DO SCORE: O ranking é dominado pelo Moneyball Score. Ordene grupos por criticidade, e veículos pelo Score.
+6. DESCARTES PADRONIZADOS: "baixo_score", "redundancia_estrutural", "alta_variancia" ou "linha_ineficiente".
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_de_jogo": "Síntese textual vinda estritamente do Nexus...",
+  "perfil_de_jogo": "Síntese textual...",
   "status_conversao": "convertido|sem_conversao",
-  "motivo_sem_conversao": null,
   "veiculo_destaque": {
     "id_assimetria_origem": "A1",
-    "titulo_assimetria_origem": "Título da Assimetria",
-    "tipo_veiculo": "Nome Macro (ex: Over Goals)",
-    "selecao": "Seleção Exata (ex: Over 2.5)",
+    "tipo_veiculo": "Nome Macro",
+    "selecao": "Seleção Exata",
     "moneyball_score": 91.5,
-    "motivo_dominancia": "maior_score",
-    "justificativa_destaque": "Explicação baseada estritamente no Score e Dossiê Nexus."
+    "motivo_dominancia": "maior_score"
   },
   "grupos_de_assimetria": [
     {
       "id_assimetria": "A1",
-      "natureza": "Processo/Volume | Margem/Resultado | Ritmo/Intensidade",
+      "natureza": "Processo/Volume",
       "criticidade": "alta|media|baixa",
-      "titulo_original_nexus": "Título exatamente igual ao Nexus",
-      "descricao_nexus": "Descrição exatamente igual ao Nexus",
+      "titulo_original_nexus": "Título da tese",
+      "descricao_nexus": "Resumo da tese",
       "catalogo_de_veiculos": [
         {
-          "tipo_veiculo": "Nome Macro do Veículo",
-          "selecao": "Seleção Exata",
+          "tipo_veiculo": "Mercado (ex: Team Total)",
+          "selecao": "Linha (ex: Over 1.5)",
           "moneyball_score": 89.0,
-          "odd": "1.85",
           "perfil_veiculo": "principal|alternativo|protecao|valor|piso",
-          "confianca_da_conversao": "alta|media|baixa",
           "grau_dependencia": "independente|correlacionado",
-          "assimetrias_relacionadas": ["A1"],
-          "porque_este_veiculo": "Motivo direto mecânico."
+          "porque_este_veiculo": "Justificativa direta."
         }
       ]
     }
@@ -172,8 +159,8 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
     {
       "tipo_veiculo": "Veículo Rejeitado",
       "selecao": "Seleção Rejeitada",
-      "categoria_descarte": "baixo_score|redundancia_estrutural|alta_variancia|linha_ineficiente",
-      "motivo": "Explicação direta do descarte."
+      "categoria_descarte": "baixo_score",
+      "motivo": "Motivo limpo."
     }
   ]
 }`;
@@ -186,37 +173,26 @@ async function analisarComGroq() {
     const display = document.getElementById("display-area");
     const inputContainer = document.getElementById("input-container");
 
-    if (!apiKeyInput || !jsonInput || !btn || !display) return;
-
     const apiKey = apiKeyInput.value.trim() || localStorage.getItem("moneyball_groq_key");
     const raw = jsonInput.value.trim();
 
-    if (!apiKey) {
-        alert("Insira a Groq API Key.");
-        return;
-    }
-    if (!raw) {
-        alert("Cole o Dossiê do Nexus.");
-        return;
-    }
+    if (!apiKey) { alert("Insira a Groq API Key."); return; }
+    if (!raw) { alert("Cole o Dossiê do Nexus."); return; }
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Construindo Grafo de Veículos...`;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processando...`;
+    
     display.innerHTML = `
-        <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
-            <i class="fa-solid fa-network-wired text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Estruturando Catálogo para o Cortex...</h3>
-            <p class="text-xs text-slate-500">Ordenando por criticidade e eliminando redundâncias cruzadas.</p>
+        <div class="py-10 text-center space-y-3 opacity-50">
+            <i class="fa-solid fa-code-merge text-2xl animate-pulse"></i>
+            <p class="text-xs font-mono">Catalogando veículos...</p>
         </div>
     `;
 
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${apiKey}`
-            },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
@@ -228,21 +204,20 @@ async function analisarComGroq() {
             })
         });
 
-        if (!response.ok) throw new Error(`Erro API (${response.status})`);
+        if (!response.ok) throw new Error(`Erro API: ${response.status}`);
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
+        const content = data.choices[0].message.content;
         const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
 
         if (inputContainer) inputContainer.classList.add("hidden");
         renderizarPainelPortfolio(parsed);
 
     } catch (error) {
-        console.error(error);
-        display.innerHTML = `<div class="p-4 bg-red-950/40 border border-red-900 text-red-300 text-sm rounded-xl">⚠️ Falha na tradução: ${error.message}</div>`;
+        display.innerHTML = `<div class="p-3 bg-red-950/30 text-red-400 text-xs rounded border border-red-900/50">Erro: ${error.message}</div>`;
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Extrair Catálogo de Veículos`;
+        btn.innerHTML = `Gerar Catálogo de Veículos`;
     }
 }
 window.analisarComGroq = analisarComGroq;
@@ -255,82 +230,68 @@ function renderizarPainelPortfolio(data) {
     const descartados = data.veiculos_descartados || [];
     const destaque = data.veiculo_destaque || null;
 
-    const getCriticidadeBadge = (crit) => {
+    // Design minimalista da criticidade (Ponto de cor + texto)
+    const renderCriticidade = (crit) => {
         const c = (crit || 'media').toLowerCase();
-        if (c === 'alta') return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-red-500/20 text-red-400 border border-red-500/30"><i class="fa-solid fa-fire mr-1"></i>Criticidade Alta</span>`;
-        if (c === 'media') return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30"><i class="fa-solid fa-gauge-high mr-1"></i>Criticidade Média</span>`;
-        return `<span class="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-blue-500/20 text-blue-400 border border-blue-500/30">Criticidade Baixa</span>`;
+        if (c === 'alta') return `<span class="flex items-center gap-1.5 text-[10px] text-red-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Alta Criticidade</span>`;
+        if (c === 'media') return `<span class="flex items-center gap-1.5 text-[10px] text-amber-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Média Criticidade</span>`;
+        return `<span class="flex items-center gap-1.5 text-[10px] text-blue-400 font-medium uppercase tracking-wider"><span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Baixa Criticidade</span>`;
     };
 
-    const getConfiancaBadge = (conf) => {
-        const c = (conf || 'alta').toLowerCase();
-        if (c === 'alta') return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Confiança de Conversão">Alta</span>`;
-        if (c === 'media') return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Confiança de Conversão">Média</span>`;
-        return `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20" title="Confiança de Conversão">Baixa</span>`;
-    };
-
-    const getPerfilStyle = (perfil) => {
-        const p = (perfil || 'principal').toLowerCase();
-        if (p === 'principal') return 'bg-accent/20 text-accent border border-accent/30';
-        if (p === 'alternativo') return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-        if (p === 'protecao') return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
-        if (p === 'valor') return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-        if (p === 'piso') return 'bg-slate-700/50 text-slate-300 border border-slate-600';
-        return 'bg-slate-800 text-slate-400 border border-slate-700';
+    // Cores sutis para o perfil
+    const getPerfilColor = (perfil) => {
+        const p = (perfil || '').toLowerCase();
+        if (p === 'principal') return 'text-white font-bold';
+        if (p === 'protecao') return 'text-amber-300';
+        if (p === 'valor') return 'text-emerald-300';
+        return 'text-slate-400';
     };
 
     let htmlGrupos = grupos.map((g) => {
         const veiculos = (g.catalogo_de_veiculos || []);
 
         const htmlVeiculos = veiculos.map(v => `
-            <div class="p-3.5 bg-base-card rounded-xl border border-accent/20 space-y-2.5 hover:border-accent/50 transition-all relative">
-                <div class="flex justify-between items-start gap-2">
-                    <div>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded uppercase ${getPerfilStyle(v.perfil_veiculo)}">${v.perfil_veiculo || 'Veículo'}</span>
-                            <span class="text-[9px] font-semibold px-2 py-0.5 rounded ${v.grau_dependencia === 'correlacionado' ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700'} uppercase" title="Grau de Dependência">
-                                ${v.grau_dependencia || 'independente'}
-                            </span>
-                            ${getConfiancaBadge(v.confianca_da_conversao)}
-                        </div>
-                        <h5 class="font-bold text-slate-100 text-xs mt-1.5">${v.tipo_veiculo}</h5>
-                    </div>
-                    <div class="text-right shrink-0">
-                        <span class="text-xs font-black px-2 py-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 inline-block">
-                            <i class="fa-solid fa-chart-line mr-1 text-[10px]"></i>Score: ${v.moneyball_score ?? '-'}
-                        </span>
+            <div class="bg-base-panel border border-base-border rounded-lg p-4 hover:border-slate-500 transition-colors flex flex-col justify-between space-y-3">
+                
+                <!-- Topo: Mercado e Score -->
+                <div class="flex justify-between items-start">
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">${v.tipo_veiculo}</span>
+                    <span class="text-[10px] font-mono text-slate-300 bg-base-card px-1.5 py-0.5 rounded border border-base-border">
+                        Score: <span class="text-white font-bold">${v.moneyball_score ?? '-'}</span>
+                    </span>
+                </div>
+
+                <!-- Meio: Seleção principal (Clean) -->
+                <div>
+                    <h5 class="text-base font-bold text-accent tracking-tight">${v.selecao}</h5>
+                    <div class="flex items-center gap-2 mt-1 text-[9px] uppercase tracking-wider font-mono">
+                        <span class="${getPerfilColor(v.perfil_veiculo)}">${v.perfil_veiculo || 'Veículo'}</span>
+                        <span class="text-slate-600">•</span>
+                        <span class="text-slate-500">${v.grau_dependencia || 'independente'}</span>
                     </div>
                 </div>
 
-                <div class="flex justify-between items-center bg-base-bg p-2 rounded-lg border border-base-border text-xs">
-                    <span class="text-accent font-black">${v.selecao}</span>
-                    ${v.odd ? `<span class="text-slate-400 text-[11px]">Odd: <b class="text-white">${v.odd}</b></span>` : '<span class="text-slate-600 text-[10px]">Odd não informada</span>'}
-                </div>
-
-                ${v.porque_este_veiculo ? `<p class="text-[11px] text-slate-400 leading-relaxed"><i class="fa-solid fa-bullseye text-accent/50 mr-1"></i>${v.porque_este_veiculo}</p>` : ''}
-
-                ${(v.assimetrias_relacionadas && v.assimetrias_relacionadas.length > 1) ? `
-                    <div class="text-[10px] text-slate-500 pt-1 flex items-center gap-1 border-t border-base-border/50">
-                        <i class="fa-solid fa-link text-accent"></i> Captura simultânea: <b class="text-slate-300 font-mono">${v.assimetrias_relacionadas.join(", ")}</b>
-                    </div>
-                ` : ''}
+                <!-- Rodapé: Resumo do motivo truncado -->
+                ${v.porque_este_veiculo ? `<p class="text-[10px] text-slate-500 line-clamp-2 leading-relaxed border-t border-base-border/50 pt-2 mt-1">${v.porque_este_veiculo}</p>` : ''}
             </div>
         `).join("");
 
         return `
-            <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-4">
-                <div class="border-b border-base-border pb-3 flex justify-between items-start gap-3">
-                    <div class="space-y-1">
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded bg-accent/20 text-accent font-mono text-xs font-black">${g.id_assimetria || 'A'}</span>
-                            <h4 class="font-bold text-white text-sm">${g.titulo_original_nexus}</h4>
-                            ${g.natureza ? `<span class="text-[9px] font-mono text-slate-400 bg-base-bg px-2 py-0.5 rounded border border-base-border">${g.natureza}</span>` : ''}
-                        </div>
-                        <p class="text-xs text-slate-400 leading-relaxed">${g.descricao_nexus}</p>
+            <div class="space-y-3 mb-8">
+                <!-- Cabeçalho do Grupo (Alinhado e compacto) -->
+                <div class="space-y-1">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs font-mono font-bold text-slate-500">${g.id_assimetria || '#'}</span>
+                        <h4 class="text-sm font-semibold text-white">${g.titulo_original_nexus}</h4>
+                        <span class="text-slate-600">|</span>
+                        ${renderCriticidade(g.criticidade)}
                     </div>
-                    <div class="shrink-0">${getCriticidadeBadge(g.criticidade)}</div>
+                    <!-- line-clamp-2 reduz o texto gigante -->
+                    <p class="text-[11px] text-slate-400 line-clamp-2 pl-6" title="${g.descricao_nexus}">${g.descricao_nexus}</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+                <!-- Grid de Veículos (Bilhetes Limpos) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
                     ${htmlVeiculos}
                 </div>
             </div>
@@ -339,54 +300,50 @@ function renderizarPainelPortfolio(data) {
 
     display.innerHTML = `
         <div class="space-y-6">
-            <!-- BARRA DE TOPO & VEÍCULO DESTAQUE -->
-            <div class="p-5 bg-gradient-to-r from-accent/20 via-base-panel to-base-panel border border-accent/30 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-[10px] font-bold tracking-widest text-accent uppercase"><i class="fa-solid fa-car-side mr-1"></i> Catálogo de Veículos (Cortex-Ready)</span>
-                        <h3 class="font-extrabold text-white text-base mt-1">${data.perfil_de_jogo || "Catálogo de conversão extraído."}</h3>
-                    </div>
-                    <button type="button" onclick="reexibirInput()" class="px-3 py-1.5 bg-base-card hover:bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold border border-base-border transition-all cursor-pointer">
-                        <i class="fa-solid fa-rotate-left mr-1"></i> Nova Extração
-                    </button>
+            
+            <!-- CONTROLES SUPERIORES -->
+            <div class="flex items-center justify-between">
+                <div class="text-xs text-slate-500 flex items-center gap-2">
+                    <i class="fa-solid fa-check-circle text-emerald-500"></i> Catálogo estruturado com sucesso.
                 </div>
-
-                ${destaque ? `
-                    <div class="mt-2 p-3.5 bg-base-bg/90 border border-emerald-500/40 rounded-xl space-y-2">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono text-xs font-black">${destaque.id_assimetria_origem || 'A1'}</span>
-                                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-trophy mr-1"></i> Veículo Alpha — Dominância por Score</span>
-                            </div>
-                            <span class="text-xs font-black px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                                Score: ${destaque.moneyball_score}
-                            </span>
-                        </div>
-                        <div class="text-xs">
-                            <span class="text-slate-400">${destaque.titulo_assimetria_origem || 'Assimetria Dominante'} ➔ </span>
-                            <b class="text-white">${destaque.tipo_veiculo}</b> (<span class="text-accent font-bold">${destaque.selecao}</span>)
-                        </div>
-                        ${destaque.justificativa_destaque ? `<p class="text-[11px] text-slate-400/90">${destaque.justificativa_destaque}</p>` : ''}
-                    </div>
-                ` : ''}
+                <button type="button" onclick="reexibirInput()" class="text-[10px] uppercase tracking-wider font-bold text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Nova Extração
+                </button>
             </div>
 
-            <!-- GRUPOS DE ASSIMETRIA -->
-            ${htmlGrupos}
+            <!-- VEÍCULO DESTAQUE (BANNER LIMPO) -->
+            ${destaque ? `
+                <div class="bg-base-panel border-l-2 border-accent p-4 rounded-r-lg flex justify-between items-center">
+                    <div>
+                        <span class="text-[9px] text-accent font-bold uppercase tracking-widest block mb-1">Veículo Alpha (${destaque.id_assimetria_origem || 'A1'})</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-sm font-semibold text-slate-300">${destaque.tipo_veiculo}:</span>
+                            <span class="text-lg font-bold text-white">${destaque.selecao}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Moneyball Score</span>
+                        <span class="text-xl font-black text-white font-mono">${destaque.moneyball_score}</span>
+                    </div>
+                </div>
+            ` : ''}
 
-            <!-- DESCARTES PADRONIZADOS -->
+            <div class="w-full h-px bg-base-border my-6"></div>
+
+            <!-- LISTAGEM DOS GRUPOS -->
+            <div class="space-y-2">
+                ${htmlGrupos}
+            </div>
+
+            <!-- DESCARTES (Lista super discreta) -->
             ${descartados.length > 0 ? `
-                <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-3 opacity-80">
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-shield-halved text-amber-400 mr-1.5"></i> Filtro de Redundância & Descartes</h4>
-                    <div class="space-y-2">
+                <div class="mt-8 pt-4 border-t border-base-border border-dashed space-y-3">
+                    <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Veículos Descartados (Filtro)</h4>
+                    <div class="space-y-1.5">
                         ${descartados.map(d => `
-                            <div class="p-2.5 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border flex justify-between items-start gap-2">
-                                <div>
-                                    <b class="text-slate-300">${d.tipo_veiculo} (${d.selecao}):</b> ${d.motivo}
-                                </div>
-                                <span class="text-[9px] font-mono text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20 uppercase whitespace-nowrap shrink-0">
-                                    ${(d.categoria_descarte || 'descartado').replace('_', ' ')}
-                                </span>
+                            <div class="flex items-start gap-2 text-[10px]">
+                                <i class="fa-solid fa-xmark text-slate-600 mt-0.5"></i>
+                                <span class="text-slate-400"><b class="text-slate-300">${d.selecao}</b> — ${d.motivo}</span>
                             </div>
                         `).join("")}
                     </div>
