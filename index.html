@@ -486,11 +486,14 @@ function renderizarPainelPortfolio(data) {
                     </summary>
                     <div class="space-y-2 mt-3">
                         ${descartados.map(d => `
-                            <div class="p-2.5 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border flex justify-between items-start gap-2">
-                                <div><b class="text-slate-300">${d.tipo_veiculo} (${d.selecao}):</b> ${d.motivo}</div>
-                                <span class="text-[9px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700 uppercase whitespace-nowrap shrink-0">
-                                    ${categoriaDescarte[d.categoria_descarte] || 'Descartada'}
-                                </span>
+                            <div class="p-3 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border space-y-1.5">
+                                <div class="flex items-center justify-between gap-2 flex-wrap">
+                                    <span class="font-bold text-slate-300">${d.tipo_veiculo} <span class="text-slate-500 font-normal">(${d.selecao})</span></span>
+                                    <span class="text-[9px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700 uppercase whitespace-nowrap">
+                                        ${categoriaDescarte[d.categoria_descarte] || 'Descartada'}
+                                    </span>
+                                </div>
+                                <p class="leading-relaxed">${d.motivo}</p>
                             </div>
                         `).join("")}
                     </div>
