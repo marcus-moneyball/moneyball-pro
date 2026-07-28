@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moneyball Bet Builder | Suas Entradas do Dia</title>
+    <title>MoneyballPro</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -65,13 +65,13 @@
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Pronto pra analisar seu jogo
             </div>
-            <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL <span class="text-accent">BET BUILDER</span></h1>
+            <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
             <p class="text-xs text-slate-500">Cole o dossiê da partida e veja as melhores entradas, sem enrolação.</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
         <div id="input-container" class="space-y-6">
-            <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
+            <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
 
             <details class="bg-base-panel border border-base-border rounded-2xl p-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -97,6 +97,13 @@
 
         <!-- DISPLAY DE RESULTADOS -->
         <div id="display-area"></div>
+
+        <!-- AVISO LEGAL -->
+        <footer class="pt-4 pb-2 text-center">
+            <p class="text-[10px] text-slate-600 leading-relaxed max-w-lg mx-auto">
+                Nenhum modelo estatístico é capaz de prever resultados esportivos com certeza. Eventos esportivos possuem variáveis imprevisíveis e qualquer decisão tomada pelo usuário é de sua inteira responsabilidade. Ferramenta de análise estatística. Não constitui recomendação de aposta nem garante lucro. <b class="text-slate-500">18+</b>.
+            </p>
+        </footer>
     </div>
 
 <script>
@@ -124,9 +131,10 @@ function reexibirInput() {
 window.reexibirInput = reexibirInput;
 
 const MODULES = {
-    beisebol: { label: "Beisebol", icon: "fa-baseball" },
     futebol: { label: "Futebol", icon: "fa-futbol" },
-    basquete: { label: "Basquete", icon: "fa-basketball" }
+    beisebol: { label: "MLB", icon: "fa-baseball" },
+    basquete: { label: "NBA", icon: "fa-basketball" },
+    nfl: { label: "NFL", icon: "fa-football" }
 };
 
 let sportAtivo = "futebol";
@@ -164,6 +172,7 @@ Toda entrada gerada em "catalogo_de_veiculos" ou "veiculo_destaque" DEVE pertenc
 - BEISEBOL: Money Line | Handicap de Corridas / Vencedor (Run Line) | Total de Corridas na Partida | Money Line F5 (Primeiras 5 Entradas) | Total de Corridas F5
 - BASQUETE: Money Line | Handicap de Pontos | Total de Pontos
 - FUTEBOL: Chance Dupla | Handicap Asiático/Europeu de Gols | Total de Gols na Partida | Resultado do Intervalo (1º Tempo)
+- NFL/NCAA (FUTEBOL AMERICANO): Money Line | Handicap de Pontos (Spread) | Total de Pontos | Money Line 1º Tempo | Total de Pontos 1º Tempo
 
 PROIBIDO gerar entradas de escanteios, cartões, chutes a gol, faltas, props de jogador, ou qualquer mercado fora dessa lista, mesmo que a assimetria do Nexus aponte claramente pra esse tipo de vantagem.
 
