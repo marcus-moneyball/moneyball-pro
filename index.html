@@ -130,10 +130,10 @@ function reexibirInput() {
 window.reexibirInput = reexibirInput;
 
 const MODULES = {
-    futebol: { label: "Futebol", icon: "fa-futbol" },
-    beisebol: { label: "MLB", icon: "fa-baseball" },
-    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
-    nfl: { label: "NFL/NCAA", icon: "fa-football" }
+    futebol: { label: "Futebol", icon: "fa-futbol", temProp: false },
+    beisebol: { label: "MLB", icon: "fa-baseball", temProp: true },
+    basquete: { label: "NBA/WNBA", icon: "fa-basketball", temProp: true },
+    nfl: { label: "NFL/NCAA", icon: "fa-football", temProp: false }
 };
 
 const MODOS = {
@@ -157,6 +157,14 @@ function buildSportTabs() {
 function buildModeTabs() {
     const container = document.getElementById("mode-tabs");
     if (!container) return;
+    const esporteAtual = MODULES[sportAtivo];
+    if (!esporteAtual || !esporteAtual.temProp) {
+        modoAtivo = "coletivo";
+        container.innerHTML = "";
+        container.classList.add("hidden");
+        return;
+    }
+    container.classList.remove("hidden");
     container.innerHTML = Object.entries(MODOS).map(([key, mod]) => `
         <button type="button" onclick="selecionarModo('${key}')" id="modo-${key}" class="py-2.5 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === modoAtivo ? 'bg-value/15 border-value text-value' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
@@ -167,6 +175,7 @@ function buildModeTabs() {
 function selecionarSport(key) {
     sportAtivo = key;
     buildSportTabs();
+    buildModeTabs();
 }
 window.selecionarSport = selecionarSport;
 
@@ -180,12 +189,21 @@ window.selecionarModo = selecionarModo;
 // SYSTEM PROMPT — Bet Builder V1 (Over/Under honesto)
 // ============================================================
 function montarSystemPrompt(esporte, modo) {
-  const CATALOGOS = {
+  const CATALOGOS_COLETIVO = {
     futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
-    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total) | "Strikeouts do Arremessador" (prop)',
+    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)',
     basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)"',
     nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)"'
   };
+  const CATALOGOS_PROP = {
+    futebol: null,
+    beisebol: '"Strikeouts do Arremessador"',
+    basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
+    nfl: null
+  };
+
+  const catalogoAtivo = modo === "prop" ? CATALOGOS_PROP[esporte] : CATALOGOS_COLETIVO[esporte];
+  const catalogoTexto = catalogoAtivo || CATALOGOS_COLETIVO[esporte];
 
   return `Você é o Moneyball Bet Builder V1 para o esporte: ${esporte.toUpperCase()} (modo: ${modo}).
 
@@ -199,8 +217,8 @@ Sua missão é montar, quando fizer sentido, uma múltipla de 3 a 4 pernas que c
 ------------------------------------------------
 
 [0. CATÁLOGO DE MERCADOS PERMITIDOS — MATRIZ V1 (RÍGIDO)]
-Para ${esporte.toUpperCase()}, os ÚNICOS mercados permitidos são:
-${CATALOGOS[esporte] || CATALOGOS.futebol}
+Para ${esporte.toUpperCase()} no modo ${modo.toUpperCase()}, os ÚNICOS mercados permitidos são:
+${catalogoTexto}
 
 PROIBIDO qualquer mercado fora dessa lista (nada de Moneyline seco, Handicap Asiático fora do catálogo, escanteios, cartões, etc.) — se uma assimetria só puder ser expressa fora daqui, descarte-a com "categoria_descarte": "fora_do_escopo".
 
