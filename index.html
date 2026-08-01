@@ -130,10 +130,10 @@ function reexibirInput() {
 window.reexibirInput = reexibirInput;
 
 const MODULES = {
-    futebol: { label: "Futebol", icon: "fa-futbol", temProp: false },
+    futebol: { label: "Futebol", icon: "fa-futbol", temProp: true },
     beisebol: { label: "MLB", icon: "fa-baseball", temProp: true },
     basquete: { label: "NBA/WNBA", icon: "fa-basketball", temProp: true },
-    nfl: { label: "NFL/NCAA", icon: "fa-football", temProp: false }
+    nfl: { label: "NFL/NCAA", icon: "fa-football", temProp: true }
 };
 
 const MODOS = {
@@ -196,10 +196,10 @@ function montarSystemPrompt(esporte, modo) {
     nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)"'
   };
   const CATALOGOS_PROP = {
-    futebol: null,
+    futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
     beisebol: '"Strikeouts do Arremessador"',
     basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
-    nfl: null
+    nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
   };
 
   const catalogoAtivo = modo === "prop" ? CATALOGOS_PROP[esporte] : CATALOGOS_COLETIVO[esporte];
