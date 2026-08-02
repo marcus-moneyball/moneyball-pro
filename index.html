@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoneyballPro</title>
+
+    <!-- PWA: transforma em app instalável -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0c10">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MoneyballPro">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -249,7 +258,15 @@ Preencha "coerencia_explicada" com uma frase conectando as pernas ao mesmo rotei
 
 ------------------------------------------------
 
-[3. MONTAGEM DA MÚLTIPLA]
+[3. MARGEM DE SEGURANÇA NA ESCOLHA DA LINHA]
+Quando o mercado permitir escolher entre linhas alternativas (Over/Under com múltiplas opções, ex: 9.5 / 8.5 / 7.5 escanteios), NUNCA escolha a linha mais "no limite" só porque ela parece capturar melhor a assimetria.
+
+- **Modo coletivo**: prefira uma linha 1.0 unidade abaixo da leitura central da evidência (ex: se a evidência aponta ~9 corridas, prefira Over 7.5 a Over 8.5).
+- **Modo prop** (variância estruturalmente maior — amostra de jogador/estatística estreita): prefira uma linha 1.5 a 2.0 unidades abaixo da leitura central (ex: se a evidência aponta ~9.5 escanteios, prefira Over 7.5 a Over 8.5).
+
+Isso só se aplica quando o usuário colou linhas alternativas reais nos prints — nunca invente uma linha que não veio na entrada. Registre em "motivo" por que a linha escolhida (e não a mais "seca") foi a selecionada.
+
+[4. MONTAGEM DA MÚLTIPLA]
 - 3 a 4 pernas no máximo, priorizando as de maior qualidade (forca alta + persistencia alta + confianca alta > forca alta + persistencia media + confianca alta).
 - Odd combinada = produto das odds REAIS informadas na entrada. Se faltar odd de alguma perna escolhida, informe "odd_combinada": null e avise no "motivo" que falta odd real pra calcular.
 - Faixa de referência (não obrigatória, é só um guia editorial): odd combinada entre 2.20 e 3.80 — fora disso, apenas comente, não rejeite automaticamente.
