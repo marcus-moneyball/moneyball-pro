@@ -67,10 +67,10 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V1 — Over/Under
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V1 — team/props
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Cole o dossiê do Nexus e veja a múltipla, sem número inventado.</p>
+            <p class="text-xs text-slate-500">Cole o dossiê do Nexus e veja as entradas,</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
@@ -79,15 +79,20 @@
 
             <div id="mode-tabs" class="grid grid-cols-2 gap-2"></div>
 
-            <details class="bg-base-panel border border-base-border rounded-2xl p-4">
-                <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
-                    <i class="fa-solid fa-key text-accent"></i> Sua chave da API Groq
-                </summary>
-                <div class="mt-4 space-y-2">
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no seu navegador)</label>
-                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
-                </div>
-            </details>
+         <details class="bg-base-panel border border-base-border rounded-2xl p-4">
+    <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
+        <i class="fa-solid fa-key text-accent"></i> 
+        Cole sua chave da API Groq 
+        <!-- Link inserido como subtexto/ajuda -->
+        <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="text-xs text-accent underline ml-auto hover:opacity-80" onclick="event.stopPropagation()">
+            (Gerar chave aqui <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>)
+        </a>
+    </summary>
+    <div class="mt-4 space-y-2">
+        <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no seu navegador)</label>
+        <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
+    </div>
+</details>
 
             <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
                 <div class="flex items-center gap-2">
