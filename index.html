@@ -13,6 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MoneyballPro">
+
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +55,6 @@
         }
         .betslip::before { left: -7px; }
         .betslip::after { right: -7px; }
-        .tear-divider { border-top: 2px dashed rgba(242,177,52,0.3); }
         @media (prefers-reduced-motion: no-preference) {
             .fade-up { animation: fadeUp .4s ease-out both; }
             @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -67,18 +67,16 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V1 — Over/Under
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Ranking Único
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Cole o dossiê do Nexus e veja a múltipla, sem número inventado.</p>
+            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (jogo + props) e veja o ranking, sem número inventado.</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
-        <div id="input-container" class="space-y-6">
-            <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        <div id="input-container" class="space-y-4">
 
-            <div id="mode-tabs" class="grid grid-cols-2 gap-2"></div>
-
+            <!-- CHAVE DA API — primeiro, como pedido -->
             <details class="bg-base-panel border border-base-border rounded-2xl p-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <i class="fa-solid fa-key text-accent"></i> Sua chave da API Groq
@@ -89,16 +87,17 @@
                 </div>
             </details>
 
+            <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+
             <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                    <label class="text-sm font-semibold text-slate-300">Dossiê da partida (Nexus) + odds reais</label>
+                    <label class="text-sm font-semibold text-slate-300">Dossiê da partida (jogo + props) + odds reais</label>
                 </div>
-                <div id="modo-indicador" class="text-[11px] text-slate-500 -mt-2"></div>
-                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON do Nexus (com as odds reais que você anotou)..."></textarea>
+                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props que você pediu) com as odds reais que você anotou..."></textarea>
 
                 <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-bolt"></i> Montar Minha Múltipla
+                    <i class="fa-solid fa-bolt"></i> Gerar Ranking
                 </button>
             </div>
         </div>
@@ -121,8 +120,6 @@ function salvarKey(val) {
 
 document.addEventListener("DOMContentLoaded", () => {
     buildSportTabs();
-    buildModeTabs();
-    atualizarIndicadorModo();
     const savedKey = localStorage.getItem("moneyball_groq_key");
     if (savedKey) {
         const input = document.getElementById("groq-key");
@@ -130,30 +127,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-function reexibirInput() {
-    const inputContainer = document.getElementById("input-container");
-    const display = document.getElementById("display-area");
-    const jsonInput = document.getElementById("json-input");
-    if (inputContainer) inputContainer.classList.remove("hidden");
-    if (display) display.innerHTML = "";
-    if (jsonInput) jsonInput.focus();
-}
-window.reexibirInput = reexibirInput;
-
 const MODULES = {
-    futebol: { label: "Futebol", icon: "fa-futbol", temProp: true },
-    beisebol: { label: "MLB", icon: "fa-baseball", temProp: true },
-    basquete: { label: "NBA/WNBA", icon: "fa-basketball", temProp: true },
-    nfl: { label: "NFL/NCAA", icon: "fa-football", temProp: true }
-};
-
-const MODOS = {
-    coletivo: { label: "Coletivo (Time)", icon: "fa-people-group" },
-    prop: { label: "Prop (Jogador)", icon: "fa-user" }
+    futebol: { label: "Futebol", icon: "fa-futbol" },
+    beisebol: { label: "MLB", icon: "fa-baseball" },
+    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
+    nfl: { label: "NFL/NCAA", icon: "fa-football" }
 };
 
 let sportAtivo = "futebol";
-let modoAtivo = "coletivo";
 
 function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
@@ -165,53 +146,19 @@ function buildSportTabs() {
     `).join("");
 }
 
-function buildModeTabs() {
-    const container = document.getElementById("mode-tabs");
-    if (!container) return;
-    const esporteAtual = MODULES[sportAtivo];
-    if (!esporteAtual || !esporteAtual.temProp) {
-        modoAtivo = "coletivo";
-        container.innerHTML = "";
-        container.classList.add("hidden");
-        return;
-    }
-    container.classList.remove("hidden");
-    container.innerHTML = Object.entries(MODOS).map(([key, mod]) => `
-        <button type="button" onclick="selecionarModo('${key}')" id="modo-${key}" class="py-2.5 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === modoAtivo ? 'bg-value/15 border-value text-value' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
-            <i class="fa-solid ${mod.icon}"></i> ${mod.label}
-        </button>
-    `).join("");
-}
-
-function atualizarIndicadorModo() {
-    const el = document.getElementById("modo-indicador");
-    if (!el) return;
-    const esporte = MODULES[sportAtivo]?.label || "";
-    const modoTexto = modoAtivo === "prop" ? "PROP (jogador/estatística)" : "COLETIVO (time)";
-    el.innerHTML = `<i class="fa-solid fa-circle-info mr-1"></i> Esperando dossiê de <b class="text-slate-300">${esporte}</b> — modo <b class="text-accent">${modoTexto}</b> (detectado automaticamente ao colar).`;
-}
-
 function selecionarSport(key) {
     sportAtivo = key;
     buildSportTabs();
-    buildModeTabs();
-    atualizarIndicadorModo();
 }
 window.selecionarSport = selecionarSport;
 
-function selecionarModo(key) {
-    modoAtivo = key;
-    buildModeTabs();
-    atualizarIndicadorModo();
-}
-window.selecionarModo = selecionarModo;
-
 // ============================================================
-// SYSTEM PROMPT — Bet Builder V1 (Over/Under honesto)
+// SYSTEM PROMPT — Bet Builder V2 (lê 1 JSON com coletivo + props,
+// devolve uma lista única de pernas elegíveis pro ranking)
 // ============================================================
-function montarSystemPrompt(esporte, modo) {
+function montarSystemPrompt(esporte) {
   const CATALOGOS_COLETIVO = {
-    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" (substitui Moneyline seco, mais seguro) | "Handicap Asiático/Europeu de Gols"',
+    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
     beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total) | "Money Line" | "Handicap de Corridas / Vencedor (Run Line)"',
     basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"',
     nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"'
@@ -223,106 +170,92 @@ function montarSystemPrompt(esporte, modo) {
     nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
   };
 
-  const catalogoAtivo = modo === "prop" ? CATALOGOS_PROP[esporte] : CATALOGOS_COLETIVO[esporte];
-  const catalogoTexto = catalogoAtivo || CATALOGOS_COLETIVO[esporte];
-
-  return `Você é o Moneyball Bet Builder V1 para o esporte: ${esporte.toUpperCase()} (modo: ${modo}).
+  return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
 
 FILOSOFIA:
-Você NÃO inventa número, projeção ou "gordura" nenhuma. Você só trabalha com o que existe de fato:
-(a) os campos QUALITATIVOS que o Nexus já entregou (forca, persistencia, confianca_do_julgamento),
-(b) as ODDS REAIS que o usuário colou na entrada. Se uma odd não veio na entrada, não invente uma.
-
-Sua missão é montar, quando fizer sentido, uma múltipla de 3 a 4 pernas que conta a MESMA história do jogo — nunca pernas soltas escolhidas por conveniência.
+Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" (o jogo como um todo) e um array "analises_prop" (zero ou mais jogadores/estatísticas). Sua missão é aplicar o MESMO filtro de qualidade nos dois, e devolver uma ÚNICA lista de pernas elegíveis — sem separar em "time" e "prop" pro usuário. Você NÃO inventa número, projeção ou odd. Só usa (a) os campos qualitativos que o Nexus já entregou (forca, persistencia, confianca_do_julgamento) e (b) odds REAIS que o usuário colou na entrada.
 
 ------------------------------------------------
 
-[0. CATÁLOGO DE MERCADOS PERMITIDOS — MATRIZ V1 (RÍGIDO)]
-Para ${esporte.toUpperCase()} no modo ${modo.toUpperCase()}, os ÚNICOS mercados permitidos são:
-${catalogoTexto}
+[0. CATÁLOGO DE MERCADOS PERMITIDOS]
+Pra assimetrias vindas de "analise_coletiva", os ÚNICOS mercados permitidos são:
+${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
 
-PROIBIDO qualquer mercado fora dessa lista (nada de escanteios/cartões fora do que foi listado pra Futebol, nada de props fora do catálogo de prop, etc.) — se uma assimetria só puder ser expressa fora daqui, descarte-a com "categoria_descarte": "fora_do_escopo".
+Pra assimetrias vindas de qualquer item de "analises_prop", os ÚNICOS mercados permitidos são:
+${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
 
-**Atenção especial pra Money Line / Chance Dupla / Handicap**: são mercados mais "secos" (dependem de acertar o resultado exato, não só um volume). Eles NÃO têm nenhum privilégio no Gate — passam pelas mesmas exigências da Seção 1, sem exceção. Se a evidência não for forte o suficiente, descarte-os com a mesma facilidade que descartaria um Total.
-
-------------------------------------------------
-
-[1. GATE OBRIGATÓRIO — SÓ QUALIDADE REAL, SEM NÚMERO INVENTADO]
-Leia o dossiê do Nexus (schema unificado: "resultado_principal", "assimetrias", "deliberacao"). Uma perna só é elegível se, simultaneamente:
-- "resultado_principal.cenario_definido" (ou "tendencia_definida") == true;
-- "resultado_principal.forca" == "alta";
-- a assimetria de origem tem "persistencia" == "media" OU "alta" (NUNCA "baixa" sozinha);
-- "precificacao_local.confianca_do_julgamento" == "alta" para a assimetria usada;
-- "deliberacao.apenas_espelha_mercado" == false.
-
-Se qualquer um desses falhar, a perna NÃO entra na múltipla — vai para "pernas_descartadas".
-
-Se NENHUMA perna passar no Gate: "status_conversao": "sem_conversao".
+PROIBIDO qualquer mercado fora dessas listas — se uma assimetria só puder ser expressa fora daqui, descarte-a com "categoria_descarte": "fora_do_escopo".
 
 ------------------------------------------------
 
-[2. REGRA DE COERÊNCIA NARRATIVA (evita múltipla incoerente)]
-Todas as pernas escolhidas precisam derivar do MESMO roteiro (o texto de "resultado_principal.descricao"/"narrativa.cenario_provavel"). Antes de fechar a múltipla, verifique:
+[1. GATE OBRIGATÓRIO — MESMA REGRA PRO COLETIVO E PRA CADA PROP]
+Para CADA assimetria (seja de "analise_coletiva" ou de qualquer item de "analises_prop"), uma perna só é elegível se, simultaneamente:
+- o bloco de origem tem "resultado_principal.cenario_definido" == true (nunca converta nada de um bloco com cenario_definido == false);
+- "resultado_principal.forca" == "alta" NESSE bloco;
+- a assimetria específica tem "persistencia" == "media" OU "alta" (nunca "baixa" sozinha);
+- "precificacao_local.confianca_do_julgamento" == "alta" pra essa assimetria;
+- "deliberacao.apenas_espelha_mercado" == false nesse bloco.
 
-- **Redundância** (PROIBIDO): duas pernas do mesmo mercado só com linha diferente (ex: Over 6.5 E Over 7.5 de Total de Corridas). Mantenha só a de maior qualidade.
-- **Contradição** (PROIBIDO): pernas que não podem ser verdade ao mesmo tempo sem uma explicação causal explícita (ex: "Under Total da Partida" + "Team Total Over do time mais ofensivo" só se fizer sentido — o outro time jogando muito retraído — e isso precisa estar escrito em "coerencia_explicada").
-- **Falta de relação causal** (PROIBIDO): uma perna que não se conecta a nenhuma evidência do MESMO cenário dominante (ela pode ser "verdadeira" isoladamente, mas se não pertence ao mesmo roteiro, não entra nessa múltipla).
+Money Line, Chance Dupla e Handicap NÃO têm nenhum privilégio — passam pela mesma régua acima, sem exceção.
 
-Preencha "coerencia_explicada" com uma frase conectando as pernas ao mesmo roteiro — se você não conseguir escrever essa frase de forma honesta, a múltipla está incoerente e deve ser reduzida ou cancelada.
+Se NENHUMA assimetria (nem do coletivo, nem de nenhum prop) passar: "status_geral": "sem_conversao".
+
+------------------------------------------------
+
+[2. MARGEM DE SEGURANÇA NA ESCOLHA DA LINHA]
+Quando existir linha alternativa real nos prints, NUNCA escolha a mais "no limite":
+- Pernas de "analise_coletiva": prefira 1.0 unidade de folga abaixo da leitura central.
+- Pernas de qualquer prop (variância maior): prefira 1.5 a 2.0 unidades de folga abaixo da leitura central.
+Nunca invente uma linha que não veio na entrada.
 
 ------------------------------------------------
 
-[3. MARGEM DE SEGURANÇA NA ESCOLHA DA LINHA]
-Quando o mercado permitir escolher entre linhas alternativas (Over/Under com múltiplas opções, ex: 9.5 / 8.5 / 7.5 escanteios), NUNCA escolha a linha mais "no limite" só porque ela parece capturar melhor a assimetria.
-
-- **Modo coletivo**: prefira uma linha 1.0 unidade abaixo da leitura central da evidência (ex: se a evidência aponta ~9 corridas, prefira Over 7.5 a Over 8.5).
-- **Modo prop** (variância estruturalmente maior — amostra de jogador/estatística estreita): prefira uma linha 1.5 a 2.0 unidades abaixo da leitura central (ex: se a evidência aponta ~9.5 escanteios, prefira Over 7.5 a Over 8.5).
-
-Isso só se aplica quando o usuário colou linhas alternativas reais nos prints — nunca invente uma linha que não veio na entrada. Registre em "motivo" por que a linha escolhida (e não a mais "seca") foi a selecionada.
-
-[4. MONTAGEM DA MÚLTIPLA]
-- 3 a 4 pernas no máximo, priorizando as de maior qualidade (forca alta + persistencia alta + confianca alta > forca alta + persistencia media + confianca alta).
-- Odd combinada = produto das odds REAIS informadas na entrada. Se faltar odd de alguma perna escolhida, informe "odd_combinada": null e avise no "motivo" que falta odd real pra calcular.
-- Faixa de referência (não obrigatória, é só um guia editorial): odd combinada entre 2.20 e 3.80 — fora disso, apenas comente, não rejeite automaticamente.
-
-------------------------------------------------
+[3. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
+Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio — mas nunca em listas separadas.
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_de_jogo": "Síntese do roteiro do jogo, em tom de apostador...",
-  "status_conversao": "convertido|sem_conversao",
+  "perfil_geral": "Síntese curta do jogo e dos props pedidos, em tom de apostador...",
+  "status_geral": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
-  "multipla_recomendada": {
-    "coerencia_explicada": "Frase conectando todas as pernas ao mesmo roteiro do jogo.",
-    "odd_combinada": 2.65,
-    "pernas": [
-      {
-        "mercado": "Nome do mercado (Catálogo [0])",
-        "selecao": "Seleção exata (ex: Mais de 6.5 Corridas)",
-        "odd": "1.85",
-        "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
-        "motivo": "Por que essa perna, em tom de apostador, sem jargão técnico."
-      }
-    ]
-  },
+  "pernas_elegiveis": [
+    {
+      "origem": "coletivo",
+      "alvo_prop": null,
+      "mercado": "Nome do mercado (Catálogo [0])",
+      "selecao": "Seleção exata (ex: Mais de 6.5 Corridas)",
+      "odd": "1.85",
+      "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
+      "motivo": "Por que essa perna, em tom de apostador, sem jargão técnico."
+    },
+    {
+      "origem": "prop",
+      "alvo_prop": "Nome do jogador ou estatística-alvo",
+      "mercado": "Nome do mercado (Catálogo [0] de prop)",
+      "selecao": "Seleção exata",
+      "odd": "2.10",
+      "qualidade": { "forca": "alta", "persistencia": "media", "confianca": "alta" },
+      "motivo": "..."
+    }
+  ],
   "pernas_descartadas": [
     {
+      "origem": "coletivo|prop",
+      "alvo_prop": null,
       "mercado": "",
       "selecao": "",
-      "categoria_descarte": "baixo_gate|redundante|contraditoria|sem_relacao_causal|fora_do_escopo|sem_odd_real",
+      "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido",
       "motivo": ""
     }
   ]
 }`;
 }
 
-
 async function analisarComGroq() {
     const apiKeyInput = document.getElementById("groq-key");
     const jsonInput = document.getElementById("json-input");
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
-    const inputContainer = document.getElementById("input-container");
 
     if (!apiKeyInput || !jsonInput || !btn || !display) return;
 
@@ -335,40 +268,20 @@ async function analisarComGroq() {
         return;
     }
     if (!raw) {
-        display.innerHTML = alertaErro("Cole o dossiê do Nexus antes de montar a múltipla.");
+        display.innerHTML = alertaErro("Cole o dossiê do Nexus antes de gerar o ranking.");
         jsonInput.focus();
         return;
     }
 
-    // Auto-detecta o modo (coletivo/prop) direto do JSON colado —
-    // não depende de você lembrar de clicar na aba certa antes.
-    let modoDetectado = modoAtivo;
-    let avisoModo = "";
-    try {
-        const dossie = JSON.parse(raw);
-        const fp = dossie.fingerprint || {};
-        const temAlvoProp = !!(fp.jogador_ou_alvo || fp.estatistica_alvo);
-        modoDetectado = temAlvoProp ? "prop" : "coletivo";
-        if (MODULES[sportAtivo] && MODULES[sportAtivo].temProp && modoDetectado !== modoAtivo) {
-            avisoModo = `<div class="text-[10px] text-accent/80 mb-2"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Detectei que esse dossiê é de <b>${modoDetectado === 'prop' ? 'PROP' : 'COLETIVO'}</b> — ajustando automaticamente.</div>`;
-            modoAtivo = modoDetectado;
-            buildModeTabs();
-            atualizarIndicadorModo();
-        }
-    } catch (e) {
-        // Não é JSON válido ainda (ou é texto solto) — segue com o modo já selecionado manualmente.
-    }
-
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Montando a múltipla...`;
-    display.innerHTML = `
-        <div class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse">
-            ${avisoModo}
-            <i class="fa-solid fa-ticket text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade e coerência das pernas...</h3>
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Gerando ranking...`;
+    display.insertAdjacentHTML("afterbegin", `
+        <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
+            <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
+            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade de tudo (jogo + props)...</h3>
             <p class="text-xs text-slate-500">Sem número inventado — só o que o dossiê e as odds reais confirmam.</p>
         </div>
-    `;
+    `);
 
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -380,13 +293,15 @@ async function analisarComGroq() {
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [
-                    { role: "system", content: montarSystemPrompt(sportAtivo, modoAtivo) },
+                    { role: "system", content: montarSystemPrompt(sportAtivo) },
                     { role: "user", content: raw }
                 ],
                 temperature: 0.1,
                 response_format: { type: "json_object" }
             })
         });
+
+        document.getElementById("loading-card")?.remove();
 
         if (!response.ok) throw new Error(`Erro na API (${response.status})`);
 
@@ -396,86 +311,127 @@ async function analisarComGroq() {
 
         jsonInput.value = "";
         jsonInput.focus();
-        renderizarPainel(parsed);
+        renderizarRanking(parsed);
 
     } catch (error) {
         console.error(error);
-        display.innerHTML = alertaErro(`Não deu pra analisar: ${error.message}`);
+        document.getElementById("loading-card")?.remove();
+        display.insertAdjacentHTML("afterbegin", alertaErro(`Não deu pra analisar: ${error.message}`));
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Montar Minha Múltipla`;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Gerar Ranking`;
     }
 }
 window.analisarComGroq = analisarComGroq;
 
 function alertaErro(msg) {
-    return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl">⚠️ ${msg}</div>`;
+    return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
 }
 
 const CATEGORIA_DESCARTE = {
     baixo_gate: "Não passou no filtro de qualidade",
-    redundante: "Repetia outra perna",
-    contraditoria: "Contradizia outra perna",
-    sem_relacao_causal: "Não pertencia ao mesmo roteiro",
-    fora_do_escopo: "Mercado fora da matriz V1",
-    sem_odd_real: "Faltou odd real pra essa perna"
+    fora_do_escopo: "Mercado fora do catálogo",
+    sem_odd_real: "Faltou odd real",
+    cenario_indefinido: "Sem cenário/tendência definida"
 };
 
-function calcularSeloConfiabilidade(q) {
-    if (!q) return { texto: "SEM DADOS", estilo: "bg-slate-800 text-slate-500 border-slate-700" };
+// ---- Cálculo de qualidade e ranking, feito em código (determinístico, sem número inventado) ----
+function pontuarQualidade(q) {
+    if (!q) return 0;
     const valores = [q.forca, q.persistencia, q.confianca].map(v => (v || "").toLowerCase());
-    const altas = valores.filter(v => v === "alta").length;
-    const baixas = valores.filter(v => v === "baixa").length;
-    if (altas === 3) return { texto: "OURO", estilo: "bg-accent/20 text-accent border-accent/40" };
-    if (altas >= 2 && baixas === 0) return { texto: "PRATA", estilo: "bg-slate-300/15 text-slate-200 border-slate-400/30" };
+    const pontos = { alta: 2, media: 1, baixa: 0 };
+    return valores.reduce((soma, v) => soma + (pontos[v] ?? 0), 0);
+}
+
+function seloPorPontuacao(pontos) {
+    if (pontos >= 6) return { texto: "OURO", estilo: "bg-accent/20 text-accent border-accent/40" };
+    if (pontos >= 4) return { texto: "PRATA", estilo: "bg-slate-300/15 text-slate-200 border-slate-400/30" };
     return { texto: "BRONZE", estilo: "bg-orange-800/20 text-orange-300 border-orange-700/40" };
 }
 
-function renderizarPainel(data) {
+function montarRanking(pernas) {
+    const comPontos = pernas.map(p => ({ ...p, _pontos: pontuarQualidade(p.qualidade) }));
+    comPontos.sort((a, b) => b._pontos - a._pontos);
+
+    const top3 = comPontos.slice(0, 3).map((p, i) => ({
+        ...p,
+        _rotulo: ["OURO", "PRATA", "BRONZE"][i],
+        _rotuloEstilo: [
+            "bg-accent/20 text-accent border-accent/40",
+            "bg-slate-300/15 text-slate-200 border-slate-400/30",
+            "bg-orange-800/20 text-orange-300 border-orange-700/40"
+        ][i]
+    }));
+
+    const comOddReal = comPontos.filter(p => p.odd && !isNaN(parseFloat(p.odd)));
+    let cirurgica = null, valor = null;
+    if (comOddReal.length > 0) {
+        const porOdd = [...comOddReal].sort((a, b) => parseFloat(a.odd) - parseFloat(b.odd));
+        cirurgica = { ...porOdd[0], _rotulo: "APOSTA CIRÚRGICA", _rotuloEstilo: "bg-value/20 text-value border-value/40" };
+        const candidataValor = porOdd[porOdd.length - 1];
+        if (candidataValor.odd !== cirurgica.odd || porOdd.length > 1) {
+            valor = { ...candidataValor, _rotulo: "ALTERNATIVA DE VALOR", _rotuloEstilo: "bg-sky-500/20 text-sky-400 border-sky-500/40" };
+        }
+    }
+
+    // monta a lista final sem duplicar visualmente a mesma perna (ela pode acumular rótulos)
+    const resultado = [...top3];
+    [cirurgica, valor].forEach(extra => {
+        if (!extra) return;
+        const jaExiste = resultado.find(r => r.mercado === extra.mercado && r.selecao === extra.selecao && r.alvo_prop === extra.alvo_prop);
+        if (jaExiste) {
+            jaExiste._rotuloExtra = extra._rotulo;
+            jaExiste._rotuloExtraEstilo = extra._rotuloEstilo;
+        } else {
+            resultado.push(extra);
+        }
+    });
+
+    return resultado;
+}
+
+function renderizarRanking(data) {
     const display = document.getElementById("display-area");
     if (!display) return;
-
     const cardId = "resultado-" + Date.now();
 
-    if (data.status_conversao === "sem_conversao") {
-        const htmlSemConversao = `
+    if (data.status_geral === "sem_conversao") {
+        display.insertAdjacentHTML("afterbegin", `
             <div id="${cardId}" class="bg-base-panel border border-amber-500/25 rounded-2xl p-6 space-y-4 fade-up mb-5">
                 <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2 text-accent font-bold text-sm">
-                        <i class="fa-solid fa-shield-halved text-lg"></i> SEM MÚLTIPLA
+                        <i class="fa-solid fa-shield-halved text-lg"></i> SEM RANKING HOJE
                     </div>
-                    <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer" title="Fechar este resultado">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
+                    <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                ${data.perfil_de_jogo ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300">${data.perfil_de_jogo}</div>` : ""}
+                ${data.perfil_geral ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300">${data.perfil_geral}</div>` : ""}
                 <div class="p-4 bg-amber-950/10 border border-amber-900/30 rounded-xl text-xs text-amber-200">
-                    ${data.motivo_sem_conversao || "Nenhuma perna passou no filtro de qualidade real."}
+                    ${data.motivo_sem_conversao || "Nenhuma perna (jogo ou prop) passou no filtro de qualidade real."}
                 </div>
             </div>
-        `;
-        display.insertAdjacentHTML("afterbegin", htmlSemConversao);
+        `);
         return;
     }
 
-    const multipla = data.multipla_recomendada || {};
-    const pernas = multipla.pernas || [];
+    const pernas = data.pernas_elegiveis || [];
     const descartadas = data.pernas_descartadas || [];
+    const ranking = montarRanking(pernas);
 
-    const htmlPernas = pernas.map((p, idx) => {
-        const selo = calcularSeloConfiabilidade(p.qualidade);
+    const htmlItens = ranking.map((p, idx) => {
+        const origemTag = p.origem === "prop"
+            ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 uppercase">Prop${p.alvo_prop ? ': ' + p.alvo_prop : ''}</span>`
+            : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-700/30 text-slate-300 border border-slate-600/40 uppercase">Jogo</span>`;
         return `
         <div class="p-4 bg-base-card rounded-xl border border-accent/20 space-y-2.5 fade-up" style="animation-delay:${idx * 60}ms">
-            <div class="flex justify-between items-start gap-2">
-                <div class="flex items-center gap-1.5">
-                    <span class="w-6 h-6 inline-flex items-center justify-center rounded-full bg-accent/15 text-accent font-mono text-[11px] font-black">${idx + 1}</span>
-                    <span class="text-xs font-bold text-slate-300">${p.mercado}</span>
+            <div class="flex justify-between items-start gap-2 flex-wrap">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p._rotuloEstilo}">${p._rotulo}</span>
+                    ${p._rotuloExtra ? `<span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p._rotuloExtraEstilo}">${p._rotuloExtra}</span>` : ''}
+                    ${origemTag}
                 </div>
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${selo.estilo}" title="Selo calculado a partir de força + persistência + confiança">${selo.texto}</span>
-                    ${p.odd ? `<span class="text-xs font-mono text-white">@${p.odd}</span>` : '<span class="text-[10px] text-slate-600">sem odd</span>'}
-                </div>
+                ${p.odd ? `<span class="text-xs font-mono text-white">@${p.odd}</span>` : '<span class="text-[10px] text-slate-600">sem odd</span>'}
             </div>
+            <p class="text-xs font-bold text-slate-300">${p.mercado}</p>
             <p class="text-accent font-black text-base">${p.selecao}</p>
             ${p.motivo ? `<p class="text-[11px] text-slate-400 leading-relaxed">${p.motivo}</p>` : ''}
         </div>
@@ -484,23 +440,16 @@ function renderizarPainel(data) {
 
     const htmlResultado = `
         <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
-            <div class="betslip rounded-2xl p-5 md:p-6 space-y-3 fade-up" style="--slip-bg:#171307;">
+            <div class="betslip rounded-2xl p-5 md:p-6 space-y-2 fade-up" style="--slip-bg:#171307;">
                 <div class="flex items-center justify-between flex-wrap gap-2">
-                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ticket mr-1"></i> Múltipla Recomendada</span>
-                    <div class="flex items-center gap-2">
-                        ${multipla.odd_combinada ? `<span class="text-xs font-black px-2.5 py-1 rounded bg-value/15 text-value border border-value/30 font-mono">Odd ${multipla.odd_combinada}</span>` : '<span class="text-[10px] text-slate-500">sem odd combinada (faltou odd real)</span>'}
-                        <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer" title="Fechar este resultado">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
+                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Ranking (jogo + props)</span>
+                    <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div class="tear-divider pt-3">
-                    <p class="text-xs text-slate-300 leading-relaxed">${multipla.coerencia_explicada || data.perfil_de_jogo || ''}</p>
-                </div>
+                <p class="text-xs text-slate-300 leading-relaxed">${data.perfil_geral || ''}</p>
             </div>
 
             <div class="space-y-3">
-                ${htmlPernas || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma perna com qualidade suficiente.</p>'}
+                ${htmlItens || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma perna com qualidade suficiente.</p>'}
             </div>
 
             ${descartadas.length > 0 ? `
@@ -512,10 +461,10 @@ function renderizarPainel(data) {
                         ${descartadas.map(d => `
                             <div class="p-3 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border space-y-1.5">
                                 <div class="flex items-center justify-between gap-2 flex-wrap">
-                                    <span class="font-bold text-slate-300">${d.mercado} <span class="text-slate-500 font-normal">(${d.selecao})</span></span>
+                                    <span class="font-bold text-slate-300">${d.mercado || '(prop)'} <span class="text-slate-500 font-normal">(${d.selecao || ''})</span></span>
                                     <span class="text-[9px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700 uppercase whitespace-nowrap">${CATEGORIA_DESCARTE[d.categoria_descarte] || 'Descartada'}</span>
                                 </div>
-                                <p class="leading-relaxed">${d.motivo}</p>
+                                <p class="leading-relaxed">${d.motivo || ''}</p>
                             </div>
                         `).join("")}
                     </div>
@@ -523,7 +472,6 @@ function renderizarPainel(data) {
             ` : ""}
         </div>
     `;
-
     display.insertAdjacentHTML("afterbegin", htmlResultado);
 }
 </script>
