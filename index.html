@@ -70,7 +70,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Ranking Único
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (jogo + props) e veja o ranking, sem número inventado.</p>
+            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e veja o ranking dos bilhetes.</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
@@ -202,7 +202,13 @@ Se NENHUMA assimetria (nem do coletivo, nem de nenhum prop) passar: "status_gera
 
 ------------------------------------------------
 
-[2. MARGEM DE SEGURANÇA NA ESCOLHA DA LINHA]
+[2. NORMALIZAÇÃO DE ODDS — DECIMAL x AMERICANA]
+A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120") — às vezes fontes diferentes no mesmo print (Scores24 costuma ser decimal, Action Network costuma ser americana). SEMPRE converta para decimal no campo "odd" da sua saída, usando a fórmula padrão:
+- Americana positiva (+120): decimal = (120 / 100) + 1 = 2.20
+- Americana negativa (-150): decimal = (100 / 150) + 1 = 1.67
+Isso é conversão de representação de um número real que veio na entrada — NUNCA um cálculo novo, NUNCA uma estimativa. Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
+
+[3. MARGEM DE SEGURANÇA NA ESCOLHA DA LINHA]
 Quando existir linha alternativa real nos prints, NUNCA escolha a mais "no limite":
 - Pernas de "analise_coletiva": prefira 1.0 unidade de folga abaixo da leitura central.
 - Pernas de qualquer prop (variância maior): prefira 1.5 a 2.0 unidades de folga abaixo da leitura central.
@@ -210,7 +216,7 @@ Nunca invente uma linha que não veio na entrada.
 
 ------------------------------------------------
 
-[3. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
+[4. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
 Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio — mas nunca em listas separadas.
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
