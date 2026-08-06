@@ -233,20 +233,24 @@ Isso é conversão de representação de um número real que veio na entrada —
 
 ------------------------------------------------
 
-[4. MARGEM DE SEGURANÇA E STRESS TEST NA ESCOLHA DA LINHA]
-Ao escolher a linha alternativa nos prints do usuário, aplique o recuo de margem adequado à direção da aposta:
+[4. MARGEM DE SEGURANÇA, MARCOS DE MERCADO E STRESS TEST DE LINHA]
+Ao selecionar a linha nos prints da casa de aposta enviados pelo usuário, aplique os filtros de exequibilidade e recuo de margem:
 
-A) PARA SELEÇÕES DE "OVER" (Mais de):
-- Pernas Coletivas: prefira de 0.5 a 1.0 unidade de folga ABAIXO da leitura central (ex: Leitura Over 2.5 -> Seleciona Over 1.5).
-- Pernas de Prop: prefira de 1.5 a 2.0 unidades de folga ABAIXO da leitura central.
+A) PARA SELEÇÕES DE "OVER" (Mais de / Marcos de Desempenho 4+, 5+, 6+):
+- Pernas Coletivas: Exija de 0.5 a 1.0 unidade de folga ABAIXO da leitura central (ex: Leitura Over 2.5 -> Seleciona Over 1.5).
+- Pernas de Prop (Atletas/Pitchers): Aplique a TRAVA DE MARGEM AMPLIADA. Exija de 2.5 a 3.0 unidades de folga ABAIXO da leitura central (ex: Projeção de 8.0 Ks -> Seleciona Marco de 5+ Ks ou Over 4.5 Ks).
+- Flexibilidade: Aproveite as escadas de marcos da casa (ex: 4+, 5+) para descer até a linha exata que garante essa margem estendida.
 
-B) PARA SELEÇÕES DE "UNDER" (Menos de):
-- ATENÇÃO: No Under, a margem de segurança AUMENTA a linha para dar mais teto ao jogo.
-- Pernas Coletivas: prefira de 0.5 a 1.0 unidade de folga ACIMA da leitura central (ex: Leitura Under 2.5 -> Seleciona Under 3.5).
-- Pernas de Prop: prefira de 1.5 a 2.0 unidades de folga ACIMA da leitura central.
+B) PARA SELEÇÕES DE "UNDER" (Menos de / Linhas Fixas da Casa):
+- ATENÇÃO CRÍTICA AO MERCADO REAL: As casas de aposta NÃO costumam oferecer escadas abertas para Under. NUNCA crie ou sugira uma linha teórica de Under (ex: Under 7.5) se ela não estiver visível no print.
+- Teste Obrigatório: Avalie a projeção da IA EXCLUSIVAMENTE contra a linha padrão de Under disponível na entrada (ex: Under 4.5).
+- Margem Mínima de Folga no Under:
+  * Pernas Coletivas: A linha disponível no print deve estar de 0.5 a 1.0 unidade ACIMA da leitura central.
+  * Pernas de Prop (Atletas/Pitchers): A linha disponível no print deve estar de 2.5 a 3.0 unidades ACIMA da leitura central.
+  * Se a linha de Under disponível no print não oferecer essa folga ampliada, REJEITE A PERNA IMEDIATAMENTE.
 
-C) STRESS TEST:
-A linha escolhida deve resistir a uma variância moderada da partida. Se não houver linha alternativa real no print que cumpra essa margem de segurança, descarte a perna com "categoria_descarte": "baixo_gate" e informe no motivo: "Linha sem margem de segurança no stress test". Nunca invente uma linha que não veio na entrada.
+C) STRESS TEST DE EXEQUIBILIDADE:
+A linha escolhida deve resistir à variância e EXISTIR REALMENTE nos prints fornecidos. Se não houver linha alternativa no print que cumpra a margem exigida, descarte a perna com "categoria_descarte": "baixo_gate" e informe no motivo: "Linha real indisponível para a margem exigida no stress test".
 
 ------------------------------------------------
 
@@ -284,13 +288,13 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
       "alvo_prop": null,
       "mercado": "",
       "selecao": "",
-      "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido",
+      "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido|sem_linha_real_no_print",
       "motivo": ""
     }
   ]
 }`;
 }
-
+    
 async function analisarComGroq() {
     const apiKeyInput = document.getElementById("groq-key");
     const jsonInput = document.getElementById("json-input");
