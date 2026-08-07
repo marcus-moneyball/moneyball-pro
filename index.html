@@ -157,6 +157,12 @@ window.selecionarSport = selecionarSport;
 // devolve uma lista única de pernas elegíveis pro ranking)
 // ============================================================
 function montarSystemPrompt(esporte) {
+  const CATALOGOS_COLETIVO = {
+    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
+    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total) | "Money Line" | "Handicap de Corridas / Vencedor (Run Line)"',
+    basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"',
+    nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"'
+  };
   
   const CATALOGOS_PROP = {
     futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
