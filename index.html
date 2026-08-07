@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoneyballPro</title>
- 
-    <!-- PWA: transforma em app instalável -->
+
+    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0c10">
     <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -13,7 +13,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="MoneyballPro">
- 
+
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -63,48 +63,48 @@
 </head>
 <body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% -10%, rgba(242,177,52,0.07), transparent 55%);">
     <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
- 
+
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Ranking Único
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — GPT-OSS
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
             <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e veja o ranking dos bilhetes.</p>
         </div>
- 
+
         <!-- ÁREA DE ENTRADA -->
         <div id="input-container" class="space-y-4">
- 
-            <!-- CHAVE DA API — primeiro, como pedido -->
+
+            <!-- CHAVE DA API -->
             <details class="bg-base-panel border border-base-border rounded-2xl p-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <i class="fa-solid fa-key text-accent"></i> Sua chave da API Groq
                 </summary>
                 <div class="mt-4 space-y-2">
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no seu navegador)</label>
+                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no navegador)</label>
                     <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
                 </div>
             </details>
- 
+
             <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
- 
+
             <div class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
                     <label class="text-sm font-semibold text-slate-300">Dossiê da partida (jogo + props) + odds reais</label>
                 </div>
-                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props que você pediu) com as odds reais que você anotou..."></textarea>
- 
+                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props) com as odds reais que você anotou..."></textarea>
+
                 <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-bolt"></i> Gerar Ranking
                 </button>
             </div>
         </div>
- 
+
         <!-- DISPLAY DE RESULTADOS -->
         <div id="display-area"></div>
- 
+
         <!-- AVISO LEGAL -->
         <footer class="pt-4 pb-2 text-center">
             <p class="text-[10px] text-slate-600 leading-relaxed max-w-lg mx-auto">
@@ -112,12 +112,12 @@
             </p>
         </footer>
     </div>
- 
+
 <script>
 function salvarKey(val) {
     if (val) localStorage.setItem("moneyball_groq_key", val.trim());
 }
- 
+
 document.addEventListener("DOMContentLoaded", () => {
     buildSportTabs();
     const savedKey = localStorage.getItem("moneyball_groq_key");
@@ -126,16 +126,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (input) input.value = savedKey;
     }
 });
- 
+
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
     beisebol: { label: "MLB", icon: "fa-baseball" },
     basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
     nfl: { label: "NFL/NCAA", icon: "fa-football" }
 };
- 
+
 let sportAtivo = "futebol";
- 
+
 function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
     if (!container) return;
@@ -145,17 +145,13 @@ function buildSportTabs() {
         </button>
     `).join("");
 }
- 
+
 function selecionarSport(key) {
     sportAtivo = key;
     buildSportTabs();
 }
 window.selecionarSport = selecionarSport;
- 
-// ============================================================
-// SYSTEM PROMPT — Bet Builder V2 (lê 1 JSON com coletivo + props,
-// devolve uma lista única de pernas elegíveis pro ranking)
-// ============================================================
+
 function montarSystemPrompt(esporte) {
   const CATALOGOS_COLETIVO = {
     futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
@@ -169,48 +165,48 @@ function montarSystemPrompt(esporte) {
     basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
     nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
   };
- 
+
   return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
- 
+
 FILOSOFIA:
 Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" (o jogo como um todo) e um array "analises_prop" (zero ou mais jogadores/estatísticas). Sua missão é aplicar o FUNIL DE DECISÃO EM 4 PASSOS em ambos para devolver uma ÚNICA lista de pernas elegíveis — sem separar em "time" e "prop" pro usuário. Você NÃO inventa número, projeção ou odd. Só usa (a) os campos qualitativos que o Nexus já entregou (forca, persistencia, confianca_do_julgamento) e (b) odds REAIS que o usuário colou na entrada.
- 
+
 ------------------------------------------------
- 
+
 [0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (CLASSIFICAÇÃO EXCLUSIVA)]
 Antes de avaliar qualquer odd ou mercado, analise o dossiê Nexus e classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses abaixo. É PROIBIDO misturar categorias.
- 
+
 1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída)
    - Pergunta: "Quanto este jogo tende a produzir com ambas as partes contribuindo?"
    - Módulos de referência: Controle de Ritmo, Criação, Conversão e Defesa.
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
    - EXCLUI AUTOMATICAMENTE: Team Totals isolados, Moneyline, Handicaps e Spreads.
- 
+
 2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
    - Pergunta: "Existe superioridade e controle suficiente para garantir a vitória/vantagem?"
    - Módulos de referência: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
    - FAMÍLIA PERMITIDA: Moneyline | Handicap | Spread | Chance Dupla.
    - EXCLUI AUTOMATICAMENTE: Totais de Gols/Pontos da Partida e BTTS.
- 
+
 3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
    - Pergunta: "A alta produção ou vulnerabilidade está concentrada predominantemente em APENAS UM dos lados?"
    - Exemplo: Favorito avassalador x Zebra inofensiva | Pitcher/Bullpen destruído x Ataque de elite.
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
    - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida, BTTS e Moneylines puras.
- 
+
 ------------------------------------------------
- 
+
 [1. CATÁLOGO DE MERCADOS PERMITIDOS]
 Pra assimetrias vindas de "analise_coletiva", os ÚNICOS mercados permitidos são os da FAMÍLIA PERMITIDA definida na ETAPA 0, restritos a:
 ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
- 
+
 Pra assimetrias vindas de qualquer item de "analises_prop", os ÚNICOS mercados permitidos são:
 ${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
- 
+
 PROIBIDO qualquer mercado fora dessas listas ou fora da Família Permitida — se uma assimetria só puder ser expressa fora daqui, descarte-a com "categoria_descarte": "fora_do_escopo".
- 
+
 ------------------------------------------------
- 
+
 [2. GATE OBRIGATÓRIO — MESMA REGRA PRO COLETIVO E PRA CADA PROP]
 Para CADA assimetria (seja de "analise_coletiva" ou de qualquer item de "analises_prop"), uma perna só é elegível se, simultaneamente:
 - o bloco de origem tem "resultado_principal.cenario_definido" == true (nunca converta nada de um bloco com cenario_definido == false);
@@ -218,66 +214,51 @@ Para CADA assimetria (seja de "analise_coletiva" ou de qualquer item de "analise
 - a assimetria específica tem "persistencia" == "media" OU "alta" (nunca "baixa" sozinha);
 - "precificacao_local.confianca_do_julgamento" == "alta" pra essa assimetria;
 - "deliberacao.apenas_espelha_mercado" == false nesse bloco.
- 
+
 Money Line, Chance Dupla e Handicap NÃO têm nenhum privilégio — passam pela mesma régua acima, sem exceção.
- 
+
 Se NENHUMA assimetria (nem do coletivo, nem de nenhum prop) passar: "status_geral": "sem_conversao".
- 
+
 ------------------------------------------------
- 
+
 [3. NORMALIZAÇÃO DE ODDS — DECIMAL x AMERICANA]
-A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120") — às vezes fontes diferentes no mesmo print (Scores24 costuma ser decimal, Action Network costuma ser americana). SEMPRE converta para decimal no campo "odd" da sua saída, usando a fórmula padrão:
+A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120"). SEMPRE converta para decimal no campo "odd" da sua saída:
 - Americana positiva (+120): decimal = (120 / 100) + 1 = 2.20
 - Americana negativa (-150): decimal = (100 / 150) + 1 = 1.67
-Isso é conversão de representação de um número real que veio na entrada — NUNCA um cálculo novo, NUNCA uma estimativa. Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
- 
+Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
+
 ------------------------------------------------
- 
+
 [4. SELEÇÃO DE LINHAS NOS PRINTS E STRESS TEST DE EXEQUIBILIDADE]
-O Córtex NÃO calcula novas margens, NÃO subtrai unidades e NÃO inventa projeções. Você apenas COMPARA as linhas disponíveis nos prints enviados com os dados recebidos do Nexus:
- 
-A) SELEÇÕES DE "OVER" (Mais de / Marcos 4+, 5+, 6+):
-- Navegue pela escada de marcos/linhas de Over no print enviado.
-- Selecione a MENOR linha disponível que ainda mantenha uma odd válida para a estratégia.
-- Se a única linha de Over disponível no print for a linha mais alta/esticada do jogo, DESCARTE por falta de piso de segurança.
- 
+Apenas COMPARA as linhas disponíveis nos prints enviados com os dados recebidos do Nexus:
+
+A) SELEÇÕES DE "OVER" (Mais de):
+- Selecione a MENOR linha disponível que ainda mantenha uma odd válida.
+- Se a única linha disponível for a mais esticada do jogo, DESCARTE.
+
 B) SELEÇÕES DE "UNDER" (Menos de):
-- ATENÇÃO: Casas de apostas NÃO oferecem escadas flexíveis para Under.
-- Verifique EXCLUSIVAMENTE a linha de Under que está visível no print enviado.
-- Se o print NÃO contiver uma linha de Under explicitamente disponível, ou se a linha visível for arriscada (sem folga do teto), DESCARTE A PERNA IMEDIATAMENTE. É proibido assumir que existem linhas de Under que não estão no print.
- 
-C) REGRA DE EXEQUIBILIDADE (STRESS TEST):
-A seleção DEVE EXISTIR EXATAMENTE COMO ESCRITA nos prints de entrada. 
-Se a linha necessária não estiver visível no print, descarte com:
-"categoria_descarte": "sem_linha_real_no_print"
+- Verifique EXCLUSIVAMENTE a linha de Under visível no print.
+- Se o print NÃO contiver uma linha de Under visível, DESCARTE A PERNA IMEDIATAMENTE.
+
+C) REGRA DE EXEQUIBILIDADE:
+Se a linha necessária não estiver visível no print, descarte com: "categoria_descarte": "sem_linha_real_no_print"
+
 ------------------------------------------------
- 
-[5. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
-Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio — mas nunca em listas separadas.
- 
-FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
+
+[5. FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO]
 {
-  "perfil_geral": "Síntese curta do jogo e dos props pedidos, em tom de apostador...",
+  "perfil_geral": "Síntese curta do jogo e dos props pedidos...",
   "status_geral": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "pernas_elegiveis": [
     {
-      "origem": "coletivo",
+      "origem": "coletivo|prop",
       "alvo_prop": null,
-      "mercado": "Nome do mercado (Catálogo [0])",
-      "selecao": "Seleção exata (ex: Mais de 6.5 Corridas)",
+      "mercado": "Nome do mercado",
+      "selecao": "Seleção exata",
       "odd": "1.85",
       "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
-      "motivo": "Por que essa perna, em tom de apostador, sem jargão técnico."
-    },
-    {
-      "origem": "prop",
-      "alvo_prop": "Nome do jogador ou estatística-alvo",
-      "mercado": "Nome do mercado (Catálogo [0] de prop)",
-      "selecao": "Seleção exata",
-      "odd": "2.10",
-      "qualidade": { "forca": "alta", "persistencia": "media", "confianca": "alta" },
-      "motivo": "..."
+      "motivo": "Motivo direto sem jargão técnico."
     }
   ],
   "pernas_descartadas": [
@@ -298,12 +279,12 @@ async function analisarComGroq() {
     const jsonInput = document.getElementById("json-input");
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
- 
+
     if (!apiKeyInput || !jsonInput || !btn || !display) return;
- 
+
     const apiKey = apiKeyInput.value.trim() || localStorage.getItem("moneyball_groq_key");
     const raw = jsonInput.value.trim();
- 
+
     if (!apiKey) {
         display.innerHTML = alertaErro("Cole sua chave da API Groq antes de continuar.");
         apiKeyInput.focus();
@@ -314,17 +295,17 @@ async function analisarComGroq() {
         jsonInput.focus();
         return;
     }
- 
+
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Gerando ranking...`;
     display.insertAdjacentHTML("afterbegin", `
         <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
             <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade de tudo (jogo + props)...</h3>
+            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade via GPT-OSS...</h3>
             <p class="text-xs text-slate-500">Sem número inventado — só o que o dossiê e as odds reais confirmam.</p>
         </div>
     `);
- 
+
     try {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
@@ -333,7 +314,7 @@ async function analisarComGroq() {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "gpt-oss-120b",
                 messages: [
                     { role: "system", content: montarSystemPrompt(sportAtivo) },
                     { role: "user", content: raw }
@@ -342,19 +323,23 @@ async function analisarComGroq() {
                 response_format: { type: "json_object" }
             })
         });
- 
+
         document.getElementById("loading-card")?.remove();
- 
+
         if (!response.ok) throw new Error(`Erro na API (${response.status})`);
- 
+
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
- 
+        let content = data.choices?.[0]?.message?.content || "";
+        
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) content = jsonMatch[0];
+
+        const parsed = JSON.parse(content);
+
         jsonInput.value = "";
         jsonInput.focus();
         renderizarRanking(parsed);
- 
+
     } catch (error) {
         console.error(error);
         document.getElementById("loading-card")?.remove();
@@ -365,36 +350,30 @@ async function analisarComGroq() {
     }
 }
 window.analisarComGroq = analisarComGroq;
- 
+
 function alertaErro(msg) {
     return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
 }
- 
+
 const CATEGORIA_DESCARTE = {
     baixo_gate: "Não passou no filtro de qualidade",
     fora_do_escopo: "Mercado fora do catálogo",
     sem_odd_real: "Faltou odd real",
-    cenario_indefinido: "Sem cenário/tendência definida"
+    cenario_indefinido: "Sem cenário/tendência definida",
+    sem_linha_real_no_print: "Sem linha real no print"
 };
- 
-// ---- Cálculo de qualidade e ranking, feito em código (determinístico, sem número inventado) ----
+
 function pontuarQualidade(q) {
     if (!q) return 0;
     const valores = [q.forca, q.persistencia, q.confianca].map(v => (v || "").toLowerCase());
     const pontos = { alta: 2, media: 1, baixa: 0 };
     return valores.reduce((soma, v) => soma + (pontos[v] ?? 0), 0);
 }
- 
-function seloPorPontuacao(pontos) {
-    if (pontos >= 6) return { texto: "OURO", estilo: "bg-accent/20 text-accent border-accent/40" };
-    if (pontos >= 4) return { texto: "PRATA", estilo: "bg-slate-300/15 text-slate-200 border-slate-400/30" };
-    return { texto: "BRONZE", estilo: "bg-orange-800/20 text-orange-300 border-orange-700/40" };
-}
- 
+
 function montarRanking(pernas) {
     const comPontos = pernas.map(p => ({ ...p, _pontos: pontuarQualidade(p.qualidade) }));
     comPontos.sort((a, b) => b._pontos - a._pontos);
- 
+
     const top3 = comPontos.slice(0, 3).map((p, i) => ({
         ...p,
         _rotulo: ["OURO", "PRATA", "BRONZE"][i],
@@ -404,7 +383,7 @@ function montarRanking(pernas) {
             "bg-orange-800/20 text-orange-300 border-orange-700/40"
         ][i]
     }));
- 
+
     const comOddReal = comPontos.filter(p => p.odd && !isNaN(parseFloat(p.odd)));
     let cirurgica = null, valor = null;
     if (comOddReal.length > 0) {
@@ -415,8 +394,7 @@ function montarRanking(pernas) {
             valor = { ...candidataValor, _rotulo: "ALTERNATIVA DE VALOR", _rotuloEstilo: "bg-sky-500/20 text-sky-400 border-sky-500/40" };
         }
     }
- 
-    // monta a lista final sem duplicar visualmente a mesma perna (ela pode acumular rótulos)
+
     const resultado = [...top3];
     [cirurgica, valor].forEach(extra => {
         if (!extra) return;
@@ -428,15 +406,15 @@ function montarRanking(pernas) {
             resultado.push(extra);
         }
     });
- 
+
     return resultado;
 }
- 
+
 function renderizarRanking(data) {
     const display = document.getElementById("display-area");
     if (!display) return;
     const cardId = "resultado-" + Date.now();
- 
+
     if (data.status_geral === "sem_conversao") {
         display.insertAdjacentHTML("afterbegin", `
             <div id="${cardId}" class="bg-base-panel border border-amber-500/25 rounded-2xl p-6 space-y-4 fade-up mb-5">
@@ -454,11 +432,11 @@ function renderizarRanking(data) {
         `);
         return;
     }
- 
+
     const pernas = data.pernas_elegiveis || [];
     const descartadas = data.pernas_descartadas || [];
     const ranking = montarRanking(pernas);
- 
+
     const htmlItens = ranking.map((p, idx) => {
         const origemTag = p.origem === "prop"
             ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 uppercase">Prop${p.alvo_prop ? ': ' + p.alvo_prop : ''}</span>`
@@ -479,7 +457,7 @@ function renderizarRanking(data) {
         </div>
     `;
     }).join("");
- 
+
     const htmlResultado = `
         <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
             <div class="betslip rounded-2xl p-5 md:p-6 space-y-2 fade-up" style="--slip-bg:#171307;">
@@ -489,11 +467,11 @@ function renderizarRanking(data) {
                 </div>
                 <p class="text-xs text-slate-300 leading-relaxed">${data.perfil_geral || ''}</p>
             </div>
- 
+
             <div class="space-y-3">
                 ${htmlItens || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma perna com qualidade suficiente.</p>'}
             </div>
- 
+
             ${descartadas.length > 0 ? `
                 <details class="bg-base-panel border border-base-border rounded-2xl p-5 fade-up">
                     <summary class="cursor-pointer text-xs font-bold text-slate-400 uppercase tracking-wider">
