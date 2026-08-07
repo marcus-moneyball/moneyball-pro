@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MoneyballPro</title>
 
-    <!-- PWA: transforma em app instalável -->
+    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a0c10">
     <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -67,7 +67,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Ranking Único
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — GPT-OSS
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
             <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e veja o ranking dos bilhetes.</p>
@@ -76,13 +76,13 @@
         <!-- ÁREA DE ENTRADA -->
         <div id="input-container" class="space-y-4">
 
-            <!-- CHAVE DA API — primeiro, como pedido -->
+            <!-- CHAVE DA API -->
             <details class="bg-base-panel border border-base-border rounded-2xl p-4">
                 <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
                     <i class="fa-solid fa-key text-accent"></i> Sua chave da API Groq
                 </summary>
                 <div class="mt-4 space-y-2">
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no seu navegador)</label>
+                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no navegador)</label>
                     <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
                 </div>
             </details>
@@ -94,7 +94,7 @@
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
                     <label class="text-sm font-semibold text-slate-300">Dossiê da partida (jogo + props) + odds reais</label>
                 </div>
-                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props que você pediu) com as odds reais que você anotou..."></textarea>
+                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props) com as odds reais que você anotou..."></textarea>
 
                 <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-bolt"></i> Gerar Ranking
@@ -152,10 +152,6 @@ function selecionarSport(key) {
 }
 window.selecionarSport = selecionarSport;
 
-// ============================================================
-// SYSTEM PROMPT — Bet Builder V2 (lê 1 JSON com coletivo + props,
-// devolve uma lista única de pernas elegíveis pro ranking)
-// ============================================================
 function montarSystemPrompt(esporte) {
   const CATALOGOS_COLETIVO = {
     futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
@@ -177,25 +173,26 @@ Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" (o jogo
 
 ------------------------------------------------
 
-[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (NARRATIVA DOMINANTE E HIERARQUIA DE FAMÍLIAS)]
-Antes de avaliar qualquer odd ou mercado, analise o dossiê Nexus e identifique a NARRATIVA DOMINANTE da partida em uma das 3 hipóteses abaixo. É proibido selecionar mercados de famílias opostas ou conflitantes no mesmo bilhete.
+[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (CLASSIFICAÇÃO EXCLUSIVA)]
+Antes de avaliar qualquer odd ou mercado, analise o dossiê Nexus e classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses abaixo. É PROIBIDO misturar categorias.
 
 1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída)
-   - Tese Central: "O jogo tende a ser aberto e produtivo, com ambas as partes ou o fluxo geral contribuindo para o placar."
-   - FAMÍLIA DOMINANTE PERMITIDA: "Total de Gols/Pontos/Corridas na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
-   - EXCEÇÃO CONTROLADA (Parent-Child): "Total do Time" (Team Total) é PERMITIDO APENAS se houver assimetria de nível MÁXIMO (forca: "alta", persistencia: "alta") no ataque do favorito.
-   - EXCLUI AUTOMATICAMENTE: Moneyline, Handicaps e Spreads.
+   - Pergunta: "Quanto este jogo tende a produzir com ambas as partes contribuindo?"
+   - Módulos de referência: Controle de Ritmo, Criação, Conversão e Defesa.
+   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
+   - EXCLUI AUTOMATICAMENTE: Team Totals isolados, Moneyline, Handicaps e Spreads.
 
 2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
-   - Tese Central: "Existe disparidade técnica/tática clara, onde uma equipe tem controle territorial, de posse ou de resultado."
-   - FAMÍLIA DOMINANTE PERMITIDA: Moneyline | Handicap | Spread | Chance Dupla.
-   - EXCEÇÃO CONTROLADA (Parent-Child): "Total do Time Dominante" (Team Total) é PERMITIDO se a tese apontar vitória por placar construído (ex: Handicap + Over do Dominante).
-   - EXCLUI AUTOMATICAMENTE: Totais Gerais da Partida (Over/Under Geral) e BTTS.
+   - Pergunta: "Existe superioridade e controle suficiente para garantir a vitória/vantagem?"
+   - Módulos de referência: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
+   - FAMÍLIA PERMITIDA: Moneyline | Handicap | Spread | Chance Dupla.
+   - EXCLUI AUTOMATICAMENTE: Totais de Gols/Pontos da Partida e BTTS.
 
-3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração Unilateral de Performance)
-   - Tese Central: "A produção de pontos/corridas/gols está concentrada EXCLUSIVAMENTE em um dos lados (Favorito avassalador ou fragilidade extrema do rival/pitcher)."
-   - FAMÍLIA DOMINANTE PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
-   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida (evita depender da zebra inofensiva), BTTS e Moneylines puras.
+3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
+   - Pergunta: "A alta produção ou vulnerabilidade está concentrada predominantemente em APENAS UM dos lados?"
+   - Exemplo: Favorito avassalador x Zebra inofensiva | Pitcher/Bullpen destruído x Ataque de elite.
+   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
+   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida, BTTS e Moneylines puras.
 
 ------------------------------------------------
 
@@ -225,58 +222,43 @@ Se NENHUMA assimetria (nem do coletivo, nem de nenhum prop) passar: "status_gera
 ------------------------------------------------
 
 [3. NORMALIZAÇÃO DE ODDS — DECIMAL x AMERICANA]
-A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120") — às vezes fontes diferentes no mesmo print (Scores24 costuma ser decimal, Action Network costuma ser americana). SEMPRE converta para decimal no campo "odd" da sua saída, usando a fórmula padrão:
+A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120"). SEMPRE converta para decimal no campo "odd" da sua saída:
 - Americana positiva (+120): decimal = (120 / 100) + 1 = 2.20
 - Americana negativa (-150): decimal = (100 / 150) + 1 = 1.67
-Isso é conversão de representação de um número real que veio na entrada — NUNCA um cálculo novo, NUNCA uma estimativa. Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
+Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
 
 ------------------------------------------------
 
 [4. SELEÇÃO DE LINHAS NOS PRINTS E STRESS TEST DE EXEQUIBILIDADE]
-O Córtex NÃO calcula novas margens, NÃO subtrai unidades e NÃO inventa projeções. Você apenas COMPARA as linhas disponíveis nos prints enviados com os dados recebidos do Nexus:
+Apenas COMPARA as linhas disponíveis nos prints enviados com os dados recebidos do Nexus:
 
-A) SELEÇÕES DE "OVER" (Mais de / Marcos 4+, 5+, 6+):
-- Navegue pela escada de marcos/linhas de Over no print enviado.
-- Selecione a MENOR linha disponível que ainda mantenha uma odd válida para a estratégia.
-- Se a única linha de Over disponível no print for a linha mais alta/esticada do jogo, DESCARTE por falta de piso de segurança.
+A) SELEÇÕES DE "OVER" (Mais de):
+- Selecione a MENOR linha disponível que ainda mantenha uma odd válida.
+- Se a única linha disponível for a mais esticada do jogo, DESCARTE.
 
 B) SELEÇÕES DE "UNDER" (Menos de):
-- ATENÇÃO: Casas de apostas NÃO oferecem escadas flexíveis para Under.
-- Verifique EXCLUSIVAMENTE a linha de Under que está visível no print enviado.
-- Se o print NÃO contiver uma linha de Under explicitamente disponível, ou se a linha visível for arriscada (sem folga do teto), DESCARTE A PERNA IMEDIATAMENTE. É proibido assumir que existem linhas de Under que não estão no print.
+- Verifique EXCLUSIVAMENTE a linha de Under visível no print.
+- Se o print NÃO contiver uma linha de Under visível, DESCARTE A PERNA IMEDIATAMENTE.
 
-C) REGRA DE EXEQUIBILIDADE (STRESS TEST):
-A seleção DEVE EXISTIR EXATAMENTE COMO ESCRITA nos prints de entrada. 
-Se a linha necessária não estiver visível no print, descarte com:
-"categoria_descarte": "sem_linha_real_no_print"
+C) REGRA DE EXEQUIBILIDADE:
+Se a linha necessária não estiver visível no print, descarte com: "categoria_descarte": "sem_linha_real_no_print"
+
 ------------------------------------------------
 
-[5. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
-Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio — mas nunca em listas separadas.
-
-FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
+[5. FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO]
 {
-  "perfil_geral": "Síntese curta do jogo e dos props pedidos, em tom de apostador...",
+  "perfil_geral": "Síntese curta do jogo e dos props pedidos...",
   "status_geral": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "pernas_elegiveis": [
     {
-      "origem": "coletivo",
+      "origem": "coletivo|prop",
       "alvo_prop": null,
-      "mercado": "Nome do mercado (Catálogo [0])",
-      "selecao": "Seleção exata (ex: Mais de 6.5 Corridas)",
+      "mercado": "Nome do mercado",
+      "selecao": "Seleção exata",
       "odd": "1.85",
       "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
-      "motivo": "Por que essa perna, em tom de apostador, sem jargão técnico."
-    },
-    {
-      "origem": "prop",
-      "alvo_prop": "Nome do jogador ou estatística-alvo",
-      "mercado": "Nome do mercado (Catálogo [0] de prop)",
-      "selecao": "Seleção exata",
-      "odd": "2.10",
-      "qualidade": { "forca": "alta", "persistencia": "media", "confianca": "alta" },
-      "motivo": "..."
+      "motivo": "Motivo direto sem jargão técnico."
     }
   ],
   "pernas_descartadas": [
@@ -319,7 +301,7 @@ async function analisarComGroq() {
     display.insertAdjacentHTML("afterbegin", `
         <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
             <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade de tudo (jogo + props)...</h3>
+            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade via GPT-OSS...</h3>
             <p class="text-xs text-slate-500">Sem número inventado — só o que o dossiê e as odds reais confirmam.</p>
         </div>
     `);
@@ -332,7 +314,7 @@ async function analisarComGroq() {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "gpt-oss-120b",
                 messages: [
                     { role: "system", content: montarSystemPrompt(sportAtivo) },
                     { role: "user", content: raw }
@@ -347,8 +329,12 @@ async function analisarComGroq() {
         if (!response.ok) throw new Error(`Erro na API (${response.status})`);
 
         const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
+        let content = data.choices?.[0]?.message?.content || "";
+        
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) content = jsonMatch[0];
+
+        const parsed = JSON.parse(content);
 
         jsonInput.value = "";
         jsonInput.focus();
@@ -373,21 +359,15 @@ const CATEGORIA_DESCARTE = {
     baixo_gate: "Não passou no filtro de qualidade",
     fora_do_escopo: "Mercado fora do catálogo",
     sem_odd_real: "Faltou odd real",
-    cenario_indefinido: "Sem cenário/tendência definida"
+    cenario_indefinido: "Sem cenário/tendência definida",
+    sem_linha_real_no_print: "Sem linha real no print"
 };
 
-// ---- Cálculo de qualidade e ranking, feito em código (determinístico, sem número inventado) ----
 function pontuarQualidade(q) {
     if (!q) return 0;
     const valores = [q.forca, q.persistencia, q.confianca].map(v => (v || "").toLowerCase());
     const pontos = { alta: 2, media: 1, baixa: 0 };
     return valores.reduce((soma, v) => soma + (pontos[v] ?? 0), 0);
-}
-
-function seloPorPontuacao(pontos) {
-    if (pontos >= 6) return { texto: "OURO", estilo: "bg-accent/20 text-accent border-accent/40" };
-    if (pontos >= 4) return { texto: "PRATA", estilo: "bg-slate-300/15 text-slate-200 border-slate-400/30" };
-    return { texto: "BRONZE", estilo: "bg-orange-800/20 text-orange-300 border-orange-700/40" };
 }
 
 function montarRanking(pernas) {
@@ -415,7 +395,6 @@ function montarRanking(pernas) {
         }
     }
 
-    // monta a lista final sem duplicar visualmente a mesma perna (ela pode acumular rótulos)
     const resultado = [...top3];
     [cirurgica, valor].forEach(extra => {
         if (!extra) return;
