@@ -184,56 +184,38 @@ function montarSystemPrompt(esporte) {
 DIRETRIZ DE INTEGRALIDADE E FORMATO:
 Responda EXCLUSIVAMENTE com o objeto JSON estruturado. É ESTRITAMENTE PROIBIDO incluir qualquer texto explicativo ou marcação Markdown (como \`\`\`json) fora da resposta.
 
-DIRETRIZ DE PROFUNDIDADE ANALÍTICA (FIM DA ANÁLISE RASA):
-Você está proibido de gerar justificativas superficiais (ex: "Jogador X tem histórico de ir bem"). 
-1. O campo "perfil_geral" deve conter uma síntese TÁTICA ESTATÍSTICA profunda do confronto, explicando o ritmo esperado de jogo e os principais "mismatches" (desequilíbrios) encontrados no dossiê.
-2. O campo "motivo" dentro de "pernas_elegiveis" DEVE cruzar as estatísticas exatas do dossiê. Cite números, tendências (matchups, splits, vantagens de sistema) e justifique POR QUE a persistência/força atende aos critérios quantitativos. Se a justificativa for obvia/rasa, o sistema punirá a análise.
+DIRETRIZ DE PROFUNDIDADE ANALÍTICA:
+1. O campo "perfil_geral" deve conter uma síntese TÁTICA ESTATÍSTICA profunda do confronto, explicando o ritmo esperado e os principais desequilíbrios do dossiê.
+2. O campo "motivo" dentro de "pernas_elegiveis" DEVE cruzar as estatísticas do dossiê (cite números, métricas e tendências). Proibido justificativas rasas.
 
-------------------------------------------------
-
-[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (EXCLUSIVA DA ANÁLISE COLETIVA)]
-Antes de avaliar as odds, classifique a partida em UMA das 3 hipóteses:
-1. TIPO A — PRODUÇÃO (Volume e Fluidez) -> Permite Totais do Jogo e BTTS.
-2. TIPO B — DOMÍNIO (Superioridade) -> Permite Moneyline, Run Line, Spread.
-3. TIPO C — PRODUÇÃO ASSIMÉTRICA -> Permite Team Totals.
-
-------------------------------------------------
+[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA]
+Classifique a partida em UMA das 3 hipóteses:
+1. TIPO A — PRODUÇÃO (Volume/Fluidez) -> Totais do Jogo e BTTS.
+2. TIPO B — DOMÍNIO (Superioridade) -> Moneyline, Run Line, Spread.
+3. TIPO C — PRODUÇÃO ASSIMÉTRICA -> Team Totals.
 
 [1. CATÁLOGO DE MERCADOS PERMITIDOS]
 Coletivo permitidos: ${catálogoColetivo}
 Props permitidos: ${catálogoProp}
 Se fora disso, descarte ("categoria_descarte": "fora_do_escopo").
 
-------------------------------------------------
-
-[2. GATE OBRIGATÓRIO DE ELEGIBILIDADE]
-Uma perna só é ELEGÍVEL se:
-1. "cenario_definido" == true
-2. "forca" == "alta"
-3. "persistencia" == "alta" ou "media"
-4. "confianca_do_julgamento" == "alta"
-5. "apenas_espelha_mercado" == false
-
-------------------------------------------------
+[2. GATE DE ELEGIBILIDADE FLEXÍVEL (EVITAR DESCARTES EM MASSA)]
+Seja analítico, mas construtivo. Uma perna é elegível se houver suporte lógico e estatístico no dossiê:
+- Prefira incluir pernas que tenham boa sustentação nos dados, mesmo que alguns indicadores sejam moderados. 
+- Evite ao máximo retornar "status_geral": "sem_conversao" se houver pelo menos uma boa oportunidade mapeada no dossiê.
 
 [3. NORMALIZAÇÃO DE ODDS (DECIMAL)]
-Converta odds americanas (+120, -150) para decimais sempre (float numérico).
-
-------------------------------------------------
+Converta odds americanas para decimais (float numérico).
 
 [4. REGRA DE EXEQUIBILIDADE E STRESS DE LINHAS]
-Você só compara o dossiê com as linhas DISPONÍVEIS nos prints/entradas.
 - OVER: Menor linha viável com odd aceitável. Descarte se a única for "linha_esticada_sem_piso".
 - UNDER: Descarte se não existir a linha exata no print ("sem_linha_real_no_print").
-Não suponha linhas que não foram enviadas.
-
-------------------------------------------------
 
 [5. FORMATO DE SAÍDA — JSON RIGOROSO]
 Gere um único JSON válido:
 {
-  "perfil_geral": "Análise tática e quantitativa rica do confronto, destacando o contexto, o ritmo esperado e os principais mismatches (desequilíbrios) apontados no dossiê.",
-  "status_geral": "convertido|sem_conversao",
+  "perfil_geral": "Análise tática e quantitativa rica do confronto, ritmo e desequilíbrios.",
+  "status_geral": "convertido",
   "motivo_sem_conversao": null,
   "pernas_elegiveis": [
     {
@@ -242,8 +224,8 @@ Gere um único JSON válido:
       "mercado": "Nome do mercado conforme Catálogo",
       "selecao": "Seleção exata do print",
       "odd": 1.85,
-      "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
-      "motivo": "Justificativa TÁTICA e ESTATÍSTICA profunda. Cite métricas exatas do dossiê (ex: 'Batedor X possui ISO .310 e wRC+ 145 contra arremessadores canhotos, cruzando com a taxa baixa de groundballs de Pitcher Y...'). Proibido justificativas superficiais."
+      "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
+      "motivo": "Justificativa tática profunda cruzando métricas exatas do dossiê."
     }
   ],
   "pernas_descartadas": [
