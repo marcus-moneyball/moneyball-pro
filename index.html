@@ -179,117 +179,81 @@ function montarSystemPrompt(esporte) {
   const catálogoColetivo = CATALOGOS_COLETIVO[esporteTratado] || CATALOGOS_COLETIVO.futebol;
   const catálogoProp = CATALOGOS_PROP[esporteTratado] || CATALOGOS_PROP.futebol;
 
-  return `Você é o Bet Builder V2 do Nexus para o esporte: ${esporteTratado.toUpperCase()}.
+  return `Você é um Analista Quantitativo Sênior (Quant) operando o Bet Builder V2 do Nexus para o esporte: ${esporteTratado.toUpperCase()}.
 
-DIRETRIZ DE INTEGRALIDADE DA RESPOSTA:
-Responda EXCLUSIVAMENTE com o objeto JSON estruturado. É ESTRITAMENTE PROIBIDO incluir qualquer texto explicativo, introdução, conclusão ou marcação Markdown (como \`\`\`json) fora ou dentro da resposta. A saída deve iniciar diretamente com { e terminar com }.
+DIRETRIZ DE INTEGRALIDADE E FORMATO:
+Responda EXCLUSIVAMENTE com o objeto JSON estruturado. É ESTRITAMENTE PROIBIDO incluir qualquer texto explicativo ou marcação Markdown (como \`\`\`json) fora da resposta.
 
-FILOSOFIA:
-Você recebe UM dossiê único do Nexus 2.1, com um bloco "analise_coletiva" e um array "analises_prop" (zero ou mais jogadores). Sua missão é aplicar o FUNIL DE DECISÃO EM 4 PASSOS em ambos para devolver uma ÚNICA lista de pernas elegíveis. Você NÃO inventa números, projeções ou odds. Só utiliza (a) os campos qualitativos que o Nexus já entregou no schema e (b) as odds REAIS trazidas pelo usuário na mensagem de entrada.
+DIRETRIZ DE PROFUNDIDADE ANALÍTICA (FIM DA ANÁLISE RASA):
+Você está proibido de gerar justificativas superficiais (ex: "Jogador X tem histórico de ir bem"). 
+1. O campo "perfil_geral" deve conter uma síntese TÁTICA ESTATÍSTICA profunda do confronto, explicando o ritmo esperado de jogo e os principais "mismatches" (desequilíbrios) encontrados no dossiê.
+2. O campo "motivo" dentro de "pernas_elegiveis" DEVE cruzar as estatísticas exatas do dossiê. Cite números, tendências (matchups, splits, vantagens de sistema) e justifique POR QUE a persistência/força atende aos critérios quantitativos. Se a justificativa for obvia/rasa, o sistema punirá a análise.
 
 ------------------------------------------------
 
 [0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (EXCLUSIVA DA ANÁLISE COLETIVA)]
-Antes de avaliar qualquer odd ou mercado do bloco coletivo, analise o dossiê e classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses abaixo. É PROIBIDO misturar categorias:
-
-1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída)
-   - Módulos de referência: Controle de Ritmo, Criação, Conversão e Defesa.
-   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
-   - EXCLUI AUTOMATICAMENTE: Team Totals isolados, Moneyline, Handicaps e Spreads.
-
-2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
-   - Módulos de referência: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
-   - FAMÍLIA PERMITIDA: Moneyline | Handicap | Spread | Chance Dupla / Run Line.
-   - EXCLUI AUTOMATICAMENTE: Totais Gerais da Partida e BTTS.
-
-3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
-   - Foco: Alta produção ou vulnerabilidade concentrada em apenas um dos lados.
-   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
-   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida, BTTS e Moneylines puras.
+Antes de avaliar as odds, classifique a partida em UMA das 3 hipóteses:
+1. TIPO A — PRODUÇÃO (Volume e Fluidez) -> Permite Totais do Jogo e BTTS.
+2. TIPO B — DOMÍNIO (Superioridade) -> Permite Moneyline, Run Line, Spread.
+3. TIPO C — PRODUÇÃO ASSIMÉTRICA -> Permite Team Totals.
 
 ------------------------------------------------
 
 [1. CATÁLOGO DE MERCADOS PERMITIDOS]
-Para assimetrias vindas de "analise_coletiva", os ÚNICOS mercados permitidos são os da FAMÍLIA PERMITIDA definida na ETAPA 0, restritos a:
-${catálogoColetivo}
-
-Para assimetrias vindas de qualquer item em "analises_prop", os ÚNICOS mercados permitidos são:
-${catálogoProp}
-
-Se uma assimetria só puder ser expressa fora dessas listas, descarte-a imediatamente marcando "categoria_descarte": "fora_do_escopo".
+Coletivo permitidos: ${catálogoColetivo}
+Props permitidos: ${catálogoProp}
+Se fora disso, descarte ("categoria_descarte": "fora_do_escopo").
 
 ------------------------------------------------
 
-[2. GATE OBRIGATÓRIO DE ELEGIBILIDADE (SCHEMAS NEXUS 2.1)]
-Avalie o bloco correspondente ("analise_coletiva" ou o objeto individual em "analises_prop"). Uma perna só é ELEGÍVEL se TODAS as condições abaixo forem atendidas SIMULTANEMENTE:
-
-1. O campo "cenario_definido" no bloco de origem é igual a true.
-2. Na assimetria avaliada (item de "assimetrias_mapeadas" ou "assimetrias_individuais"):
-   - "forca" == "alta"
-   - "persistencia" == "alta" OU "media" (nunca "baixa")
-   - "confianca_do_julgamento" == "alta"
-   - "apenas_espelha_mercado" == false
-
-Money Line, Chance Dupla, Spreads e Props NÃO têm privilégios e devem passar pelo Gate com o mesmo rigor.
-Se NENHUMA assimetria (coletiva ou individual) cumprir os requisitos, defina "status_geral": "sem_conversao".
+[2. GATE OBRIGATÓRIO DE ELEGIBILIDADE]
+Uma perna só é ELEGÍVEL se:
+1. "cenario_definido" == true
+2. "forca" == "alta"
+3. "persistencia" == "alta" ou "media"
+4. "confianca_do_julgamento" == "alta"
+5. "apenas_espelha_mercado" == false
 
 ------------------------------------------------
 
-[3. NORMALIZAÇÃO DE ODDS (DECIMAL vs AMERICANA)]
-A entrada pode conter odds em formato decimal (ex: 1.85) ou americano (ex: "-150", "+120"). Converta SEMPRE para número decimal no campo "odd" da saída:
-- Americana positiva (+120): decimal = (120 / 100) + 1 = 2.20
-- Americana negativa (-150): decimal = (100 / 150) + 1 = 1.67
-É uma conversão direta de formato das odds fornecidas na entrada. NUNCA calcule ou projete odds novas. O campo "odd" na saída DEVE SER UM NÚMERO (float), jamais uma string.
+[3. NORMALIZAÇÃO DE ODDS (DECIMAL)]
+Converta odds americanas (+120, -150) para decimais sempre (float numérico).
 
 ------------------------------------------------
 
-[4. SELEÇÃO DE LINHAS NOS PRINTS E STRESS TEST DE EXEQUIBILIDADE]
-Você apenas COMPARA as linhas disponíveis nos prints fornecidos com as leituras do Nexus:
-
-A) SELEÇÕES DE "OVER" (Mais de / Marcos):
-- Escolha a MENOR linha disponível nos prints que mantenha uma odd viável.
-- Se a única linha disponível no print for a mais alta/esticada da partida, DESCARTE por falta de piso de segurança ("categoria_descarte": "linha_esticada_sem_piso").
-
-B) SELEÇÕES DE "UNDER" (Menos de):
-- Verifique EXCLUSIVAMENTE a linha de Under visível no print enviado.
-- Se o print NÃO mostrar a linha de Under explicitamente, ou se a linha não oferecer margem, DESCARTE A PERNA IMEDIATAMENTE. Proibido supor a existência de linhas ausentes.
-
-C) REGRA DE EXEQUIBILIDADE:
-A seleção deve existir EXATAMENTE como mostrada no print fornecido. Caso contrário, descarte marcando:
-"categoria_descarte": "sem_linha_real_no_print"
+[4. REGRA DE EXEQUIBILIDADE E STRESS DE LINHAS]
+Você só compara o dossiê com as linhas DISPONÍVEIS nos prints/entradas.
+- OVER: Menor linha viável com odd aceitável. Descarte se a única for "linha_esticada_sem_piso".
+- UNDER: Descarte se não existir a linha exata no print ("sem_linha_real_no_print").
+Não suponha linhas que não foram enviadas.
 
 ------------------------------------------------
 
 [5. FORMATO DE SAÍDA — JSON RIGOROSO]
-Gere um único objeto JSON válido seguindo a estrutura abaixo (respeitando os tipos de dados: números como float e booleans quando aplicável):
-
+Gere um único JSON válido:
 {
-  "perfil_geral": "Síntese executiva do confronto e dos props analisados.",
+  "perfil_geral": "Análise tática e quantitativa rica do confronto, destacando o contexto, o ritmo esperado e os principais mismatches (desequilíbrios) apontados no dossiê.",
   "status_geral": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
   "pernas_elegiveis": [
     {
       "origem": "coletivo|prop",
-      "alvo_prop": "Nome do Jogador (se origem for prop) ou null (se origem for coletivo)",
+      "alvo_prop": "Nome do Jogador ou null",
       "mercado": "Nome do mercado conforme Catálogo",
-      "selecao": "Seleção exata observada no print (ex: Mais de 2.5 Gols)",
+      "selecao": "Seleção exata do print",
       "odd": 1.85,
-      "qualidade": { 
-        "forca": "alta", 
-        "persistencia": "alta|media", 
-        "confianca": "alta" 
-      },
-      "motivo": "Justificativa direta baseada no dossiê."
+      "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
+      "motivo": "Justificativa TÁTICA e ESTATÍSTICA profunda. Cite métricas exatas do dossiê (ex: 'Batedor X possui ISO .310 e wRC+ 145 contra arremessadores canhotos, cruzando com a taxa baixa de groundballs de Pitcher Y...'). Proibido justificativas superficiais."
     }
   ],
   "pernas_descartadas": [
     {
       "origem": "coletivo|prop",
-      "alvo_prop": "Nome do Jogador (se origem for prop) ou null (se origem for coletivo)",
+      "alvo_prop": "Nome ou null",
       "mercado": "Nome do mercado testado",
       "selecao": "Seleção testada",
       "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido|sem_linha_real_no_print|linha_esticada_sem_piso",
-      "motivo": "Razão clara da rejeição pelo funil."
+      "motivo": "Razão da rejeição."
     }
   ]
 }`;
@@ -323,7 +287,7 @@ async function analisarComGroq() {
     const raw = jsonInput.value.trim();
 
     if (!apiKey) {
-        display.innerHTML = alertaErro("Cole sua chave da API Groq antes de continuar.");
+        display.innerHTML = alertaErro("Cole sua chave da API antes de continuar.");
         apiKeyInput.focus();
         return;
     }
@@ -334,12 +298,12 @@ async function analisarComGroq() {
     }
 
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Gerando ranking...`;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processando Análise Quantitativa...`;
     display.insertAdjacentHTML("afterbegin", `
         <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
             <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Checando qualidade de tudo (foco em props)...</h3>
-            <p class="text-xs text-slate-500">Sem número inventado — só o que o dossiê e as odds reais confirmam.</p>
+            <h3 class="text-sm font-semibold text-slate-300">Cruzando métricas e verificando gates de qualidade...</h3>
+            <p class="text-xs text-slate-500">Exigindo justificativas profundas baseadas nos dados do dossiê.</p>
         </div>
     `);
 
@@ -351,12 +315,12 @@ async function analisarComGroq() {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-120b",
                 messages: [
                     { role: "system", content: montarSystemPrompt(sportAtivo) },
                     { role: "user", content: raw }
                 ],
-                temperature: 0.1,
+                temperature: 0.15,
                 response_format: { type: "json_object" }
             })
         });
@@ -392,7 +356,8 @@ const CATEGORIA_DESCARTE = {
     fora_do_escopo: "Mercado fora do catálogo",
     sem_odd_real: "Faltou odd real",
     cenario_indefinido: "Sem cenário/tendência definida",
-    sem_linha_real_no_print: "Linha ausente no print enviado"
+    sem_linha_real_no_print: "Linha ausente no print enviado",
+    linha_esticada_sem_piso: "Linha alta sem margem de erro"
 };
 
 // Cálculo de pontuação priorizando Props e ordenando de forma determinística
@@ -452,7 +417,7 @@ function renderizarRanking(data) {
                     </div>
                     <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                ${data.perfil_geral ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300">${data.perfil_geral}</div>` : ""}
+                ${data.perfil_geral ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300 leading-relaxed">${data.perfil_geral}</div>` : ""}
                 <div class="p-4 bg-amber-950/10 border border-amber-900/30 rounded-xl text-xs text-amber-200">
                     ${data.motivo_sem_conversao || "Nenhuma perna (jogo ou prop) passou no filtro de qualidade real."}
                 </div>
@@ -480,19 +445,19 @@ function renderizarRanking(data) {
             </div>
             <p class="text-xs font-bold text-slate-300">${p.mercado}</p>
             <p class="text-accent font-black text-base">${p.selecao}</p>
-            ${p.motivo ? `<p class="text-[11px] text-slate-400 leading-relaxed">${p.motivo}</p>` : ''}
+            ${p.motivo ? `<p class="text-xs text-slate-400 leading-relaxed italic border-l-2 border-accent/30 pl-3 mt-2">${p.motivo}</p>` : ''}
         </div>
     `;
     }).join("");
 
     const htmlResultado = `
         <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
-            <div class="betslip rounded-2xl p-5 md:p-6 space-y-2 fade-up" style="--slip-bg:#171307;">
+            <div class="betslip rounded-2xl p-5 md:p-6 space-y-3 fade-up" style="--slip-bg:#171307;">
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Ranking de Bilhetes (Até 5 Props Principais)</span>
                     <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <p class="text-xs text-slate-300 leading-relaxed">${data.perfil_geral || ''}</p>
+                <p class="text-[13px] text-slate-300 leading-relaxed font-serif tracking-wide border-t border-accent/10 pt-3">${data.perfil_geral || ''}</p>
             </div>
 
             <div class="space-y-3">
