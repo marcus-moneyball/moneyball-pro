@@ -102,7 +102,7 @@
             </div>
         </div>
 
-        <!-- BOTÃO DE NOVA ANÁLISE (APARECE QUANDO O INPUT RECOLHE) -->
+        <!-- BOTÃO DE NOVA ANÁLISE -->
         <div id="new-analysis-bar" class="hidden">
             <button type="button" onclick="resetarEntrada()" class="w-full py-3 bg-base-panel hover:bg-base-card border border-accent/40 rounded-xl text-accent font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg">
                 <i class="fa-solid fa-plus"></i> Nova Análise (Colar outro JSON)
@@ -159,69 +159,43 @@ function selecionarSport(key) {
 }
 window.selecionarSport = selecionarSport;
 
-export function getBetBuilderPrompt(esporte = "geral") {
+function montarSystemPrompt(esporte = "futebol") {
   return `Você é o Moneyball Bet Builder Pro para o esporte: ${esporte.toUpperCase()}.
 
 FILOSOFIA E REGRA DE OURO:
-Você recebe um dossiê JSON detalhado da partida contendo estatísticas, odds, métricas avançadas e o cenário macro/micro. Sua missão é aplicar o FUNIL DE DECISÃO para selecionar as **3 melhores pernas** da partida, ordenando-as estritamente em um Pódio: **Ouro, Prata e Bronze**.
+Você recebe um dossiê JSON detalhado da partida contendo estatísticas, odds, métricas avançadas e o cenário macro/micro. Sua missão é selecionar as **3 melhores pernas** da partida, ordenando-as estritamente em um Pódio: **Ouro, Prata e Bronze**.
 
 ⚠️ **REGRA ABSOLUTA DE COERÊNCIA TÁTICA:** 
 É ESTRITAMENTE PROIBIDO misturar apostas contraditórias no mesmo bilhete (ex: colocar um "Over/Mais de" e um "Under/Menos de" na mesma seleção, ou mercado de gols/pontos gerais colidente com handicaps opostos). O bilhete deve seguir uma **única tese coerente** para a partida.
 
-------------------------------------------------
-
-[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA]
-Antes de definir as pernas, analise o dossiê e classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses:
-1. **TIPO A — PRODUÇÃO (Volume e Fluidez):** Foco em totais altos, Over de gols/pontos e BTTS. (Exclui unders e handicaps de domínio).
-2. **TIPO B — DOMÍNIO (Controle de Resultado):** Foco em Moneyline, Spreads e Handicaps. (Exclui totais da partida).
-3. **TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Lado):** Foco em Team Totals (Totais de um time específico) e Props individuais do lado dominante.
-
-------------------------------------------------
-
-[1. SELEÇÃO DO PÓDIO (3 PERNAS OBRIGATÓRIAS)]
-Com base na hipótese escolhida e nas odds reais disponíveis no dossiê, selecione exatamente 3 pernas e classifique-as:
-- **🥇 Ouro:** A perna de maior assimetria estatística e confiança da partida (a âncora do bilhete).
-- **🥈 Prata:** A segunda melhor oportunidade (alta resiliência ou prop de volume complementar).
-- **🥉 Bronze:** A terceira melhor opção (aproveitando o cenário macro ou mercado de suporte).
-
-------------------------------------------------
-
-[2. NORMALIZAÇÃO DE ODDS]
-Converta todas as odds para formato decimal (ex: 1.85, 2.10). Se a entrada trouxer odds americanas (+120 / -150), converta matematicamente para decimal. Nunca invente odds que não estejam presentes no dossiê.
-
-------------------------------------------------
-
-[3. FORMATO DE SAÍDA OBRIGATÓRIO (JSON ESTRITO)]
+[FORMATO DE SAÍDA OBRIGATÓRIO (JSON ESTRITO)]
 Você DEVE retornar um JSON válido estruturado exatamente neste formato, sem textos adicionais fora do JSON:
-
 {
   "perfil_geral": "Síntese executiva da tese da partida, justificando a direção escolhida (em tom de apostador profissional)...",
+  "status_geral": "convertido",
   "pernas_elegiveis": [
     {
-      "medalha": "Ouro",
-      "mercado": "Nome exato do mercado (ex: Total de Gols)",
-      "selecao": "Seleção exata (ex: Mais de 2.5)",
+      "origem": "prop",
+      "alvo_prop": "Nome do jogador ou null",
+      "mercado": "Nome exato do mercado",
+      "selecao": "Seleção exata",
       "odd": 1.85,
+      "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
       "motivo": "Justificativa quantitativa curta baseada nas métricas do dossiê."
-    },
+    }
+  ],
+  "pernas_descartadas": [
     {
-      "medalha": "Prata",
-      "mercado": "Nome exato do mercado",
-      "selecao": "Seleção exata",
-      "odd": 1.90,
-      "motivo": "Justificativa quantitativa curta..."
-    },
-    {
-      "medalha": "Bronze",
-      "mercado": "Nome exato do mercado",
-      "selecao": "Seleção exata",
-      "odd": 2.10,
-      "motivo": "Justificativa quantitativa curta..."
+      "origem": "coletivo",
+      "mercado": "Nome",
+      "selecao": "Seleção",
+      "categoria_descarte": "baixo_gate",
+      "motivo": "Justificativa curta"
     }
   ]
 }`;
 }
-    
+
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
     document.getElementById("new-analysis-bar")?.classList.remove("hidden");
@@ -323,15 +297,12 @@ const CATEGORIA_DESCARTE = {
     linha_esticada_sem_piso: "Linha alta sem margem de erro"
 };
 
-// Cálculo de pontuação priorizando Props e ordenando de forma determinística
 function pontuarQualidade(p) {
     if (!p) return 0;
     const q = p.qualidade || {};
     const valores = [q.forca, q.persistencia, q.confianca].map(v => (v || "").toLowerCase());
     const pontosQualidade = { alta: 2, media: 1, baixa: 0 };
     let base = valores.reduce((soma, v) => soma + (pontosQualidade[v] ?? 0), 0);
-    
-    // BÔNUS DE PRIORIZAÇÃO EXCLUSIVO PARA PROPS: Garante foco em props
     if (p.origem === "prop") base += 10;
     return base;
 }
@@ -339,8 +310,6 @@ function pontuarQualidade(p) {
 function montarRanking(pernas) {
     const comPontos = pernas.map(p => ({ ...p, _pontos: pontuarQualidade(p) }));
     comPontos.sort((a, b) => b._pontos - a._pontos);
-
-    // Limitado estritamente a 3 bilhetes (Ouro, Prata, Bronze)
     const limitadas = comPontos.slice(0, 3);
 
     return limitadas.map((p, i) => {
@@ -382,7 +351,7 @@ function renderizarRanking(data) {
                 </div>
                 ${data.perfil_geral ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300 leading-relaxed">${data.perfil_geral}</div>` : ""}
                 <div class="p-4 bg-amber-950/10 border border-amber-900/30 rounded-xl text-xs text-amber-200">
-                    ${data.motivo_sem_conversao || "Nenhuma perna (jogo ou prop) passou no filtro de qualidade real."}
+                    ${data.motivo_sem_conversao || "Nenhuma perna passou no filtro de qualidade real."}
                 </div>
             </div>
         `);
@@ -417,7 +386,7 @@ function renderizarRanking(data) {
         <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
             <div class="betslip rounded-2xl p-5 md:p-6 space-y-3 fade-up" style="--slip-bg:#171307;">
                 <div class="flex items-center justify-between flex-wrap gap-2">
-                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Ranking de Bilhetes (Até 5 Props Principais)</span>
+                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Ranking de Bilhetes (Top 3 Pódio)</span>
                     <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <p class="text-[13px] text-slate-300 leading-relaxed font-serif tracking-wide border-t border-accent/10 pt-3">${data.perfil_geral || ''}</p>
