@@ -361,8 +361,8 @@ function montarRanking(pernas) {
     const comPontos = pernas.map(p => ({ ...p, _pontos: pontuarQualidade(p) }));
     comPontos.sort((a, b) => b._pontos - a._pontos);
 
-    // Limita estritamente até no máximo 5 bilhetes/pernas
-    const limitadas = comPontos.slice(0, 5);
+    // Limitado estritamente a 3 bilhetes (Ouro, Prata, Bronze)
+    const limitadas = comPontos.slice(0, 3);
 
     return limitadas.map((p, i) => {
         let rotulo = `BILHETE ${i + 1}`;
