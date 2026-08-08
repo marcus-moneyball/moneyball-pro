@@ -199,13 +199,15 @@ Coletivo permitidos: ${catálogoColetivo}
 Props permitidos: ${catálogoProp}
 Se fora disso, descarte ("categoria_descarte": "fora_do_escopo").
 
-[2. GATE DE ELEGIBILIDADE FLEXÍVEL (EVITAR DESCARTES EM MASSA)]
-Seja analítico, mas construtivo. Uma perna é elegível se houver suporte lógico e estatístico no dossiê:
-- Prefira incluir pernas que tenham boa sustentação nos dados, mesmo que alguns indicadores sejam moderados. 
-- Evite ao máximo retornar "status_geral": "sem_conversao" se houver pelo menos uma boa oportunidade mapeada no dossiê.
+[2. GATE DE ELEGIBILIDADE FLEXÍVEL]
+Seja analítico e construtivo. Inclua pernas com boa sustentação nos dados do dossiê. Evite retornar "status_geral": "sem_conversao" se houver oportunidades viáveis.
 
-[3. NORMALIZAÇÃO DE ODDS (DECIMAL)]
-Converta odds americanas para decimais (float numérico).
+[3. NORMALIZAÇÃO OBRIGATÓRIA DE ODDS (FORMATO DECIMAL)]
+Converta obrigatoriamente qualquer odd informada (seja decimal ou americana) para o formato decimal padrão (float numérico com duas casas):
+- Se a odd de entrada for americana positiva (ex: +120), calcule e use: (120 / 100) + 1 = 2.20
+- Se a odd de entrada for americana negativa (ex: -150), calcule e use: (100 / 150) + 1 = 1.67
+- Se já for decimal (ex: 1.85), mantenha como número decimal.
+O campo "odd" na saída DEVE ser estritamente um número float (ex: 1.85, 2.20, 1.67), JAMAIS string ou formato americano com sinal.
 
 [4. REGRA DE EXEQUIBILIDADE E STRESS DE LINHAS]
 - OVER: Menor linha viável com odd aceitável. Descarte se a única for "linha_esticada_sem_piso".
