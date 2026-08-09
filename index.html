@@ -161,6 +161,7 @@ window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
   const esporteTratado = (esporte || 'futebol').toLowerCase();
+  const isFutebol = esporteTratado === 'futebol';
 
   // 1. Removidos Moneyline e Handicap/Spread/Run Line daqui
   const CATALOGOS_COLETIVO = {
@@ -170,17 +171,23 @@ function montarSystemPrompt(esporte) {
     nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
   };
 
+  // Ajustado: Futebol recebe aviso explícito de que não há props.
   const CATALOGOS_PROP = {
-    futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
+    futebol: 'NENHUM - Não aplicável para futebol nesta arquitetura.',
     beisebol: '"Strikeouts do Arremessador" | "Rebatidas/Hits do Jogador" | "Total Bases do Jogador"',
     basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador" | "Triplo-Duplo"',
     nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
   };
 
+  // 2. Regra dinâmica de composição injetada via JavaScript
+  const regraComposicao = isFutebol
+    ? '⚠️ REGRA DE COMPOSIÇÃO (FUTEBOL): Por se tratar de futebol, as props individuais não existem nesta configuração. Portanto, as 3 opções (Ouro, Prata e Bronze) DEVEM ser obrigatoriamente de origem "coletivo".'
+    : `⚠️ REGRA DE COMPOSIÇÃO (${esporteTratado.toUpperCase()}): A entrega DEVE conter exatamente 3 opções. A distribuição OBRIGATÓRIA nas categorias Ouro, Prata e Bronze é: 1 mercado de origem "coletivo" e 2 mercados de origem "prop".`;
+
   return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporteTratado.toUpperCase()}.
   
 FILOSOFIA:
-Você recebe um dossiê do Nexus com dados de um jogo e props. Sua missão é analisar de forma inteligente e **flexível** para extrair as melhores oportunidades de apostas em uma lista de pernas elegíveis. **Nunca** diga que o sistema só funciona para futebol; você atende perfeitamente ao esporte ${esporteTratado.toUpperCase()}. Use as odds reais fornecidas.
+Você recebe um dossiê do Nexus com dados de um jogo e props. Sua missão é analisar de forma inteligente e **flexível** para extrair as melhores oportunidades de apostas. **Nunca** diga que o sistema só funciona para futebol; você atende perfeitamente ao esporte ${esporteTratado.toUpperCase()}. Use as odds reais fornecidas.
   
 ------------------------------------------------
   
@@ -210,8 +217,13 @@ Para cada assimetria encontrada, avalie se há sustentação lógica básica nos
   
 ------------------------------------------------
   
-[3. NORMALIZAÇÃO DE ODDS — DECIMAL x AMERICANA]
-Converta sempre para o formato decimal no campo "odd" (ex: americano +120 vira 2.20; -150 vira 1.67). Se houver dúvida, mantenha o valor original.
+[3. HIERARQUIA DE BILHETES (OURO, PRATA, BRONZE)]
+Sua saída deve classificar as 3 melhores oportunidades encontradas nas categorias de ranqueamento:
+- OURO: A oportunidade de maior assimetria e confiança analítica.
+- PRATA: A segunda oportunidade com maior embasamento.
+- BRONZE: A terceira oportunidade com bom valor.
+
+${regraComposicao}
   
 ------------------------------------------------
   
@@ -220,17 +232,35 @@ Converta sempre para o formato decimal no campo "odd" (ex: americano +120 vira 2
   "perfil_geral": "Síntese analítica do jogo e dos props em tom profissional de apostador...",
   "status_geral": "convertido|sem_conversao",
   "motivo_sem_conversao": null,
-  "pernas_elegiveis": [
-    {
-      "origem": "coletivo",
-      "alvo_prop": null,
+  "recomendacoes": {
+    "ouro": {
+      "origem": "coletivo|prop",
+      "alvo_prop": "Nome do Jogador ou null",
       "mercado": "Nome do mercado",
-      "selecao": "Seleção exata (ex: Twins ML ou Mais de 8.5 Corridas)",
+      "selecao": "Seleção exata (ex: Mais de 8.5 Corridas)",
+      "odd": "1.85",
+      "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
+      "motivo": "Justificativa comercial e analítica da perna."
+    },
+    "prata": {
+      "origem": "coletivo|prop",
+      "alvo_prop": "Nome do Jogador ou null",
+      "mercado": "Nome do mercado",
+      "selecao": "Seleção exata",
+      "odd": "1.85",
+      "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
+      "motivo": "Justificativa comercial e analítica da perna."
+    },
+    "bronze": {
+      "origem": "coletivo|prop",
+      "alvo_prop": "Nome do Jogador ou null",
+      "mercado": "Nome do mercado",
+      "selecao": "Seleção exata",
       "odd": "1.85",
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
       "motivo": "Justificativa comercial e analítica da perna."
     }
-  ],
+  },
   "pernas_descartadas": [
     {
       "origem": "coletivo|prop",
