@@ -184,7 +184,7 @@ Você recebe o Dossiê Investigativo do MIE (Moneyball Intelligence Engine), nes
 {
   "investigation_summary": {}, "match_context": {},
   "markets": {
-    "<nome_do_mercado>": {
+    "<chave_livre_definida_pelo_MIE>": {
       "market_snapshot": {}, "evidences": [], "conflicts": [], "limitations": [],
       "missing_evidence": [], "investigation_priority": [], "public_attention": "",
       "hypothesis": null | { "statement": "", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "logic_path": [], "refutation": "" }
@@ -193,15 +193,24 @@ Você recebe o Dossiê Investigativo do MIE (Moneyball Intelligence Engine), nes
   "unmapped_findings": []
 }
 
-O MIE nunca calcula probabilidade, EV, robustez ou confiança — essa camada é sua. O MIE também nunca gera hipótese sem conflito real: quando "hypothesis" é null naquele mercado, significa que não foi encontrada tese sustentável ali.
+O MIE nunca calcula probabilidade, EV, robustez ou confiança — essa camada é sua. O MIE também nunca gera hipótese sem conflito real: quando "hypothesis" é null naquele mercado, significa que não foi encontrada tese sustentável ali. As chaves dentro de "markets" NÃO seguem os nomes do catálogo — são livres, definidas pelo MIE a partir do MDM.
 
 DIRETRIZ DE INTEGRALIDADE DA RESPOSTA:
 Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE PROIBIDO incluir texto explicativo, saudação ou blocos de código Markdown fora do JSON. A resposta DEVE iniciar com '{' e terminar com '}'.
 
 ---
-### GATE OBRIGATÓRIO (aplique a cada mercado dentro de "markets")
+### PASSO 0 — MAPEAMENTO DE MERCADOS (antes do gate)
 
-1. Se hypothesis == null → descarte com categoria "cenario_indefinido" (o MIE não achou tese sustentável).
+Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspondente do catálogo permitido (seção 1) observando o CONTEÚDO de market_snapshot (tipo de linha/odd: total de pontos/corridas/gols, spread/handicap, moneyline, prop de jogador etc.) — nunca o nome literal da chave.
+
+- Se uma chave corresponder claramente a um mercado do catálogo, trate como esse mercado.
+- Ao preencher o campo "mercado" na saída, use SEMPRE o nome exato do catálogo — nunca a chave original do dossiê.
+- Se uma chave não corresponder a nenhum mercado do catálogo (ex: escanteios, cartões, chutes a gol quando fora do catálogo prop do esporte), descarte com categoria_descarte "fora_do_escopo".
+
+---
+### GATE OBRIGATÓRIO (aplique a cada mercado já mapeado no Passo 0)
+
+1. Se hypothesis == null → descarte "cenario_indefinido" (o MIE não achou tese sustentável).
 2. Se hypothesis existir, meça a força real:
    - conte supporting_evidence_ids e contradicting_evidence_ids;
    - se contradicting.length >= supporting.length → descarte "baixo_gate" (evidência não é decisiva);
@@ -212,7 +221,7 @@ Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE 
    - confianca: "alta" se não houver conflito não resolvido nem lacuna crítica em missing_evidence para esse mercado; "media" se houver lacuna menor; "baixa" se houver lacuna crítica ou conflito não resolvido.
    - Só inclua a perna se forca != "baixa" E confianca != "baixa".
 4. Classifique "origem": "prop" se a hipótese/evidências giram em torno de um jogador específico; "coletivo" caso contrário. Preencha "alvo_prop" com o nome do jogador quando origem for "prop", senão null.
-5. Se o mercado não constar no catálogo permitido (seção 1) → descarte "fora_do_escopo".
+5. Se o mercado (já mapeado no Passo 0) não constar no catálogo permitido → descarte "fora_do_escopo".
 6. Se não houver odd real utilizável em market_snapshot para esse mercado → descarte "sem_odd_real".
 
 ⚠️ COERÊNCIA ENTRE PERNAS: não inclua duas pernas redundantes (mesma tese, mercados diferentes) nem contraditórias entre si.
@@ -225,13 +234,18 @@ Se nenhum mercado passar no gate, retorne pernas_elegiveis vazio, status_geral "
 - Props individuais permitidos: ${catálogoProp}
 
 ---
-[2. ODDS — NUNCA INVENTAR]
+[2. ODDS — NUNCA INVENTAR, SEMPRE CONVERTER PARA DECIMAL]
 - Utilize exclusivamente odds/linhas presentes no market_snapshot de cada mercado do dossiê.
-- Converta para número float no campo "odd" (ex: 1.85).
-- Se ausente: "odd": null, "odd_estimada": true, descarte "sem_odd_real".
+- As odds no dossiê vêm em formato americano (ex: -200, +165, -115). Converta SEMPRE para decimal usando a fórmula exata:
+  - Se a odd americana for positiva (+X): decimal = 1 + (X / 100)
+  - Se a odd americana for negativa (-X): decimal = 1 + (100 / X), usando X como valor absoluto
+  - Exemplo: +165 → 1 + (165/100) = 2.65 | -200 → 1 + (100/200) = 1.50 | -115 → 1 + (100/115) = 1.87
+- Preencha o campo "odd" com o valor decimal já convertido (arredondado em 2 casas), nunca com a odd americana original.
+- Se a odd exata não vier no market_snapshot: "odd": null, "odd_estimada": true, descarte "sem_odd_real". NUNCA invente ou estime um valor de odd.
 
 ---
 [3. FORMATO DE SAÍDA OBRIGATÓRIO]
+Retorne o JSON estritamente neste formato:
 {
   "perfil_geral": "Síntese executiva da tese da partida baseada no investigation_summary/match_context do MIE...",
   "status_geral": "convertido" | "sem_conversao",
