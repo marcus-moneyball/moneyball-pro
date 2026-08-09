@@ -168,7 +168,6 @@ function montarSystemPrompt(esporte) {
     basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"',
     nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"'
   };
-
   const CATALOGOS_PROP = {
     futebol: '"Chutes a Gol do Jogador"',
     beisebol: '"Strikeouts do Arremessador" | "Hits do Hitter" | "Bases Totais do Hitter"',
@@ -185,29 +184,32 @@ DIRETRIZ DE INTEGRALIDADE DA RESPOSTA:
 Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE PROIBIDO incluir texto explicativo, saudação ou blocos de código Markdown (como \`\`\`json) fora do JSON. A resposta DEVE iniciar com '{' e terminar com '}'.
 
 ---
+### MISSÃO PRINCIPAL: CONSTRUÇÃO DO PÓDIO HONESTO
 
-### MISSÃO PRINCIPAL: CONSTRUÇÃO DO PÓDIO OBRIGATÓRIO
-Você recebe o Dossiê Investigativo do MIE. Sua missão **OBRIGATÓRIA** é analisar os dados, hipóteses e snapshots de mercado para montar um bilhete estruturado contendo um Pódio de até **3 pernas elegíveis ("Ouro", "Prata", "Bronze")**. 
+Você recebe o Dossiê Investigativo do MIE/Nexus. Sua missão é avaliar cada mercado do market_snapshot com base nas evidências e hipóteses e montar um Pódio de até 3 pernas elegíveis ("Ouro", "Prata", "Bronze").
 
-⚠️ **REGRA DE OURO CONTRA VAZIOS:** É proibido retornar o array \`pernas_elegiveis\` vazio. Utilize os dados disponíveis no \`market_snapshot\` e nas evidências para traduzir as tendências quantitativas em seleções válidas de apostas, mantendo coerência tática (sem misturar apostas contraditórias).
+⚠️ GATE OBRIGATÓRIO (aplique a cada mercado candidato antes de aceitar):
+- Só inclua uma perna se houver divergência real entre o cenário investigado e o mercado (ex: tipo_divergencia diferente de "nenhuma", ou mercado_reflete_cenario == false), OU se as evidências qualitativas (forca/persistencia/confianca) sustentarem claramente a seleção.
+- Se o dossiê indicar que o mercado já precifica o cenário (mercado_reflete_cenario == true e tipo_divergencia == "nenhuma"), essa perna vai para pernas_descartadas com o motivo explícito — nunca para o pódio.
+- É PERMITIDO retornar pernas_elegiveis com menos de 3 itens, inclusive vazio, se nenhum mercado passar no gate. Um pódio vazio com motivo claro é preferível a uma perna forçada sem sustentação.
+
+⚠️ COERÊNCIA ENTRE PERNAS:
+- Não inclua duas pernas que sejam redundantes (mesma tese, mercados diferentes) nem contraditórias entre si.
 
 ---
-
 [1. CATÁLOGOS DE MERCADOS PERMITIDOS]
 - Mercados coletivos permitidos: ${catálogoColetivo}
 - Props individuais permitidos: ${catálogoProp}
 
 ---
-
-[2. NORMALIZAÇÃO DE ODDS]
-- Utilize as odds e linhas contidas no \`market_snapshot\` do dossiê.
-- Converta sempre para número float no campo "odd" (ex: 1.85). Se a odd exata não vier no snapshot, utilize uma estimativa lógica e realista baseada no mercado ou padrão decimal comum (ex: 1.90).
+[2. ODDS — NUNCA INVENTAR]
+- Utilize exclusivamente as odds e linhas presentes no market_snapshot do dossiê.
+- Converta para número float no campo "odd" (ex: 1.85).
+- Se a odd exata não vier no snapshot, retorne "odd": null e sinalize em "odd_estimada": true. NUNCA invente ou estime um valor de odd — isso será tratado no Bet Builder com a odd real colada pelo usuário.
 
 ---
-
 [3. FORMATO DE SAÍDA OBRIGATÓRIO]
 Retorne o JSON estritamente neste formato:
-
 {
   "perfil_geral": "Síntese executiva da tese da partida baseada nas evidências e hipóteses do MIE...",
   "status_geral": "convertido",
@@ -218,13 +220,17 @@ Retorne o JSON estritamente neste formato:
       "mercado": "Nome exato do mercado conforme Catálogo",
       "selecao": "Seleção exata baseada no snapshot",
       "odd": 1.85,
+      "odd_estimada": false,
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
-      "motivo": "Justificativa clara baseada nas evidências e hipóteses do dossiê do MIE."
+      "motivo": "Justificativa clara baseada nas evidências e hipóteses do dossiê, citando o que passou no gate."
     }
   ],
-  "pernas_descartadas": []
+  "pernas_descartadas": [
+    { "mercado": "...", "motivo": "Ex: mercado já reflete o cenário investigado (sem edge)." }
+  ]
 }`;
 }
+    
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
     document.getElementById("new-analysis-bar")?.classList.remove("hidden");
