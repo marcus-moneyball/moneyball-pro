@@ -67,13 +67,13 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Ranking Único
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Pódio Quantitativo
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e veja o ranking dos bilhetes.</p>
+            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e obtenha as 3 melhores oportunidades (Ouro, Prata, Bronze).</p>
         </div>
 
-        <!-- ÁREA DE ENTRADA (MÓDULO RECOLHÍVEL) -->
+        <!-- ÁREA DE ENTRADA -->
         <div id="input-container" class="space-y-4">
 
             <!-- CHAVE DA API -->
@@ -92,12 +92,12 @@
             <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
                 <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
-                    <label class="text-sm font-semibold text-slate-300">Dossiê da partida (jogo + props) + odds reais</label>
+                    <label class="text-sm font-semibold text-slate-300">Dossiê do Nexus (JSON) + Odds reais</label>
                 </div>
-                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON único do Nexus (jogo + props que você pediu) com as odds reais que você anotou..."></textarea>
+                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON gerado pelo Nexus com as odds reais..."></textarea>
 
                 <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-bolt"></i> Gerar Ranking
+                    <i class="fa-solid fa-bolt"></i> Gerar Pódio de Bilhetes
                 </button>
             </div>
         </div>
@@ -115,7 +115,7 @@
         <!-- AVISO LEGAL -->
         <footer class="pt-4 pb-2 text-center">
             <p class="text-[10px] text-slate-600 leading-relaxed max-w-lg mx-auto">
-                Nenhum modelo estatístico é capaz de prever resultados esportivos com certeza. Eventos esportivos possuem variáveis imprevisíveis e qualquer decisão tomada pelo usuário é de sua inteira responsabilidade. Ferramenta de análise estatística. Não constitui recomendação de aposta nem garante lucro. <b class="text-slate-500">18+</b>.
+                Nenhum modelo estatístico é capaz de prever resultados esportivos com certeza. Ferramenta de análise quantitativa. <b class="text-slate-500">18+</b>.
             </p>
         </footer>
     </div>
@@ -165,38 +165,17 @@ function montarSystemPrompt(esporte) {
   return `Você é o Moneyball Bet Builder V2 (Engine Quantitativa) para o esporte: ${esporteTratado.toUpperCase()}.
   
 FILOSOFIA:
-Você recebe um dossiê analítico do Nexus com dados de um jogo. Com as amarras de mercado liberadas, sua missão é varrer todas as oportunidades disponíveis e **encontrar o melhor cenário possível**. **Nunca retorne bilhetes vazios por excesso de rigor.** Sempre existem tendências claras, pequenas vantagens ou padrões estatísticos aproveitáveis em qualquer partida. Use as odds reais fornecidas.
-  
-------------------------------------------------
-  
-[1. CATÁLOGO TOTALMENTE LIVRE]
-Todos os mercados presentes no dossiê são permitidos (Moneyline, Spreads/Handicaps, Totais ou Props individuais). 
+Você recebe um dossiê analítico do Nexus com dados de um jogo. Com os mercados totalmente liberados (Moneyline, Spreads/Handicaps, Totais ou Props individuais), sua missão é varrer todas as oportunidades disponíveis e extrair obrigatoriamente as 3 melhores assimetrias matemáticas em formato de pódio. Nunca retorne bilhetes vazios. Use as odds reais fornecidas.
   
 REGRA DE CONVERSÃO DE ODDS (OBRIGATÓRIO):
 Se o JSON de entrada contiver odds no formato americano (com sinais de '+' ou '-', ex: +150, -110), você DEVE convertê-las para o formato decimal europeu antes de calcular e gerar a saída. 
 - Fórmula para Positivas (+): (Valor / 100) + 1. Exemplo: +150 vira 2.50.
 - Fórmula para Negativas (-): (100 / |Valor|) + 1. Exemplo: -110 vira 1.90.
-Sob nenhuma hipótese escreva a string "sem_odd_real". Se uma odd for legível, utilize-a.
-------------------------------------------------
-  
-[2. O MOTOR QUANTITATIVO (FLEXÍVEL)]
-Para cada oportunidade mapeada no dossiê, avalie com uma postura **pragmática e comercial**:
-- Se houver qualquer indício razoável de volume, momento de equipe, estatística recente ou desajuste leve de linha, aproveite a oportunidade.
-- Calcule estimativas direcionais para Edge e EV com base no fluxo do jogo, sem exigir perfeição matemática absoluta. O objetivo é rankear as opções mais lógicas.
-  
-------------------------------------------------
-  
-[3. HIERARQUIA OBRIGATÓRIA DE BILHETES (OURO, PRATA, BRONZE)]
-Mesmo que o cenário seja equilibrado ou difícil, **você DEVE selecionar obrigatoriamente as 3 melhores opções** encontradas no dossiê para compor o pódio:
-- **OURO:** A tese com melhor consistência e probabilidade relativa de acerto.
-- **PRATA:** A segunda melhor alternativa baseada em tendência ou momento.
-- **BRONZE:** A terceira opção viável com base em valor de odd ou volume esperado.
-  
-------------------------------------------------
-  
-[4. FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO]
+Se a odd já for decimal, mantenha-a.
+
+FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_geral": "Síntese analítica do jogo, destacando a leitura geral dos mercados...",
+  "perfil_geral": "Síntese analítica quantitativa do jogo, destacando onde está a maior assimetria matemática...",
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
@@ -204,36 +183,36 @@ Mesmo que o cenário seja equilibrado ou difícil, **você DEVE selecionar obrig
       "selecao": "Seleção exata",
       "odd": "1.85",
       "metricas": {
-        "edge_estimado": "favorável",
-        "ev": "positivo",
-        "robustez": "moderada/alta",
-        "kelly_sugerido": "padrão"
+        "edge_estimado": "ex: 6.5%",
+        "ev": "ex: +4.2%",
+        "robustez": "alta",
+        "kelly_sugerido": "Fracionário seguro"
       },
-      "motivo": "Justificativa comercial e baseada no fluxo de dados do Nexus."
+      "motivo": "Justificativa puramente quantitativa baseada no cruzamento de dados do Nexus."
     },
     "prata": {
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
       "odd": "1.90",
       "metricas": {
-        "edge_estimado": "",
-        "ev": "",
-        "robustez": "",
-        "kelly_sugerido": ""
+        "edge_estimado": "ex: 4.0%",
+        "ev": "ex: +2.5%",
+        "robustez": "moderada",
+        "kelly_sugerido": "Padrão"
       },
-      "motivo": "Justificativa..."
+      "motivo": "Justificativa quantitativa..."
     },
     "bronze": {
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
       "odd": "2.00",
       "metricas": {
-        "edge_estimado": "",
-        "ev": "",
-        "robustez": "",
-        "kelly_sugerido": ""
+        "edge_estimado": "ex: 2.5%",
+        "ev": "ex: +1.0%",
+        "robustez": "moderada",
+        "kelly_sugerido": "Conservador"
       },
-      "motivo": "Justificativa..."
+      "motivo": "Justificativa quantitativa..."
     }
   }
 }`;
@@ -282,8 +261,8 @@ async function analisarComGroq() {
     display.insertAdjacentHTML("afterbegin", `
         <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
             <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
-            <h3 class="text-sm font-semibold text-slate-300">Cruzando métricas e verificando gates de qualidade...</h3>
-            <p class="text-xs text-slate-500">Exigindo justificativas profundas baseadas nos dados do dossiê.</p>
+            <h3 class="text-sm font-semibold text-slate-300">Calculando Edge, EV e montando o Pódio...</h3>
+            <p class="text-xs text-slate-500">Varredura completa em todos os mercados livres.</p>
         </div>
     `);
 
@@ -295,14 +274,14 @@ async function analisarComGroq() {
                 "Authorization": `Bearer ${apiKey}`
             },
             body: JSON.stringify({
-    model: "openai/gpt-oss-120b",
-    messages: [
-        { role: "system", content: montarSystemPrompt(sportAtivo) },
-        { role: "user", content: raw }
-    ],
-    temperature: 0,
-    response_format: { type: "json_object" }
-})
+                model: "openai/gpt-oss-120b",
+                messages: [
+                    { role: "system", content: montarSystemPrompt(sportAtivo) },
+                    { role: "user", content: raw }
+                ],
+                temperature: 0,
+                response_format: { type: "json_object" }
+            })
         });
 
         document.getElementById("loading-card")?.remove();
@@ -322,7 +301,7 @@ async function analisarComGroq() {
         display.insertAdjacentHTML("afterbegin", alertaErro(`Não deu pra analisar: ${error.message}`));
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Gerar Ranking`;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Gerar Pódio de Bilhetes`;
     }
 }
 window.analisarComGroq = analisarComGroq;
@@ -331,92 +310,38 @@ function alertaErro(msg) {
     return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
 }
 
-const CATEGORIA_DESCARTE = {
-    baixo_gate: "Não passou no filtro de qualidade",
-    fora_do_escopo: "Mercado fora do catálogo",
-    sem_odd_real: "Faltou odd real",
-    cenario_indefinido: "Sem cenário/tendência definida",
-    sem_linha_real_no_print: "Linha ausente no print enviado",
-    linha_esticada_sem_piso: "Linha alta sem margem de erro"
-};
-
-function pontuarQualidade(p) {
-    if (!p) return 0;
-    const q = p.qualidade || {};
-    const valores = [q.forca, q.persistencia, q.confianca].map(v => (v || "").toLowerCase());
-    const pontosQualidade = { alta: 2, media: 1, baixa: 0 };
-    let base = valores.reduce((soma, v) => soma + (pontosQualidade[v] ?? 0), 0);
-    if (p.origem === "prop") base += 10;
-    return base;
-}
-
-function montarRanking(pernas) {
-    const comPontos = pernas.map(p => ({ ...p, _pontos: pontuarQualidade(p) }));
-    comPontos.sort((a, b) => b._pontos - a._pontos);
-    const limitadas = comPontos.slice(0, 3);
-
-    return limitadas.map((p, i) => {
-        let rotulo = `PICK ${i + 1}`;
-        let estilo = "bg-slate-700/30 text-slate-300 border-slate-600/40";
-
-        if (i === 0) {
-            rotulo = "TOP PICK — OURO";
-            estilo = "bg-accent/20 text-accent border-accent/40";
-        } else if (i === 1) {
-            rotulo = "PICK — PRATA";
-            estilo = "bg-slate-300/15 text-slate-200 border-slate-400/30";
-        } else if (i === 2) {
-            rotulo = "PICK — BRONZE";
-            estilo = "bg-orange-800/20 text-orange-300 border-orange-700/40";
-        }
-
-        return { ...p, _rotulo: rotulo, _rotuloEstilo: estilo };
-    });
-}
-
 function renderizarRanking(data) {
     const display = document.getElementById("display-area");
     if (!display) return;
     const cardId = "resultado-" + Date.now();
 
-    if (data.status_geral === "sem_conversao") {
-        display.insertAdjacentHTML("afterbegin", `
-            <div id="${cardId}" class="bg-base-panel border border-amber-500/25 rounded-2xl p-6 space-y-4 fade-up mb-5">
-                <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 text-accent font-bold text-sm">
-                        <i class="fa-solid fa-shield-halved text-lg"></i> SEM RANKING HOJE
-                    </div>
-                    <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                ${data.perfil_geral ? `<div class="p-3 bg-base-bg rounded-xl border border-base-border text-xs text-slate-300 leading-relaxed">${data.perfil_geral}</div>` : ""}
-                <div class="p-4 bg-amber-950/10 border border-amber-900/30 rounded-xl text-xs text-amber-200">
-                    ${data.motivo_sem_conversao || "Nenhuma perna passou no filtro de qualidade real."}
-                </div>
-            </div>
-        `);
-        return;
-    }
+    const recs = data.recomendacoes || {};
+    const pio = [
+        { key: 'ouro', label: 'TOP PICK — OURO', badgeStyle: 'bg-accent/20 text-accent border-accent/40', data: recs.ouro },
+        { key: 'prata', label: 'PICK — PRATA', badgeStyle: 'bg-slate-300/15 text-slate-200 border-slate-400/30', data: recs.prata },
+        { key: 'bronze', label: 'PICK — BRONZE', badgeStyle: 'bg-orange-800/20 text-orange-300 border-orange-700/40', data: recs.bronze }
+    ].filter(item => item.data);
 
-    const pernas = data.pernas_elegiveis || [];
-    const descartadas = data.pernas_descartadas || [];
-    const ranking = montarRanking(pernas);
-
-    const htmlItens = ranking.map((p, idx) => {
-        const origemTag = p.origem === "prop"
-            ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 uppercase">Prop${p.alvo_prop ? ': ' + p.alvo_prop : ''}</span>`
-            : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-700/30 text-slate-300 border border-slate-600/40 uppercase">Jogo</span>`;
+    const htmlItens = pio.map((p, idx) => {
+        const item = p.data;
+        const met = item.metricas || {};
         return `
         <div class="p-4 bg-base-card rounded-xl border border-accent/20 space-y-2.5 fade-up" style="animation-delay:${idx * 60}ms">
             <div class="flex justify-between items-start gap-2 flex-wrap">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p._rotuloEstilo}">${p._rotulo}</span>
-                    ${origemTag}
-                </div>
-                ${p.odd ? `<span class="text-xs font-mono text-white">@${p.odd}</span>` : '<span class="text-[10px] text-slate-600">sem odd</span>'}
+                <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p.badgeStyle}">${p.label}</span>
+                ${item.odd ? `<span class="text-xs font-mono text-white font-bold">@${item.odd}</span>` : ''}
             </div>
-            <p class="text-xs font-bold text-slate-300">${p.mercado}</p>
-            <p class="text-accent font-black text-base">${p.selecao}</p>
-            ${p.motivo ? `<p class="text-xs text-slate-400 leading-relaxed italic border-l-2 border-accent/30 pl-3 mt-2">${p.motivo}</p>` : ''}
+            <p class="text-xs font-bold text-slate-300">${item.mercado || 'Mercado'}</p>
+            <p class="text-accent font-black text-base">${item.selecao || 'Seleção'}</p>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-base-border/50 text-[10px] font-mono text-slate-400">
+                <div>Edge: <span class="text-value">${met.edge_estimado || 'N/A'}</span></div>
+                <div>EV: <span class="text-value">${met.ev || 'N/A'}</span></div>
+                <div>Robustez: <span class="text-slate-200">${met.robustez || 'N/A'}</span></div>
+                <div>Kelly: <span class="text-slate-200">${met.kelly_sugerido || 'N/A'}</span></div>
+            </div>
+
+            ${item.motivo ? `<p class="text-xs text-slate-400 leading-relaxed italic border-l-2 border-accent/30 pl-3 mt-2">${item.motivo}</p>` : ''}
         </div>
     `;
     }).join("");
@@ -425,34 +350,15 @@ function renderizarRanking(data) {
         <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
             <div class="betslip rounded-2xl p-5 md:p-6 space-y-3 fade-up" style="--slip-bg:#171307;">
                 <div class="flex items-center justify-between flex-wrap gap-2">
-                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Ranking de Bilhetes (Top 3 Pódio)</span>
+                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Pódio Quantitativo (Ouro, Prata, Bronze)</span>
                     <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
                 <p class="text-[13px] text-slate-300 leading-relaxed font-serif tracking-wide border-t border-accent/10 pt-3">${data.perfil_geral || ''}</p>
             </div>
 
             <div class="space-y-3">
-                ${htmlItens || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma perna com qualidade suficiente.</p>'}
+                ${htmlItens || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma recomendação gerada.</p>'}
             </div>
-
-            ${descartadas.length > 0 ? `
-                <details class="bg-base-panel border border-base-border rounded-2xl p-5 fade-up">
-                    <summary class="cursor-pointer text-xs font-bold text-slate-400 uppercase tracking-wider">
-                        <i class="fa-solid fa-eye-slash text-slate-500 mr-1.5"></i> Ver o que ficou de fora (${descartadas.length})
-                    </summary>
-                    <div class="space-y-2 mt-3">
-                        ${descartadas.map(d => `
-                            <div class="p-3 bg-base-bg rounded-lg text-xs text-slate-400 border border-base-border space-y-1.5">
-                                <div class="flex items-center justify-between gap-2 flex-wrap">
-                                    <span class="font-bold text-slate-300">${d.mercado || '(prop)'} <span class="text-slate-500 font-normal">(${d.selecao || ''})</span></span>
-                                    <span class="text-[9px] font-mono text-slate-500 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700 uppercase whitespace-nowrap">${CATEGORIA_DESCARTE[d.categoria_descarte] || 'Descartada'}</span>
-                                </div>
-                                <p class="leading-relaxed">${d.motivo || ''}</p>
-                            </div>
-                        `).join("")}
-                    </div>
-                </details>
-            ` : ""}
         </div>
     `;
     display.insertAdjacentHTML("afterbegin", htmlResultado);
