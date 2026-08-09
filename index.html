@@ -229,6 +229,18 @@ Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspon
 Se nenhum mercado passar no gate, retorne pernas_elegiveis vazio, status_geral "sem_conversao" e motivo_sem_conversao explicando (ex: "hipótese null em todos os mercados do catálogo" ou "evidência insuficiente em todos os mercados avaliados").
 
 ---
+### PASSO 0 — MAPEAMENTO DE MERCADOS (antes do gate)
+
+Algumas chaves de "markets" podem ser um mercado individual (com market_snapshot/hypothesis/evidences direto dentro dela), e outras podem ser um CONTÊINER agrupando vários mercados individuais (ex: uma chave "player_props" contendo várias sub-chaves, cada uma com seu próprio market_snapshot/hypothesis/evidences). Nunca descarte um contêiner inteiro pelo nome dele — sempre entre e avalie cada sub-mercado dentro dele individualmente, como se fosse uma chave de "markets" normal.
+
+Para cada mercado individual (de primeiro nível ou dentro de um contêiner), mapeie para o catálogo permitido (seção 1) observando o CONTEÚDO de market_snapshot (tipo de linha/odd, ou o jogador+estatística no caso de prop) — nunca o nome literal da chave ou do contêiner.
+
+- Se corresponder claramente a um mercado do catálogo, trate como esse mercado.
+- Ao preencher "mercado" na saída, use SEMPRE o nome exato do catálogo — nunca a chave/contêiner original do dossiê.
+- Só descarte "fora_do_escopo" um mercado individual específico que, mesmo após mapeado, não corresponda a nada do catálogo — nunca um contêiner inteiro sem abrir e checar cada item dentro dele.
+
+IDIOMA: Toda a saída (perfil_geral, motivo, motivo_sem_conversao) deve estar em português do Brasil, mesmo que o statement da hipótese ou as evidências do dossiê estejam em inglês. Traduza o conteúdo relevante, nunca copie trechos em inglês para a saída.
+---
 [1. CATÁLOGOS DE MERCADOS PERMITIDOS]
 - Mercados coletivos permitidos: ${catálogoColetivo}
 - Props individuais permitidos: ${catálogoProp}
