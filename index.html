@@ -196,6 +196,11 @@ ${CATALOGOS_PROP[esporteTratado] || 'Mercados padrão de performance individual'
   
 Se houver uma assimetria clara no jogo ou nas props, aproveite-a mapeando para o mercado correspondente mais próximo permitido, evitando descartes desnecessários por rigor excessivo.
   
+REGRA DE CONVERSÃO DE ODDS (OBRIGATÓRIO):
+Se o JSON de entrada contiver odds no formato americano (com sinais de '+' ou '-', ex: +150, -110), você DEVE convertê-las para o formato decimal europeu antes de gerar a saída. 
+- Fórmula para Positivas (+): (Valor / 100) + 1. Exemplo: +150 vira 2.50.
+- Fórmula para Negativas (-): (100 / |Valor|) + 1. Exemplo: -110 vira 1.90.
+Sob nenhuma hipótese escreva a string "sem_odd_real". Se uma odd for ilegível, simplesmente descarte aquela perna do bilhete.
 ------------------------------------------------
   
 [2. GATE DE QUALIDADE (FLEXÍVEL)]
