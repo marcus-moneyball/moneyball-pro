@@ -218,8 +218,7 @@ Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspon
 3. Classifique "qualidade" só com base em sinais reais do dossiê (nunca invente um número/label sem lastro):
    - forca: "alta" se (supporting - contradicting) >= 2; "media" se == 1; "baixa" se <= 0.
    - persistencia: "alta" se as evidências de suporte vierem de amostras estatísticas amplas (médias de temporada, career stats, ERA/WHIP acumulado); "baixa" se vierem de fatos pontuais/situacionais (uma notícia isolada, um jogo recente, uma lesão).
-   - confianca: "alta" se não houver conflito não resolvido nem lacuna crítica em missing_evidence para esse mercado; "media" se houver lacuna menor; "baixa" se houver lacuna crítica ou conflito não resolvido.
-   - Só inclua a perna se forca != "baixa" E confianca != "baixa".
+   - confianca: "alta" por padrão. Rebaixe para "media" se houver um item em missing_evidence não-crítico. Rebaixe para "baixa" apenas se: (a) houver um conflito em "conflicts" cujas evidências NÃO estejam ambas nas listas supporting_evidence_ids/contradicting_evidence_ids da própria hipótese (sinal de que a hipótese ignorou o conflito), OU (b) houver um item em missing_evidence que questione diretamente a premissa central do logic_path. Se um conflito já tiver suas duas evidências presentes nas listas supporting/contradicting da hipótese, considere que ele já foi ponderado no cálculo de "forca" (passo 3, item forca) — não penalize confianca de novo pelo mesmo conflito.
 4. Classifique "origem": "prop" se a hipótese/evidências giram em torno de um jogador específico; "coletivo" caso contrário. Preencha "alvo_prop" com o nome do jogador quando origem for "prop", senão null.
 5. Se o mercado (já mapeado no Passo 0) não constar no catálogo permitido → descarte "fora_do_escopo".
 6. Se não houver odd real utilizável em market_snapshot para esse mercado → descarte "sem_odd_real".
