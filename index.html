@@ -159,38 +159,87 @@ function selecionarSport(key) {
 }
 window.selecionarSport = selecionarSport;
 
-function montarSystemPrompt(esporte = "futebol") {
-  return `Você é o Moneyball Bet Builder Pro para o esporte: ${esporte.toUpperCase()}.
+function montarSystemPrompt(esporte) {
+  const esporteTratado = (esporte || 'futebol').toLowerCase();
 
-FILOSOFIA E REGRA DE OURO:
-Você recebe um dossiê JSON detalhado da partida contendo estatísticas, odds, métricas avançadas e o cenário macro/micro. Sua missão é selecionar as **3 melhores pernas** da partida, ordenando-as estritamente em um Pódio: **Ouro, Prata e Bronze**.
+  const CATALOGOS_COLETIVO = {
+    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
+    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total) | "Money Line" | "Handicap de Corridas / Vencedor (Run Line)"',
+    basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"',
+    nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"'
+  };
 
-⚠️ **REGRA ABSOLUTA DE COERÊNCIA TÁTICA:** 
-É ESTRITAMENTE PROIBIDO misturar apostas contraditórias no mesmo bilhete (ex: colocar um "Over/Mais de" e um "Under/Menos de" na mesma seleção, ou mercado de gols/pontos gerais colidente com handicaps opostos). O bilhete deve seguir uma **única tese coerente** para a partida.
+  const CATALOGOS_PROP = {
+    futebol: '"Chutes a Gol do Jogador"',
+    beisebol: '"Strikeouts do Arremessador" | "Hits do Hitter" | "Bases Totais do Hitter"',
+    basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
+    nfl: '"Jardas Aéreas do Quarterback" | "Recepções do Recebedor" | "Jardas Corridas do Corredor"'
+  };
 
-[FORMATO DE SAÍDA OBRIGATÓRIO (JSON ESTRITO)]
-Você DEVE retornar um JSON válido estruturado exatamente neste formato, sem textos adicionais fora do JSON:
+  const catálogoColetivo = CATALOGOS_COLETIVO[esporteTratado] || CATALOGOS_COLETIVO.futebol;
+  const catálogoProp = CATALOGOS_PROP[esporteTratado] || CATALOGOS_PROP.futebol;
+
+  return `Você é o analista sênior e Bet Builder Pro do Moneyball para o esporte: ${esporteTratado.toUpperCase()}.
+
+DIRETRIZ DE INTEGRALIDADE DA RESPOSTA:
+Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE PROIBIDO incluir texto explicativo, saudação ou blocos de código Markdown (como \`\`\`json) fora do JSON. A resposta DEVE iniciar com '{' e terminar com '}'.
+
+---
+
+### FILOSOFIA DE ANÁLISE: ASSIMETRIAS E CORRELAÇÕES
+Você recebe um dossiê JSON detalhado do Nexus contendo estatísticas, odds reais e o cenário macro da partida. Sua missão não é dar palpites aleatórios, mas aplicar duas lentes fundamentais de engenharia de apostas:
+1. **Caça às Assimetrias (Edge):** Identifique divergências reais onde a projeção fria do modelo do Nexus aponta uma tendência clara de alta força que o mercado subestimou (\`apenas_espelha_mercado: false\`).
+2. **Correlação e Coerência Tática (O Casamento do Bilhete):** Selecione até **3 pernas** que formem uma **tese única e coerente** para o confronto. É ESTRITAMENTE PROIBIDO misturar apostas contraditórias no mesmo bilhete (ex: cruzar um Over geral com Under isolado, ou tese de jogo truncado com props de alta produção individual).
+
+---
+
+[1. CATÁLOGOS DE MERCADOS PERMITIDOS]
+- Mercados coletivos permitidos: ${catálogoColetivo}
+- Props individuais permitidos (foco em volume sustentável): ${catálogoProp}
+Se uma assimetria pertencer a fora dessas listas, descarte-a imediatamente marcando "categoria_descarte": "fora_do_escopo".
+
+---
+
+[2. GATE OBRIGATÓRIO DE ELEGIBILIDADE]
+Uma perna só é elegível se atender SIMULTANEAMENTE aos critérios no dossiê:
+- O campo "cenario_definido" é true.
+- Na assimetria avaliada: "forca" == "alta", "persistencia" == "alta" ou "media", "confianca_do_julgamento" == "alta", e "apenas_espelha_mercado" == false.
+Se nenhuma perna passar no rigor, defina "status_geral": "sem_conversao".
+
+---
+
+[3. NORMALIZAÇÃO DE ODDS E LIMITES]
+- Converta sempre odds americanas (+120 / -150) ou decimais para número float no campo "odd".
+- Nunca invente odds ou linhas que não constem nos dados de entrada. Se faltar dado real, descarte ("categoria_descarte": "sem_odd_real").
+
+---
+
+[4. FORMATO DE SAÍDA E PÓDIO DE 3 PERNAS]
+Ordene estritamente as pernas elegíveis em um Pódio: **Ouro (1ª), Prata (2ª) e Bronze (3ª)** baseando-se na força da correlação e da assimetria. Retorne o JSON exatamente neste formato:
+
 {
-  "perfil_geral": "Síntese executiva da tese da partida, justificando a direção escolhida (em tom de apostador profissional)...",
-  "status_geral": "convertido",
+  "perfil_geral": "Síntese executiva da tese da partida sob a ótica de assimetria e correlação (tom profissional do Moneyball)...",
+  "status_geral": "convertido|sem_conversao",
+  "motivo_sem_conversao": null,
   "pernas_elegiveis": [
     {
-      "origem": "prop",
+      "origem": "coletivo|prop",
       "alvo_prop": "Nome do jogador ou null",
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
       "odd": 1.85,
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
-      "motivo": "Justificativa quantitativa curta baseada nas métricas do dossiê."
+      "motivo": "Justificativa direta baseada na assimetria e na correlação com o cenário do jogo."
     }
   ],
   "pernas_descartadas": [
     {
-      "origem": "coletivo",
+      "origem": "coletivo|prop",
+      "alvo_prop": "Nome ou null",
       "mercado": "Nome",
       "selecao": "Seleção",
-      "categoria_descarte": "baixo_gate",
-      "motivo": "Justificativa curta"
+      "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido|sem_linha_real_no_print",
+      "motivo": "Razão clara da rejeição."
     }
   ]
 }`;
