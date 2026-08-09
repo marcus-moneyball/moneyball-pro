@@ -267,7 +267,10 @@ Retorne o JSON estritamente neste formato:
     }
   ],
   "pernas_descartadas": [
-    { "mercado": "Nome do catálogo se o mercado corresponder a um item do
+    { "mercado": "Nome do catálogo se o mercado corresponder a um item do catálogo; caso contrário, use a descrição original do dossiê (nunca tome emprestado um nome do catálogo para um mercado que a categoria_descarte diz ser fora_do_escopo)", "selecao": "...", "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido", "motivo": "..." }
+  ]
+}`;
+}
     
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
