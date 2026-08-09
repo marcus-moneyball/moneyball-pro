@@ -198,14 +198,18 @@ O MIE nunca calcula probabilidade, EV, robustez ou confiança — essa camada é
 DIRETRIZ DE INTEGRALIDADE DA RESPOSTA:
 Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE PROIBIDO incluir texto explicativo, saudação ou blocos de código Markdown fora do JSON. A resposta DEVE iniciar com '{' e terminar com '}'.
 
+IDIOMA: Toda a saída (perfil_geral, motivo, motivo_sem_conversao) deve estar em português do Brasil, mesmo que o statement da hipótese ou as evidências do dossiê estejam em inglês. Traduza o conteúdo relevante, nunca copie trechos em inglês para a saída.
+
 ---
 ### PASSO 0 — MAPEAMENTO DE MERCADOS (antes do gate)
 
-Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspondente do catálogo permitido (seção 1) observando o CONTEÚDO de market_snapshot (tipo de linha/odd: total de pontos/corridas/gols, spread/handicap, moneyline, prop de jogador etc.) — nunca o nome literal da chave.
+Algumas chaves de "markets" podem ser um mercado individual (com market_snapshot/hypothesis/evidences direto dentro dela), e outras podem ser um CONTÊINER agrupando vários mercados individuais (ex: uma chave "player_props" contendo várias sub-chaves, cada uma com seu próprio market_snapshot/hypothesis/evidences). Nunca descarte um contêiner inteiro pelo nome dele — sempre entre e avalie cada sub-mercado dentro dele individualmente, como se fosse uma chave de "markets" normal.
 
-- Se uma chave corresponder claramente a um mercado do catálogo, trate como esse mercado.
-- Ao preencher o campo "mercado" na saída, use SEMPRE o nome exato do catálogo — nunca a chave original do dossiê.
-- Se uma chave não corresponder a nenhum mercado do catálogo (ex: escanteios, cartões, chutes a gol quando fora do catálogo prop do esporte), descarte com categoria_descarte "fora_do_escopo".
+Para cada mercado individual (de primeiro nível ou dentro de um contêiner), mapeie para o catálogo permitido (seção 1) observando o CONTEÚDO de market_snapshot (tipo de linha/odd, ou o jogador+estatística no caso de prop) — nunca o nome literal da chave ou do contêiner.
+
+- Se corresponder claramente a um mercado do catálogo, trate como esse mercado.
+- Ao preencher "mercado" na saída de uma perna ELEGÍVEL, use SEMPRE o nome exato do catálogo — nunca a chave/contêiner original do dossiê.
+- Só descarte "fora_do_escopo" um mercado individual específico que, mesmo após mapeado, não corresponda a nada do catálogo — nunca um contêiner inteiro sem abrir e checar cada item dentro dele.
 
 ---
 ### GATE OBRIGATÓRIO (aplique a cada mercado já mapeado no Passo 0)
@@ -218,7 +222,8 @@ Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspon
 3. Classifique "qualidade" só com base em sinais reais do dossiê (nunca invente um número/label sem lastro):
    - forca: "alta" se (supporting - contradicting) >= 2; "media" se == 1; "baixa" se <= 0.
    - persistencia: "alta" se as evidências de suporte vierem de amostras estatísticas amplas (médias de temporada, career stats, ERA/WHIP acumulado); "baixa" se vierem de fatos pontuais/situacionais (uma notícia isolada, um jogo recente, uma lesão).
-   - confianca: "alta" por padrão. Rebaixe para "media" se houver um item em missing_evidence não-crítico. Rebaixe para "baixa" apenas se: (a) houver um conflito em "conflicts" cujas evidências NÃO estejam ambas nas listas supporting_evidence_ids/contradicting_evidence_ids da própria hipótese (sinal de que a hipótese ignorou o conflito), OU (b) houver um item em missing_evidence que questione diretamente a premissa central do logic_path. Se um conflito já tiver suas duas evidências presentes nas listas supporting/contradicting da hipótese, considere que ele já foi ponderado no cálculo de "forca" (passo 3, item forca) — não penalize confianca de novo pelo mesmo conflito.
+   - confianca: "alta" por padrão. Rebaixe para "media" se houver um item em missing_evidence não-crítico. Rebaixe para "baixa" apenas se: (a) houver um conflito em "conflicts" cujas evidências NÃO estejam ambas nas listas supporting_evidence_ids/contradicting_evidence_ids da própria hipótese (sinal de que a hipótese ignorou o conflito), OU (b) houver um item em missing_evidence que questione diretamente a premissa central do logic_path. Se um conflito já tiver suas duas evidências presentes nas listas supporting/contradicting da hipótese, considere que ele já foi ponderado no cálculo de "forca" (item acima) — não penalize confianca de novo pelo mesmo conflito.
+   - Só inclua a perna se forca != "baixa" E confianca != "baixa".
 4. Classifique "origem": "prop" se a hipótese/evidências giram em torno de um jogador específico; "coletivo" caso contrário. Preencha "alvo_prop" com o nome do jogador quando origem for "prop", senão null.
 5. Se o mercado (já mapeado no Passo 0) não constar no catálogo permitido → descarte "fora_do_escopo".
 6. Se não houver odd real utilizável em market_snapshot para esse mercado → descarte "sem_odd_real".
@@ -227,18 +232,6 @@ Antes de aplicar o gate, mapeie cada chave de "markets" para o mercado correspon
 
 Se nenhum mercado passar no gate, retorne pernas_elegiveis vazio, status_geral "sem_conversao" e motivo_sem_conversao explicando (ex: "hipótese null em todos os mercados do catálogo" ou "evidência insuficiente em todos os mercados avaliados").
 
----
-### PASSO 0 — MAPEAMENTO DE MERCADOS (antes do gate)
-
-Algumas chaves de "markets" podem ser um mercado individual (com market_snapshot/hypothesis/evidences direto dentro dela), e outras podem ser um CONTÊINER agrupando vários mercados individuais (ex: uma chave "player_props" contendo várias sub-chaves, cada uma com seu próprio market_snapshot/hypothesis/evidences). Nunca descarte um contêiner inteiro pelo nome dele — sempre entre e avalie cada sub-mercado dentro dele individualmente, como se fosse uma chave de "markets" normal.
-
-Para cada mercado individual (de primeiro nível ou dentro de um contêiner), mapeie para o catálogo permitido (seção 1) observando o CONTEÚDO de market_snapshot (tipo de linha/odd, ou o jogador+estatística no caso de prop) — nunca o nome literal da chave ou do contêiner.
-
-- Se corresponder claramente a um mercado do catálogo, trate como esse mercado.
-- Ao preencher "mercado" na saída, use SEMPRE o nome exato do catálogo — nunca a chave/contêiner original do dossiê.
-- Só descarte "fora_do_escopo" um mercado individual específico que, mesmo após mapeado, não corresponda a nada do catálogo — nunca um contêiner inteiro sem abrir e checar cada item dentro dele.
-
-IDIOMA: Toda a saída (perfil_geral, motivo, motivo_sem_conversao) deve estar em português do Brasil, mesmo que o statement da hipótese ou as evidências do dossiê estejam em inglês. Traduza o conteúdo relevante, nunca copie trechos em inglês para a saída.
 ---
 [1. CATÁLOGOS DE MERCADOS PERMITIDOS]
 - Mercados coletivos permitidos: ${catálogoColetivo}
@@ -266,7 +259,7 @@ Retorne o JSON estritamente neste formato:
       "origem": "coletivo|prop",
       "alvo_prop": "Nome do jogador ou null",
       "mercado": "Nome exato do mercado conforme Catálogo",
-      "selecao": "Seleção exata baseada no market_snapshot",
+      "selecao": "Seleção exata baseada no market_snapshot, SEMPRE incluindo a linha numérica quando existir (ex: 'Under 7.0', nunca só 'Under'; 'Over 5.5 Strikeouts', nunca só 'Over')",
       "odd": 1.85,
       "odd_estimada": false,
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
@@ -274,10 +267,7 @@ Retorne o JSON estritamente neste formato:
     }
   ],
   "pernas_descartadas": [
-    { "mercado": "...", "selecao": "...", "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido", "motivo": "..." }
-  ]
-}`;
-}
+    { "mercado": "Nome do catálogo se o mercado corresponder a um item do
     
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
