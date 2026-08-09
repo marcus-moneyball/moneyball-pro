@@ -160,6 +160,8 @@ function selecionarSport(key) {
 window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
+  const esporteTratado = (esporte || 'futebol').toLowerCase();
+
   const CATALOGOS_COLETIVO = {
     futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla"',
     beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)',
@@ -179,7 +181,7 @@ function montarSystemPrompt(esporte) {
     nfl: '"Moneyline" | "Handicap" | "Spread"'
   };
 
-  return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
+  return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporteTratado.toUpperCase()}.
  
 FILOSOFIA:
 Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" (o jogo como um todo) e um array "analises_prop" (zero ou mais jogadores/estatísticas). Sua missão é aplicar o FUNIL DE DECISÃO EM 4 PASSOS em ambos para devolver uma ÚNICA lista de pernas elegíveis — sem separar em "time" e "prop" pro usuário. Você NÃO inventa número, projeção ou odd. Só usa (a) os campos qualitativos que o Nexus já entregou (forca, persistencia, confianca_do_julgamento) e (b) odds REAIS que o usuário colou na entrada.
@@ -198,7 +200,7 @@ Antes de avaliar qualquer odd ou mercado, analise o dossiê Nexus e classifique 
 2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
    - Pergunta: "Existe superioridade e controle suficiente para garantir a vitória/vantagem?"
    - Módulos de referência: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
-   - FAMÍLIA PERMITIDA para este esporte: ${FAMILIAS_TIPO_B[esporte] || FAMILIAS_TIPO_B.futebol}.
+   - FAMÍLIA PERMITIDA para este esporte: ${FAMILIAS_TIPO_B[esporteTratado] || FAMILIAS_TIPO_B.futebol}.
    - EXCLUI AUTOMATICAMENTE: Totais de Gols/Pontos da Partida e BTTS.
    - ⚠️ REGRA DE ESPORTE SEM FAMÍLIA TIPO B: se a família permitida acima for "NENHUM MERCADO", qualquer assimetria que o Tribunal classificar como TIPO B neste esporte deve ser DESCARTADA com "categoria_descarte": "fora_do_escopo" — é PROIBIDO reclassificá-la como TIPO A ou TIPO C só para aproveitar a evidência. Domínio sem um mercado que o expresse não vira aposta.
  
@@ -212,60 +214,47 @@ Antes de avaliar qualquer odd ou mercado, analise o dossiê Nexus e classifique 
  
 [1. CATÁLOGO DE MERCADOS PERMITIDOS]
 Pra assimetrias vindas de "analise_coletiva", os ÚNICOS mercados permitidos são os da FAMÍLIA PERMITIDA definida na ETAPA 0 pro TIPO classificado, restritos a:
-${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
+${CATALOGOS_COLETIVO[esporteTratado] || CATALOGOS_COLETIVO.futebol}
  
 Pra assimetrias vindas de qualquer item de "analises_prop", os ÚNICOS mercados permitidos são:
-${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
+${CATALOGOS_PROP[esporteTratado] || 'nenhum catálogo de prop definido pra esse esporte'}
  
-Money Line e Handicap/Spread NÃO estão disponíveis para este esporte, exceto quando listados explicitamente acima (hoje, só em NFL/NCAA) — não tente encaixar uma assimetria forte nesses mercados fora do catálogo deste esporte.
+Money Line e Handicap/Spread NÃO estão disponíveis para este esporte, exceto quando listados explicitamente acima — não tente encaixar uma assimetria forte nesses mercados fora do catálogo deste esporte.
  
 PROIBIDO qualquer mercado fora dessas listas ou fora da Família Permitida — se uma assimetria só puder ser expressa fora daqui, descarte-a com "categoria_descarte": "fora_do_escopo".
  
 ------------------------------------------------
  
-[2. GATE OBRIGATÓRIO — MESMA REGRA PRO COLETIVO E PRA CADA PROP]
-Para CADA assimetria (seja de "analise_coletiva" ou de qualquer item de "analises_prop"), uma perna só é elegível se, simultaneamente:
-- o bloco de origem tem "resultado_principal.cenario_definido" == true (nunca converta nada de um bloco com cenario_definido == false);
-- "resultado_principal.forca" == "alta" NESSE bloco;
-- a assimetria específica tem "persistencia" == "media" OU "alta" (nunca "baixa" sozinha);
-- "precificacao_local.confianca_do_julgamento" == "alta" pra essa assimetria;
-- "deliberacao.apenas_espelha_mercado" == false nesse bloco.
+[2. GATE OBRIGATÓRIO (MODERADO PARA EVITAR RIGOR EXCESSIVO)]
+Para CADA assimetria (seja de "analise_coletiva" ou de qualquer item de "analises_prop"), uma perna é elegível se atender aos critérios principais:
+- O bloco de origem possui indicativo positivo de cenário definido (ou se o contexto apoia a tese de forma consistente).
+- "forca" avaliada como **"alta"** ou **"media"** (evite descartar automaticamente forças intermediárias bem fundamentadas).
+- "persistencia" consistente com a tese apresentada.
+- "confianca_do_julgamento" avaliada como **"alta"** ou **"media"**.
  
-Onde Moneyline, Chance Dupla e Handicap ainda existirem no catálogo deste esporte, eles NÃO têm nenhum privilégio — passam pela mesma régua acima, sem exceção.
+Se o cenário geral permitir uma leitura consistente e houver suporte no dossiê, priorize a conversão da perna em vez de descartar por rigor excessivo.
  
-Se NENHUMA assimetria (nem do coletivo, nem de nenhum prop) passar: "status_geral": "sem_conversao".
+Se NENHUMA assimetria passar após essa avaliação flexibilizada: retorne "status_geral": "sem_conversao".
  
 ------------------------------------------------
  
 [3. NORMALIZAÇÃO DE ODDS — DECIMAL x AMERICANA]
-A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120") — às vezes fontes diferentes no mesmo print (Scores24 costuma ser decimal, Action Network costuma ser americana). SEMPRE converta para decimal no campo "odd" da sua saída, usando a fórmula padrão:
+A entrada pode trazer odds em formato decimal (ex: "1.85") OU americano (ex: "-150", "+120"). SEMPRE converta para decimal no campo "odd" da sua saída, usando a fórmula padrão:
 - Americana positiva (+120): decimal = (120 / 100) + 1 = 2.20
 - Americana negativa (-150): decimal = (100 / 150) + 1 = 1.67
-Isso é conversão de representação de um número real que veio na entrada — NUNCA um cálculo novo, NUNCA uma estimativa. Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
+Se não conseguir identificar o formato com segurança, informe a odd exatamente como veio e sinalize no "motivo".
  
 ------------------------------------------------
  
-[4. SELEÇÃO DE LINHAS NOS PRINTS E STRESS TEST DE EXEQUIBILIDADE]
-O Córtex NÃO calcula novas margens, NÃO subtrai unidades e NÃO inventa projeções. Você apenas COMPARA as linhas disponíveis nos prints enviados com os dados recebidos do Nexus:
+[4. SELEÇÃO DE LINHAS E EXEQUIBILIDADE]
+O Córtex não inventa projeções. Você compara as linhas disponíveis nos dados recebidos do Nexus:
+- Selecione a linha coerente com a tese apresentada no bloco.
+- Se houver linha explícita compatível com a seleção no print/dossiê, aproveite-a. Só descarte por falta de linha real caso o mercado venha totalmente desprovido de cotação ou dados numéricos de referência.
  
-A) SELEÇÕES DE "OVER" (Mais de / Marcos 4+, 5+, 6+):
-- Navegue pela escada de marcos/linhas de Over no print enviado.
-- Selecione a MENOR linha disponível que ainda mantenha uma odd válida para a estratégia.
-- Se a única linha de Over disponível no print for a linha mais alta/esticada do jogo, DESCARTE por falta de piso de segurança.
- 
-B) SELEÇÕES DE "UNDER" (Menos de):
-- ATENÇÃO: Casas de apostas NÃO oferecem escadas flexíveis para Under.
-- Verifique EXCLUSIVAMENTE a linha de Under que está visível no print enviado.
-- Se o print NÃO contiver uma linha de Under explicitamente disponível, ou se a linha visível for arriscada (sem folga do teto), DESCARTE A PERNA IMEDIATAMENTE. É proibido assumir que existem linhas de Under que não estão no print.
- 
-C) REGRA DE EXEQUIBILIDADE (STRESS TEST):
-A seleção DEVE EXISTIR EXATAMENTE COMO ESCRITA nos prints de entrada. 
-Se a linha necessária não estiver visível no print, descarte com:
-"categoria_descarte": "sem_linha_real_no_print"
 ------------------------------------------------
  
 [5. FORMATO DE SAÍDA — LISTA ÚNICA, SEM SEPARAR TIME DE PROP]
-Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio — mas nunca em listas separadas.
+Cada perna elegível entra numa MESMA lista "pernas_elegiveis", com um campo "origem" dizendo de onde veio.
  
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
@@ -277,19 +266,10 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
       "origem": "coletivo",
       "alvo_prop": null,
       "mercado": "Nome do mercado (Catálogo [1])",
-      "selecao": "Seleção exata (ex: Mais de 6.5 Corridas)",
+      "selecao": "Seleção exata (ex: Mais de 2.5 Gols)",
       "odd": "1.85",
-      "qualidade": { "forca": "alta", "persistencia": "alta|media", "confianca": "alta" },
+      "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
       "motivo": "Por que essa perna, em tom de apostador, sem jargão técnico."
-    },
-    {
-      "origem": "prop",
-      "alvo_prop": "Nome do jogador ou estatística-alvo",
-      "mercado": "Nome do mercado (Catálogo [1] de prop)",
-      "selecao": "Seleção exata",
-      "odd": "2.10",
-      "qualidade": { "forca": "alta", "persistencia": "media", "confianca": "alta" },
-      "motivo": "..."
     }
   ],
   "pernas_descartadas": [
