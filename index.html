@@ -186,15 +186,20 @@ Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE 
 ---
 ### MISSÃO PRINCIPAL: CONSTRUÇÃO DO PÓDIO HONESTO
 
-Você recebe o Dossiê Investigativo do MIE/Nexus. Sua missão é avaliar cada mercado do market_snapshot com base nas evidências e hipóteses e montar um Pódio de até 3 pernas elegíveis ("Ouro", "Prata", "Bronze").
+Você recebe o Dossiê Investigativo do Nexus (pode conter bloco coletivo/jogo E bloco de props do jogador, com estruturas de evidência diferentes entre si). Sua missão é avaliar cada mercado candidato e montar um Pódio de até 3 pernas elegíveis ("Ouro", "Prata", "Bronze").
 
-⚠️ GATE OBRIGATÓRIO (aplique a cada mercado candidato antes de aceitar):
-- Só inclua uma perna se houver divergência real entre o cenário investigado e o mercado (ex: tipo_divergencia diferente de "nenhuma", ou mercado_reflete_cenario == false), OU se as evidências qualitativas (forca/persistencia/confianca) sustentarem claramente a seleção.
-- Se o dossiê indicar que o mercado já precifica o cenário (mercado_reflete_cenario == true e tipo_divergencia == "nenhuma"), essa perna vai para pernas_descartadas com o motivo explícito — nunca para o pódio.
-- É PERMITIDO retornar pernas_elegiveis com menos de 3 itens, inclusive vazio, se nenhum mercado passar no gate. Um pódio vazio com motivo claro é preferível a uma perna forçada sem sustentação.
+⚠️ GATE OBRIGATÓRIO — a regra muda conforme a origem do mercado, porque os dois blocos do dossiê trazem evidências diferentes:
+
+- Para origem "coletivo" (jogo): só inclua a perna se houver divergência real entre o cenário investigado e o mercado (tipo_divergencia diferente de "nenhuma", ou mercado_reflete_cenario == false). Se o mercado já precifica o cenário (mercado_reflete_cenario == true e tipo_divergencia == "nenhuma"), vai para pernas_descartadas com categoria_descarte "baixo_gate".
+
+- Para origem "prop": esse bloco do dossiê NÃO tem tipo_divergencia nem mercado_reflete_cenario — não exija esses campos para props, isso descartaria o mercado inteiro por engano. Qualifique a prop somente pela força real das evidências (papel/uso, forma recente, matchup direto, H2H, risco de rotação): inclua se pelo menos duas das três notas de qualidade (forca/persistencia/confianca) forem "alta". Caso contrário, pernas_descartadas com categoria_descarte "baixo_gate".
+
+- Se a odd real não estiver disponível no market_snapshot para um mercado, descarte com categoria_descarte "sem_odd_real" (não invente, ver seção 2).
+
+- Se nenhuma perna de nenhuma origem passar no gate, retorne pernas_elegiveis como array vazio, status_geral como "sem_conversao" e preencha motivo_sem_conversao explicando por quê. Um pódio vazio com motivo claro é preferível a uma perna forçada sem sustentação.
 
 ⚠️ COERÊNCIA ENTRE PERNAS:
-- Não inclua duas pernas que sejam redundantes (mesma tese, mercados diferentes) nem contraditórias entre si.
+- Não inclua duas pernas redundantes (mesma tese, mercados diferentes) nem contraditórias entre si.
 
 ---
 [1. CATÁLOGOS DE MERCADOS PERMITIDOS]
@@ -205,14 +210,15 @@ Você recebe o Dossiê Investigativo do MIE/Nexus. Sua missão é avaliar cada m
 [2. ODDS — NUNCA INVENTAR]
 - Utilize exclusivamente as odds e linhas presentes no market_snapshot do dossiê.
 - Converta para número float no campo "odd" (ex: 1.85).
-- Se a odd exata não vier no snapshot, retorne "odd": null e sinalize em "odd_estimada": true. NUNCA invente ou estime um valor de odd — isso será tratado no Bet Builder com a odd real colada pelo usuário.
+- Se a odd exata não vier no snapshot, retorne "odd": null, "odd_estimada": true, e descarte a perna com categoria_descarte "sem_odd_real". NUNCA invente ou estime um valor de odd.
 
 ---
 [3. FORMATO DE SAÍDA OBRIGATÓRIO]
 Retorne o JSON estritamente neste formato:
 {
-  "perfil_geral": "Síntese executiva da tese da partida baseada nas evidências e hipóteses do MIE...",
-  "status_geral": "convertido",
+  "perfil_geral": "Síntese executiva da tese da partida baseada nas evidências e hipóteses do Nexus...",
+  "status_geral": "convertido" | "sem_conversao",
+  "motivo_sem_conversao": "Preencher só se status_geral for sem_conversao",
   "pernas_elegiveis": [
     {
       "origem": "coletivo|prop",
@@ -222,11 +228,11 @@ Retorne o JSON estritamente neste formato:
       "odd": 1.85,
       "odd_estimada": false,
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
-      "motivo": "Justificativa clara baseada nas evidências e hipóteses do dossiê, citando o que passou no gate."
+      "motivo": "Justificativa clara baseada nas evidências do dossiê, citando o que passou no gate."
     }
   ],
   "pernas_descartadas": [
-    { "mercado": "...", "motivo": "Ex: mercado já reflete o cenário investigado (sem edge)." }
+    { "mercado": "...", "selecao": "...", "categoria_descarte": "baixo_gate|fora_do_escopo|sem_odd_real|cenario_indefinido|sem_linha_real_no_print|linha_esticada_sem_piso", "motivo": "..." }
   ]
 }`;
 }
@@ -348,25 +354,21 @@ function montarRanking(pernas) {
     const limitadas = comPontos.slice(0, 3);
 
     return limitadas.map((p, i) => {
-        let rotulo = `BILHETE ${i + 1}`;
+        let rotulo = `PICK ${i + 1}`;
         let estilo = "bg-slate-700/30 text-slate-300 border-slate-600/40";
 
         if (i === 0) {
-            rotulo = "TOP PROP — OURO";
+            rotulo = "TOP PICK — OURO";
             estilo = "bg-accent/20 text-accent border-accent/40";
         } else if (i === 1) {
-            rotulo = "PROP — PRATA";
+            rotulo = "PICK — PRATA";
             estilo = "bg-slate-300/15 text-slate-200 border-slate-400/30";
         } else if (i === 2) {
-            rotulo = "PROP — BRONZE";
+            rotulo = "PICK — BRONZE";
             estilo = "bg-orange-800/20 text-orange-300 border-orange-700/40";
         }
 
-        return {
-            ...p,
-            _rotulo: rotulo,
-            _rotuloEstilo: estilo
-        };
+        return { ...p, _rotulo: rotulo, _rotuloEstilo: estilo };
     });
 }
 
