@@ -186,64 +186,45 @@ Responda EXCLUSIVAMENTE com um objeto JSON estruturado válido. É ESTRITAMENTE 
 
 ---
 
-### FILOSOFIA DE ANÁLISE: CONSUMINDO O DOSSIÊ DO MIE
-Você recebe o Dossiê Investigativo estruturado pelo MIE (Moneyball Intelligence Engine), contendo "markets", "market_snapshot", "evidences" e "hypothesis". 
-Sua missão é traduzir essa inteligência em um bilhete de apostas coeso:
-1. **Extração de Valor:** Analise os mercados do dossiê que possuem hipóteses estruturadas (\`hypothesis\` diferente de \`null\`) ou forte respaldo nas evidências.
-2. **Correlação Tática:** Selecione até **3 pernas** que formem uma tese única e coerente para o confronto, evitando contradições internas (ex: misturar Over geral com Under isolado).
+### MISSÃO PRINCIPAL: CONSTRUÇÃO DO PÓDIO OBRIGATÓRIO
+Você recebe o Dossiê Investigativo do MIE. Sua missão **OBRIGATÓRIA** é analisar os dados, hipóteses e snapshots de mercado para montar um bilhete estruturado contendo um Pódio de até **3 pernas elegíveis ("Ouro", "Prata", "Bronze")**. 
+
+⚠️ **REGRA DE OURO CONTRA VAZIOS:** É proibido retornar o array \`pernas_elegiveis\` vazio. Utilize os dados disponíveis no \`market_snapshot\` e nas evidências para traduzir as tendências quantitativas em seleções válidas de apostas, mantendo coerência tática (sem misturar apostas contraditórias).
 
 ---
 
 [1. CATÁLOGOS DE MERCADOS PERMITIDOS]
 - Mercados coletivos permitidos: ${catálogoColetivo}
 - Props individuais permitidos: ${catálogoProp}
-Se uma seleção pertencer a fora dessas listas, descarte-a imediatamente marcando "categoria_descarte": "fora_do_escopo".
 
 ---
 
-[2. REGRA DE CONVERSÃO DO DOSSIÊ]
-- Uma perna é elegível se o mercado correspondente no dossiê apresentar uma \`hypothesis\` válida (com evidências de suporte robustas) OU se os dados quantitativos do \`market_snapshot\` sustentarem uma assimetria clara.
-- **NÃO retorne "sem_conversao"** a menos que o dossiê inteiro venha completamente vazio ou sem nenhum dado aproveitável. Sempre busque construir as melhores opções (Pódio: Ouro, Prata e Bronze) com base no que o MIE investigou.
+[2. NORMALIZAÇÃO DE ODDS]
+- Utilize as odds e linhas contidas no \`market_snapshot\` do dossiê.
+- Converta sempre para número float no campo "odd" (ex: 1.85). Se a odd exata não vier no snapshot, utilize uma estimativa lógica e realista baseada no mercado ou padrão decimal comum (ex: 1.90).
 
 ---
 
-[3. NORMALIZAÇÃO DE ODDS E LIMITES]
-- Utilize estritamente as odds e linhas contidas no \`market_snapshot\` fornecido pelo MIE.
-- Converta sempre para número float no campo "odd".
-- Se faltar dado real de odd, descarte marcando "categoria_descarte": "sem_odd_real".
-
----
-
-[4. FORMATO DE SAÍDA E PÓDIO DE ATÉ 3 PERNAS]
-Retorne o JSON exatamente neste formato estrito:
+[3. FORMATO DE SAÍDA OBRIGATÓRIO]
+Retorne o JSON estritamente neste formato:
 
 {
-  "perfil_geral": "Síntese executiva da tese da partida baseada nas evidências e hipóteses do MIE (tom profissional do Moneyball)...",
+  "perfil_geral": "Síntese executiva da tese da partida baseada nas evidências e hipóteses do MIE...",
   "status_geral": "convertido",
   "pernas_elegiveis": [
     {
       "origem": "coletivo|prop",
       "alvo_prop": "Nome do jogador ou null",
-      "mercado": "Nome exato do mercado",
+      "mercado": "Nome exato do mercado conforme Catálogo",
       "selecao": "Seleção exata baseada no snapshot",
       "odd": 1.85,
       "qualidade": { "forca": "alta", "persistencia": "alta", "confianca": "alta" },
-      "motivo": "Justificativa baseada nas evidências e lógica do dossiê do MIE."
+      "motivo": "Justificativa clara baseada nas evidências e hipóteses do dossiê do MIE."
     }
   ],
-  "pernas_descartadas": [
-    {
-      "origem": "coletivo|prop",
-      "alvo_prop": "Nome ou null",
-      "mercado": "Nome",
-      "selecao": "Seleção",
-      "categoria_descarte": "fora_do_escopo|sem_odd_real|sem_linha_real",
-      "motivo": "Razão clara da rejeição."
-    }
-  ]
+  "pernas_descartadas": []
 }`;
 }
-
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
     document.getElementById("new-analysis-bar")?.classList.remove("hidden");
