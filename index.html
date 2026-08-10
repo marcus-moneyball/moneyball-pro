@@ -161,10 +161,10 @@ window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
   const CATALOGOS_COLETIVO = {
-    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla" | "Handicap Asiático/Europeu de Gols"',
-    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total) | "Money Line" | "Handicap de Corridas / Vencedor (Run Line)"',
-    basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"',
-    nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total) | "Handicap de Pontos (Spread)" | "Money Line"'
+    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
+    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)"',
+    basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"',
+    nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
   };
   const CATALOGOS_PROP = {
     futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
@@ -190,18 +190,18 @@ Antes de avaliar qualquer odd, classifique a partida em EXCLUSIVAMENTE UMA das 3
    - Pergunta: "Quanto este jogo tende a produzir com ambas as partes contribuindo?"
    - Módulos: Controle de Ritmo, Criação, Conversão e Defesa.
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
-   - EXCLUI AUTOMATICAMENTE: Team Totals isolados, Moneyline, Handicaps e Spreads.
+   - EXCLUI AUTOMATICAMENTE: Team Totals isolados. PROIBIDO Moneyline e Handicap.
  
 2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
-   - Pergunta: "Existe superioridade e controle suficiente para garantir a vitória/vantagem?"
+   - Pergunta: "Existe superioridade e controle suficiente para garantir a vantagem?"
    - Módulos: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
-   - FAMÍLIA PERMITIDA: Moneyline | Handicap | Spread | Chance Dupla.
-   - EXCLUI AUTOMATICAMENTE: Totais de Gols/Pontos da Partida e BTTS.
+   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total) focado na equipe dominante.
+   - EXCLUI AUTOMATICAMENTE: Over/Under Geral e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline, Handicap, Spread ou Chance Dupla.
  
 3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
    - Pergunta: "A alta produção ou vulnerabilidade está concentrada predominantemente em APENAS UM dos lados?"
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
-   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida, BTTS e Moneylines puras.
+   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline e Handicap.
  
 ------------------------------------------------
  
@@ -211,6 +211,8 @@ ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
  
 Pra assimetrias "props", os ÚNICOS mercados permitidos são:
 ${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
+
+GATEKEEPER (REGRA ABSOLUTA): É terminantemente PROIBIDO selecionar, recomendar ou listar mercados de Vencedor da Partida (Moneyline), Handicap (Spread) ou Chance Dupla. Se as únicas odds disponíveis forem essas, retorne "sem_conversao".
  
 ------------------------------------------------
  
@@ -238,6 +240,7 @@ A saída final deve priorizar a montagem de um bilhete correlacionado de 2 a 3 p
 Exemplo: Se o jogo é TIPO B (Domínio do Time da Casa), busque adicionar uma perna Prop de um jogador do Time da Casa pontuando, construindo uma narrativa coesa.
 Descarte pernas solitárias que não reforcem o cenário Macro.`;
 }
+    
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
   "perfil_geral": "Síntese analítica quantitativa do jogo, destacando onde está a maior assimetria matemática...",
