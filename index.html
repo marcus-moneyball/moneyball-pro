@@ -284,10 +284,16 @@ function comprimirImagem(file) {
 async function processarPrintComGemini(apiKey) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
-    // Mapeia todas as imagens para o array de parts da API
-    const parts = imagensBase64Selecionadas.map(img => ({
-        inline_data: { mime_type: img.mimeType, data: img.data }
-    }));
+    // Mapeia todas as imagens removendo o prefixo 'data:image/...;base64,' se ele existir
+    const parts = imagensBase64Selecionadas.map(img => {
+        const base64Pura = img.data.includes(',') ? img.data.split(',')[1] : img.data;
+        return {
+            inline_data: { 
+                mime_type: img.mimeType || 'image/png', 
+                data: base64Pura 
+            }
+        };
+    });
 
     parts.push({ 
         text: `Analise todas as ${imagensBase64Selecionadas.length} imagens/prints anexados sobre o confronto esportivo/aposta e extraia TODOS os dados visíveis (times, estatísticas, médias, linhas, odds) em formato JSON limpo.` 
@@ -304,7 +310,14 @@ async function processarPrintComGemini(apiKey) {
         body: JSON.stringify(body)
     });
 
-    if (!res.ok) throw new Error(`Erro no Gemini OCR (${res.status})`);
+    if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+            throw new Error("Muitas requisições (Erro 429). Aguarde uns 30 segundos e tente novamente.");
+        }
+        throw new Error(`Erro no Gemini OCR (${res.status}): ${errorData.error?.message || 'Falha na requisição'}`);
+    }
+
     const data = await res.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
 }
