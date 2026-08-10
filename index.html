@@ -176,13 +176,8 @@ function montarSystemPrompt(esporte) {
     return `Você é o especialista Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
 
 FILOSOFIA:
-Sua missão é extrair do dossiê do Nexus as melhores e mais seguras construções quantitativas para o pódio (Ouro, Prata e Bronze).
-NÃO FORCE 3 PALPITES SE NÃO HOUVER ASSIMETRIAS OU ODDS SUFICIENTES. É preferível entregar apenas 1 ou 2 picks de alta qualidade do que inventar apostas fracas ou opostas.
-
-REGRA DE OURO (LEITURA DE DADOS E ODDS):
-- Extraia nomes de mercados e odds EXCLUSIVAMENTE dos dados enviados no JSON.
-- NUNCA sugira um mercado ou linha que NÃO POSSUA ODD explicitamente listada no JSON.
-- NUNCA invente odds. Converta odds americanas (+120 = 2.20, -150 = 1.67) para decimais.
+Sua missão é extrair do dossiê do Nexus as melhores construções quantitativas para o pódio (Ouro, Prata e Bronze) baseando-se EXCLUSIVAMENTE no valor estatístico e na assimetria das métricas do confronto (xG, xERA, K/9, pace, etc.).
+A análise NÃO depende de odds específicas de casas de apostas. Foque na linha estatística sugerida pelo modelo.
 
 ------------------------------------------------
 
@@ -194,36 +189,42 @@ PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
-[1. PROIBIÇÃO ABSOLUTA DE HEDGE / DUPLO LADO]
-- É TERMINANTEMENTE PROIBIDO indicar os dois lados do mesmo mercado ou jogador no mesmo pódio (Exemplo de ERRO CRÍTICO: indicar Mize Over 4.5 K no Prata e Mize Under 4.5 K no Bronze).
-- Todas as seleções geradas DEVEM ser de mercados/linhas DISTINTAS e CONGRUENTES (que apontem para a mesma narrativa do jogo).
+[1. UNICIDADE RIGOROSA E VEDAÇÃO DE GAMBIARRAS]
+- Ouro, Prata e Bronze DEVEM SER 3 MERCADOS/MÉTRICAS COMPLETAMENTE DISTINTOS.
+- É TERMINANTEMENTE PROIBIDO repetir a mesma linha/mercado adicionando sufixos ou justificativas alternativas (Exemplo de ERRO GRAVE: Ouro = "Under 7.5", Bronze = "Under 7.5 (ênfase em clima)"). Se a seleção for a mesma, descarte.
 
 ------------------------------------------------
 
-[2. ESTRUTURA FLEXÍVEL DO PÓDIO (1 A 3 SELEÇÕES)]
-- **OURO (Obrigatório):** A melhor assimetria real do jogo, necessariamente COM ODD disponível. (MSC 80-99).
-- **PRATA (Opcional):** Segunda melhor assimetria distinta, COM ODD real. Se não houver opção válida, retorne null. (MSC 65-79).
-- **BRONZE (Opcional):** Terceira melhor assimetria distinta, COM ODD real. Se não houver opção válida, retorne null. (MSC 50-64).
+[2. PROIBIÇÃO ABSOLUTA DE CONTRADIÇÃO / HEDGE]
+- É TERMINANTEMENTE PROIBIDO indicar os dois lados do mesmo mercado ou jogador no mesmo pódio (Exemplo de ERRO CRÍTICO: indicar Mize Over 4.5 K no Prata e Mize Under 4.5 K no Bronze).
+- Todas as seleções geradas DEVEM contar a MESMA HISTÓRIA sobre o confronto e concordar entre si.
+
+------------------------------------------------
+
+[3. ESTRUTURA DO PÓDIO (1 A 3 SELEÇÕES)]
+- **OURO (Top Pick):** A maior assimetria estatística e convergência de dados do confronto. (MSC 80-99).
+- **PRATA (Opcional):** Segunda melhor linha/mercado distinto de valor estatístico. Se não houver opção consistente, retorne null. (MSC 65-79).
+- **BRONZE (Opcional):** Terceira linha/mercado distinto de valor marginal. Se não houver opção consistente, retorne null. (MSC 50-64).
 
 ------------------------------------------------
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_geral": "Síntese concisa da narrativa do confronto...",
+  "perfil_geral": "Síntese concisa da leitura estatística do confronto...",
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
       "mercado": "Nome do Mercado 1",
-      "selecao": "Linha exata 1",
-      "odd": "1.83",
+      "selecao": "Linha exata 1 (ex: Under 7.5 ou Over 4.5 K)",
+      "odd": "Linha Estatística", 
       "msc_score": 88,
-      "motivo": "Justificativa quantitativa..."
+      "motivo": "Justificativa quantitativa baseada nas métricas do JSON."
     },
     "prata": null, 
     "bronze": null
   }
 }
-*Nota: Retorne o objeto completo em 'prata' e 'bronze' APENAS se houver mercado/odd real e diferente do Ouro. Caso contrário, use null.*`;
+*Nota: Se no campo 'odd' houver valor numérico de odd no JSON, pode manter; caso contrário, use apenas a indicação da linha recomendada.*`;
 }
     
 function recolherEntrada() {
