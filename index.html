@@ -70,7 +70,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Pódio Quantitativo
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Envie um print de aposta ou cole o dossiê JSON para obter o pódio (Ouro, Prata, Bronze).</p>
+            <p class="text-xs text-slate-500">Envie até 10 prints da aposta ou cole o dossiê JSON para obter o pódio (Ouro, Prata, Bronze).</p>
         </div>
 
         <!-- ÁREA DE ENTRADA -->
@@ -87,7 +87,7 @@
                         <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono mt-1" onchange="salvarKey('moneyball_groq_key', this.value)">
                     </div>
                     <div>
-                        <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GEMINI (Visão / Print)</label>
+                        <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GEMINI (Visão / Prints)</label>
                         <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono mt-1" onchange="salvarKey('moneyball_gemini_key', this.value)">
                     </div>
                 </div>
@@ -102,24 +102,29 @@
                 <!-- ABAS DE MODOS DE ENTRADA (PRINT VS TEXTO) -->
                 <div class="flex border-b border-base-border pb-3 gap-2">
                     <button type="button" id="tab-mode-print" onclick="mudarModoEntrada('print')" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all bg-accent/20 border border-accent text-accent">
-                        <i class="fa-solid fa-camera"></i> 📸 Enviar Print
+                        <i class="fa-solid fa-camera"></i> 📸 Enviar Prints (até 10)
                     </button>
                     <button type="button" id="tab-mode-json" onclick="mudarModoEntrada('json')" class="flex-1 py-2 px-3 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all bg-base-bg border border-base-border text-slate-400 hover:text-slate-200">
                         <i class="fa-solid fa-code"></i> 📝 Colar JSON / Texto
                     </button>
                 </div>
 
-                <!-- CONTEÚDO DA ABA 1: PRINT -->
+                <!-- CONTEÚDO DA ABA 1: PRINT (MÚLTIPLOS) -->
                 <div id="sec-print" class="space-y-3">
                     <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-bg/50 transition-all" onclick="document.getElementById('print-input').click()">
                         <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
-                        <p class="text-xs font-semibold text-slate-300">Clique para selecionar o print da aposta</p>
+                        <p class="text-xs font-semibold text-slate-300">Clique para selecionar os prints (até 10 fotos)</p>
                         <p class="text-[10px] text-slate-500">Formatos aceitos: JPG, PNG, WEBP (Redimensionamento automático)</p>
                         <input type="file" id="print-input" accept="image/*" multiple class="hidden" onchange="previewImagens(this)">
                     </div>
-                    <div id="img-preview-container" class="hidden text-center space-y-2">
-                        <img id="img-preview" src="" alt="Preview do Print" class="max-h-48 mx-auto rounded-lg border border-accent/40 shadow-lg">
-                        <p id="img-filename" class="text-[10px] font-mono text-slate-400"></p>
+
+                    <!-- PREVIEW EM GRID DE MINIATURAS -->
+                    <div id="img-preview-container" class="hidden space-y-2">
+                        <div id="img-preview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-60 overflow-y-auto p-1 bg-base-bg/80 rounded-xl border border-base-border"></div>
+                        <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
+                            <span id="img-counter" class="text-accent font-bold">0 / 10 fotos selecionadas</span>
+                            <span id="img-size-info"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -155,7 +160,7 @@
 
 <script>
 let modoEntradaAtivo = "print"; // "print" ou "json"
-let imagemBase64Selecionada = null;
+let imagensBase64Selecionadas = []; // Array para até 10 fotos
 
 function salvarKey(chave, val) {
     if (val) localStorage.setItem(chave, val.trim());
@@ -214,48 +219,85 @@ function mudarModoEntrada(modo) {
     }
 }
 
-// Compressão de Imagem no Navegador
-function previewImagem(input) {
-    const file = input.files[0];
-    if (!file) return;
+// Processamento e Compressão de até 10 Imagens
+async function previewImagens(input) {
+    const files = Array.from(input.files);
+    if (!files || files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const img = new Image();
-        img.src = e.target.result;
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 1080;
-            let scale = 1;
-            if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width;
+    let arquivos = files;
+    if (files.length > 10) {
+        alert("Você selecionou mais de 10 fotos. Apenas as 10 primeiras serão processadas.");
+        arquivos = files.slice(0, 10);
+    }
 
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
+    imagensBase64Selecionadas = [];
+    const grid = document.getElementById("img-preview-grid");
+    const container = document.getElementById("img-preview-container");
+    const counter = document.getElementById("img-counter");
+    const sizeInfo = document.getElementById("img-size-info");
 
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    grid.innerHTML = "";
+    let totalKB = 0;
 
-            imagemBase64Selecionada = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-            
-            document.getElementById("img-preview").src = canvas.toDataURL('image/jpeg', 0.8);
-            document.getElementById("img-filename").innerText = `${file.name} (${Math.round(imagemBase64Selecionada.length / 1024)} KB)`;
-            document.getElementById("img-preview-container").classList.remove("hidden");
-        };
-    };
-    reader.readAsDataURL(file);
+    for (const file of arquivos) {
+        const base64Data = await comprimirImagem(file);
+        imagensBase64Selecionadas.push({
+            mimeType: "image/jpeg",
+            data: base64Data
+        });
+
+        totalKB += Math.round(base64Data.length / 1024);
+
+        const imgEl = document.createElement("img");
+        imgEl.src = `data:image/jpeg;base64,${base64Data}`;
+        imgEl.className = "w-full h-20 object-cover rounded-lg border border-accent/40 shadow";
+        grid.appendChild(imgEl);
+    }
+
+    counter.innerText = `${imagensBase64Selecionadas.length} / 10 fotos selecionadas`;
+    sizeInfo.innerText = `Total: ~${totalKB} KB`;
+    container.classList.remove("hidden");
 }
 
-// Visão Computacional Gemini OCR
+function comprimirImagem(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1080;
+                let scale = 1;
+                if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width;
+
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
+            };
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// Visão Computacional Gemini OCR (Múltiplas Fotos)
 async function processarPrintComGemini(apiKey) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     
+    // Mapeia todas as imagens para o array de parts da API
+    const parts = imagensBase64Selecionadas.map(img => ({
+        inline_data: { mime_type: img.mimeType, data: img.data }
+    }));
+
+    parts.push({ 
+        text: `Analise todas as ${imagensBase64Selecionadas.length} imagens/prints anexados sobre o confronto esportivo/aposta e extraia TODOS os dados visíveis (times, estatísticas, médias, linhas, odds) em formato JSON limpo.` 
+    });
+
     const body = {
-        contents: [{
-            parts: [
-                { inline_data: { mime_type: "image/jpeg", data: imagemBase64Selecionada } },
-                { text: "Analise este print esportivo/aposta e extraia TODOS os dados visíveis (times, estatísticas, médias, linhas, odds) em formato JSON limpo." }
-            ]
-        }],
+        contents: [{ parts }],
         generationConfig: { response_mime_type: "application/json" }
     };
 
@@ -367,8 +409,8 @@ async function executarAnalise() {
 
     try {
         if (modoEntradaAtivo === "print") {
-            if (!imagemBase64Selecionada) {
-                display.innerHTML = alertaErro("Selecione um print de aposta antes de gerar a análise.");
+            if (!imagensBase64Selecionadas || imagensBase64Selecionadas.length === 0) {
+                display.innerHTML = alertaErro("Selecione ao menos 1 print antes de gerar a análise.");
                 btn.disabled = false;
                 return;
             }
@@ -378,7 +420,7 @@ async function executarAnalise() {
                 return;
             }
 
-            btn.innerHTML = `<i class="fa-solid fa-eye fa-spin mr-2"></i> Lendo print via Gemini OCR...`;
+            btn.innerHTML = `<i class="fa-solid fa-eye fa-spin mr-2"></i> Lendo ${imagensBase64Selecionadas.length} print(s) via Gemini OCR...`;
             conteudoParaAnalisar = await processarPrintComGemini(geminiKey);
 
         } else {
@@ -435,8 +477,12 @@ function recolherEntrada() {
 function resetarEntrada() {
     document.getElementById("input-container")?.classList.remove("hidden");
     document.getElementById("new-analysis-bar")?.classList.add("hidden");
-    imagemBase64Selecionada = null;
+    imagensBase64Selecionadas = [];
     document.getElementById("img-preview-container")?.classList.add("hidden");
+    const grid = document.getElementById("img-preview-grid");
+    if (grid) grid.innerHTML = "";
+    const printInput = document.getElementById("print-input");
+    if (printInput) printInput.value = "";
     const jsonInput = document.getElementById("json-input");
     if (jsonInput) jsonInput.value = "";
 }
