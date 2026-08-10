@@ -193,21 +193,25 @@ PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
-[1. CONGRUÊNCIA LÓGICA E NARRATIVA ÚNICA - REGRA ABSOLUTA]
-As 3 recomendações do pódio (Ouro, Prata e Bronze) DEVEM obrigatoriamente contar a MESMA HISTÓRIA sobre a partida.
-- É ESTRITAMENTE PROIBIDO gerar seleções contraditórias ou opostas entre si no mesmo pódio.
-- NUNCA misture "Over" e "Under" para a mesma partida ou contexto (Exemplo de ERRO CRÍTICO: indicar Over Gols no Ouro e Under Gols no Prata ou Bronze).
-- NUNCA combine cenários incongruentes (Exemplo de ERRO CRÍTICO: indicar "BTTS - Sim" no Ouro e "Team Total Under 0.5" no Prata).
-- Defina UMA única narrativa macro estatística para a partida (ex: "Confronto truncado de baixa produção", "Jogo corrido e de alto volume de pontuação" ou "Domínio ofensivo de um lado") e garanta que Ouro, Prata e Bronze reforcem essa exata leitura em diferentes níveis de risco.
+[1. DIVERSIDADE E UNICIDADE DAS SELEÇÕES - REGRA ABSOLUTA]
+Ouro, Prata e Bronze DEVEM SER 3 SELEÇÕES/MERCADOS DISTINTOS ENTRE SI.
+- É TERMINANTEMENTE PROIBIDO repetir a mesma seleção/linha em mais de uma posição no pódio (Exemplo de ERRO GRAVE: indicar "Under 7.5" no Ouro, no Prata e no Bronze).
+- Cada vaga (Ouro, Prata, Bronze) precisa abordar um ângulo ou mercado diferente da partida (Exemplo CORRETO: Ouro = Total de Corridas Under 7.5 | Prata = Team Total Padres Under 3.5 | Bronze = Strikeouts do Pitcher Over 5.5).
 
 ------------------------------------------------
 
-[2. AVALIAÇÃO DE ASSIMETRIA E PÓDIO]
-- **OURO (Top Pick):** Maior assimetria do dossiê. Requer maior convergência de dados e consistência. (MSC 85-99).
-- **PRATA:** Segunda melhor assimetria. Pode ter confiança média ou menor volume de amostra. (MSC 70-84).
-- **BRONZE:** Terceira melhor opção ou aposta de valor marginal/complementar. (MSC 50-69).
+[2. CONGRUÊNCIA LÓGICA E NARRATIVA ÚNICA]
+As 3 seleções distintas do pódio DEVEM obrigatoriamente contar a MESMA HISTÓRIA coerente sobre a partida.
+- É ESTRITAMENTE PROIBIDO gerar seleções contraditórias entre si.
+- NUNCA misture "Over" e "Under" para a mesma partida ou contexto.
+- Defina UMA única narrativa macro estatística para o confronto e garanta que as 3 seleções DIFERENTES reforcem essa exata leitura.
 
-DIRETRIZ DE EXECUÇÃO: Sempre forneça as 3 recomendações (Ouro, Prata, Bronze) se houver qualquer assimetria mínima aproveitável no dossiê. Apenas retorne "sem_conversao" se o dossiê for totalmente vago ou sem odds válidas.
+------------------------------------------------
+
+[3. AVALIAÇÃO DE ASSIMETRIA E PÓDIO]
+- **OURO (Top Pick):** A melhor assimetria/linha do jogo. (MSC 85-99).
+- **PRATA:** Segunda melhor linha/mercado distinto. (MSC 70-84).
+- **BRONZE:** Terceira melhor linha/mercado distinto. (MSC 50-69).
 
 ------------------------------------------------
 
@@ -217,30 +221,30 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
-      "mercado": "Nome do Mercado",
-      "selecao": "Sua seleção/linha exata",
+      "mercado": "Nome do Mercado 1",
+      "selecao": "Linha exata 1",
       "odd": "1.85",
       "msc_score": 90,
-      "motivo": "Justificativa quantitativa resumida baseada nos dados do JSON."
+      "motivo": "Justificativa quantitativa..."
     },
     "prata": {
-      "mercado": "Nome do Mercado",
-      "selecao": "Sua seleção/linha exata",
+      "mercado": "Nome do Mercado 2 (Diferente do Ouro)",
+      "selecao": "Linha exata 2",
       "odd": "1.75",
       "msc_score": 78,
-      "motivo": "Justificativa quantitativa resumida..."
+      "motivo": "Justificativa quantitativa..."
     },
     "bronze": {
-      "mercado": "Nome do Mercado",
-      "selecao": "Sua seleção/linha exata",
+      "mercado": "Nome do Mercado 3 (Diferente do Ouro e Prata)",
+      "selecao": "Linha exata 3",
       "odd": "1.95",
       "msc_score": 65,
-      "motivo": "Justificativa quantitativa resumida..."
+      "motivo": "Justificativa quantitativa..."
     }
   }
 }`;
 }
-
+    
 function recolherEntrada() {
     document.getElementById("input-container")?.classList.add("hidden");
     document.getElementById("new-analysis-bar")?.classList.remove("hidden");
