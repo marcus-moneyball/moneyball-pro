@@ -115,7 +115,7 @@
                         <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
                         <p class="text-xs font-semibold text-slate-300">Clique para selecionar o print da aposta</p>
                         <p class="text-[10px] text-slate-500">Formatos aceitos: JPG, PNG, WEBP (Redimensionamento automático)</p>
-                        <input type="file" id="print-input" accept="image/*" class="hidden" onchange="previewImagem(this)">
+                        <input type="file" id="print-input" accept="image/*" multiple class="hidden" onchange="previewImagens(this)">
                     </div>
                     <div id="img-preview-container" class="hidden text-center space-y-2">
                         <img id="img-preview" src="" alt="Preview do Print" class="max-h-48 mx-auto rounded-lg border border-accent/40 shadow-lg">
