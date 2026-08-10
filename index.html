@@ -189,19 +189,26 @@ PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
-[1. UNICIDADE RIGOROSA E VEDAÇÃO DE GAMBIARRAS]
+[1. IDENTIFICAÇÃO DE JOGADORES EM PROPS - REGRA DE AUTORIDADE]
+- Sempre que a seleção for uma Prop Individual (ex: Strikeouts, Pontos de Jogador, Chutes a Gol), O NOME DO JOGADOR DEVE CONSTAR EXPLICITAMENTE no campo 'mercado' ou 'selecao'.
+- Exemplo CORRETO no mercado: "Strikeouts do Arremessador (Jack Flaherty)"
+- Exemplo CORRETO na seleção: "Jack Flaherty — Over 5.5 K"
+
+------------------------------------------------
+
+[2. UNICIDADE RIGOROSA E VEDAÇÃO DE GAMBIARRAS]
 - Ouro, Prata e Bronze DEVEM SER 3 MERCADOS/MÉTRICAS COMPLETAMENTE DISTINTOS.
 - É TERMINANTEMENTE PROIBIDO repetir a mesma linha/mercado adicionando sufixos ou justificativas alternativas (Exemplo de ERRO GRAVE: Ouro = "Under 7.5", Bronze = "Under 7.5 (ênfase em clima)"). Se a seleção for a mesma, descarte.
 
 ------------------------------------------------
 
-[2. PROIBIÇÃO ABSOLUTA DE CONTRADIÇÃO / HEDGE]
+[3. PROIBIÇÃO ABSOLUTA DE CONTRADIÇÃO / HEDGE]
 - É TERMINANTEMENTE PROIBIDO indicar os dois lados do mesmo mercado ou jogador no mesmo pódio (Exemplo de ERRO CRÍTICO: indicar Mize Over 4.5 K no Prata e Mize Under 4.5 K no Bronze).
 - Todas as seleções geradas DEVEM contar a MESMA HISTÓRIA sobre o confronto e concordar entre si.
 
 ------------------------------------------------
 
-[3. ESTRUTURA DO PÓDIO (1 A 3 SELEÇÕES)]
+[4. ESTRUTURA DO PÓDIO (1 A 3 SELEÇÕES)]
 - **OURO (Top Pick):** A maior assimetria estatística e convergência de dados do confronto. (MSC 80-99).
 - **PRATA (Opcional):** Segunda melhor linha/mercado distinto de valor estatístico. Se não houver opção consistente, retorne null. (MSC 65-79).
 - **BRONZE (Opcional):** Terceira linha/mercado distinto de valor marginal. Se não houver opção consistente, retorne null. (MSC 50-64).
@@ -214,17 +221,22 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
-      "mercado": "Nome do Mercado 1",
-      "selecao": "Linha exata 1 (ex: Under 7.5 ou Over 4.5 K)",
+      "mercado": "Total de Corridas na Partida",
+      "selecao": "Under 7.5",
       "odd": "Linha Estatística", 
       "msc_score": 88,
-      "motivo": "Justificativa quantitativa baseada nas métricas do JSON."
+      "motivo": "Justificativa quantitativa..."
     },
-    "prata": null, 
+    "prata": {
+      "mercado": "Strikeouts do Arremessador (Jack Flaherty)",
+      "selecao": "Jack Flaherty — Over 5.5 K",
+      "odd": "Linha Estatística", 
+      "msc_score": 75,
+      "motivo": "Justificativa quantitativa..."
+    },
     "bronze": null
   }
-}
-*Nota: Se no campo 'odd' houver valor numérico de odd no JSON, pode manter; caso contrário, use apenas a indicação da linha recomendada.*`;
+}`;
 }
     
 function recolherEntrada() {
