@@ -1,3 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoneyballPro</title>
+
+    <!-- PWA: transforma em app instalável -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0c10">
+    <link rel="icon" href="icons/icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MoneyballPro">
+
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                        display: ['"Bebas Neue"', 'sans-serif'],
+                    },
+                    colors: {
+                        base: { bg: '#0a0c10', panel: '#12151c', card: '#171b22', border: '#262b35' },
+                        accent: { DEFAULT: '#f2b134', dim: '#caa233', soft: '#f2b13422' },
+                        value: { DEFAULT: '#34d399' },
+                        risk: { DEFAULT: '#f87171' },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .betslip {
+            position: relative;
+            background:
+                radial-gradient(circle at 0 14px, transparent 8px, var(--slip-bg, #14110a) 8.5px) top left / 100% 28px repeat-y,
+                var(--slip-bg, #14110a);
+            border: 1px solid rgba(242,177,52,0.35);
+        }
+        .betslip::before, .betslip::after {
+            content: "";
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 14px;
+            background: radial-gradient(circle at center, #0a0c10 8px, transparent 8.5px);
+            background-size: 14px 28px;
+            background-repeat: repeat-y;
+        }
+        .betslip::before { left: -7px; }
+        .betslip::after { right: -7px; }
+        @media (prefers-reduced-motion: no-preference) {
+            .fade-up { animation: fadeUp .4s ease-out both; }
+            @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        }
+    </style>
+</head>
+<body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% -10%, rgba(242,177,52,0.07), transparent 55%);">
+    <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
+
+        <!-- HEADER -->
+        <div class="text-center space-y-1.5 pt-2">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Bet Builder V2 — Pódio Quantitativo
+            </div>
+            <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
+            <p class="text-xs text-slate-500">Cole o dossiê do Nexus (MDM) e obtenha as 3 melhores oportunidades (Ouro, Prata, Bronze).</p>
+        </div>
+
+        <!-- ÁREA DE ENTRADA -->
+        <div id="input-container" class="space-y-4">
+
+            <!-- CHAVE DA API -->
+            <details class="bg-base-panel border border-base-border rounded-2xl p-4">
+                <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-accent"></i> Sua chave da API Groq
+                </summary>
+                <div class="mt-4 space-y-2">
+                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (salva localmente no seu navegador)</label>
+                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono" onchange="salvarKey(this.value)">
+                </div>
+            </details>
+
+            <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+
+            <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-accent/20 text-accent text-xs font-bold flex items-center justify-center">1</span>
+                    <label class="text-sm font-semibold text-slate-300">Dossiê do Nexus (JSON) + Odds reais</label>
+                </div>
+                <textarea id="json-input" class="w-full h-52 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON gerado pelo Nexus com as odds reais..."></textarea>
+
+                <button id="analisar-btn" type="button" onclick="analisarComGroq()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-bolt"></i> Gerar Pódio de Bilhetes
+                </button>
+            </div>
+        </div>
+
+        <!-- BOTÃO DE NOVA ANÁLISE -->
+        <div id="new-analysis-bar" class="hidden">
+            <button type="button" onclick="resetarEntrada()" class="w-full py-3 bg-base-panel hover:bg-base-card border border-accent/40 rounded-xl text-accent font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg">
+                <i class="fa-solid fa-plus"></i> Nova Análise (Colar outro JSON)
+            </button>
+        </div>
+
+        <!-- DISPLAY DE RESULTADOS -->
+        <div id="display-area"></div>
+
+        <!-- AVISO LEGAL -->
+        <footer class="pt-4 pb-2 text-center">
+            <p class="text-[10px] text-slate-600 leading-relaxed max-w-lg mx-auto">
+                Nenhum modelo estatístico é capaz de prever resultados esportivos com certeza. Ferramenta de análise quantitativa. <b class="text-slate-500">18+</b>.
+            </p>
+        </footer>
+    </div>
+
+<script>
+function salvarKey(val) {
+    if (val) localStorage.setItem("moneyball_groq_key", val.trim());
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    buildSportTabs();
+    const savedKey = localStorage.getItem("moneyball_groq_key");
+    if (savedKey) {
+        const input = document.getElementById("groq-key");
+        if (input) input.value = savedKey;
+    }
+});
+
+const MODULES = {
+    futebol: { label: "Futebol", icon: "fa-futbol" },
+    beisebol: { label: "MLB", icon: "fa-baseball" },
+    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
+    nfl: { label: "NFL/NCAA", icon: "fa-football" }
+};
+
+let sportAtivo = "futebol";
+
+function buildSportTabs() {
+    const container = document.getElementById("sport-tabs");
+    if (!container) return;
+    container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
+        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+            <i class="fa-solid ${mod.icon}"></i> ${mod.label}
+        </button>
+    `).join("");
+}
+
+function selecionarSport(key) {
+    sportAtivo = key;
+    buildSportTabs();
+}
+window.selecionarSport = selecionarSport;
+
 function montarSystemPrompt(esporte) {
   const CATALOGOS_COLETIVO = {
     futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
@@ -11,50 +172,50 @@ function montarSystemPrompt(esporte) {
     basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
     nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
   };
- 
+
   return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
- 
+
 FILOSOFIA:
 Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" e um array "analises_prop". Sua missão é aplicar o FUNIL DE DECISÃO para devolver uma construção final do estilo "Moneyball": uma aposta combinada (Bet Builder) inteligente, focada em correlações lógicas (idealmente 2 a 3 pernas) baseadas em assimetrias provadas.
 
 REGRA DE OURO (LEITURA DE DADOS): 
 Você deve extrair os nomes dos mercados e os valores numéricos das odds EXCLUSIVAMENTE do array "mercados_disponiveis" (ou da lista estruturada de odds enviada no JSON). NUNCA invente odds e nunca procure odds soltas no meio do texto da análise.
- 
+
 ------------------------------------------------
- 
+
 [0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (CLASSIFICAÇÃO EXCLUSIVA)]
 Antes de avaliar qualquer odd, classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses abaixo.
- 
+
 1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída)
    - Pergunta: "Quanto este jogo tende a produzir com ambas as partes contribuindo?"
    - Módulos: Controle de Ritmo, Criação, Conversão e Defesa.
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
    - EXCLUI AUTOMATICAMENTE: Team Totals isolados. PROIBIDO Moneyline e Handicap.
- 
+
 2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
    - Pergunta: "Existe superioridade e controle suficiente para garantir a vantagem?"
    - Módulos: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total) focado na equipe dominante.
    - EXCLUI AUTOMATICAMENTE: Over/Under Geral e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline, Handicap, Spread ou Chance Dupla.
- 
+
 3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
    - Pergunta: "A alta produção ou vulnerabilidade está concentrada predominantemente em APENAS UM dos lados?"
    - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
    - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline e Handicap.
- 
+
 ------------------------------------------------
- 
+
 [1. CATÁLOGO DE MERCADOS PERMITIDOS]
 Pra assimetrias "coletivas", os ÚNICOS mercados permitidos são da FAMÍLIA PERMITIDA definida na ETAPA 0, restritos a:
 ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
- 
+
 Pra assimetrias "props", os ÚNICOS mercados permitidos são:
 ${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
 
 GATEKEEPER (REGRA ABSOLUTA): É terminantemente PROIBIDO selecionar, recomendar ou listar mercados de Vencedor da Partida (Moneyline), Handicap (Spread) ou Chance Dupla. Se as únicas odds disponíveis forem essas, retorne "sem_conversao".
- 
+
 ------------------------------------------------
- 
+
 [2. GATE OBRIGATÓRIO — MESMA REGRA PRO COLETIVO E PRA CADA PROP]
 Para CADA assimetria (coletiva ou prop), uma perna só é elegível se, simultaneamente:
 - O bloco de origem tem "resultado_principal.cenario_definido" == true;
@@ -62,20 +223,204 @@ Para CADA assimetria (coletiva ou prop), uma perna só é elegível se, simultan
 - A assimetria específica tem "persistencia" == "media" OU "alta";
 - "precificacao_local.confianca_do_julgamento" == "alta" pra essa assimetria;
 - "deliberacao.apenas_espelha_mercado" == false.
- 
+
 Se nenhuma assimetria passar, retorne: "status_geral": "sem_conversao".
- 
+
 ------------------------------------------------
- 
+
 [3. NORMALIZAÇÃO DE ODDS]
 SEMPRE converta as odds americanas (+120, -150) para formato decimal europeu no campo final.
 - Positiva (+120): (120 / 100) + 1 = 2.20
 - Negativa (-150): (100 / 150) + 1 = 1.67
- 
+
 ------------------------------------------------
- 
-[4. SÍNTESE MONEYBALL (CORRELAÇÃO DE PERNAS)]
-A saída final deve priorizar a montagem de um bilhete correlacionado de 2 a 3 pernas, combinando o Macro (Classificação A, B ou C) com o Micro (Props que sobrevivam ao Gate Obrigatório). 
-Exemplo: Se o jogo é TIPO B (Domínio do Time da Casa), busque adicionar uma perna Prop de um jogador do Time da Casa pontuando, construindo uma narrativa coesa.
-Descarte pernas solitárias que não reforcem o cenário Macro.`;
+
+[4. SÍNTESE MONEYBALL & CÁLCULO MSC SCORE]
+A saída final deve priorizar a montagem de um bilhete correlacionado de 2 a 3 pernas, combinando o Macro com o Micro.
+Atribua a cada recomendação um MSC (Moneyball Score) de 1 a 100, baseado na força da assimetria e na taxa de convergência dos dados do Nexus.
+
+FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
+{
+  "perfil_geral": "Síntese analítica quantitativa do jogo, destacando onde está a maior assimetria matemática...",
+  "status_geral": "processado_com_sucesso",
+  "recomendacoes": {
+    "ouro": {
+      "mercado": "Nome exato do mercado",
+      "selecao": "Seleção exata",
+      "odd": "1.85",
+      "msc_score": 94,
+      "motivo": "Justificativa puramente quantitativa baseada no cruzamento de dados do Nexus."
+    },
+    "prata": {
+      "mercado": "Nome exato do mercado",
+      "selecao": "Seleção exata",
+      "odd": "1.90",
+      "msc_score": 86,
+      "motivo": "Justificativa quantitativa..."
+    },
+    "bronze": {
+      "mercado": "Nome exato do mercado",
+      "selecao": "Seleção exata",
+      "odd": "2.00",
+      "msc_score": 78,
+      "motivo": "Justificativa quantitativa..."
+    }
+  }
+}`;
 }
+
+function recolherEntrada() {
+    document.getElementById("input-container")?.classList.add("hidden");
+    document.getElementById("new-analysis-bar")?.classList.remove("hidden");
+}
+
+function resetarEntrada() {
+    document.getElementById("input-container")?.classList.remove("hidden");
+    document.getElementById("new-analysis-bar")?.classList.add("hidden");
+    const jsonInput = document.getElementById("json-input");
+    if (jsonInput) {
+        jsonInput.value = "";
+        jsonInput.focus();
+    }
+}
+window.resetarEntrada = resetarEntrada;
+
+async function analisarComGroq() {
+    const apiKeyInput = document.getElementById("groq-key");
+    const jsonInput = document.getElementById("json-input");
+    const btn = document.getElementById("analisar-btn");
+    const display = document.getElementById("display-area");
+
+    if (!apiKeyInput || !jsonInput || !btn || !display) return;
+
+    const apiKey = apiKeyInput.value.trim() || localStorage.getItem("moneyball_groq_key");
+    const raw = jsonInput.value.trim();
+
+    if (!apiKey) {
+        display.innerHTML = alertaErro("Cole sua chave da API antes de continuar.");
+        apiKeyInput.focus();
+        return;
+    }
+    if (!raw) {
+        display.innerHTML = alertaErro("Cole o dossiê do Nexus antes de gerar o ranking.");
+        jsonInput.focus();
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Processando Análise Quantitativa...`;
+    display.insertAdjacentHTML("afterbegin", `
+        <div id="loading-card" class="bg-base-panel border border-base-border rounded-2xl p-8 text-center space-y-3 animate-pulse mb-5">
+            <i class="fa-solid fa-ranking-star text-accent text-3xl"></i>
+            <h3 class="text-sm font-semibold text-slate-300">Calculando MSC Score e montando o Pódio...</h3>
+            <p class="text-xs text-slate-500">Varredura completa em todos os mercados livres.</p>
+        </div>
+    `);
+
+    try {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "openai/gpt-oss-120b",
+                messages: [
+                    { role: "system", content: montarSystemPrompt(sportAtivo) },
+                    { role: "user", content: raw }
+                ],
+                temperature: 0,
+                response_format: { type: "json_object" }
+            })
+        });
+
+        document.getElementById("loading-card")?.remove();
+
+        if (!response.ok) throw new Error(`Erro na API (${response.status})`);
+
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
+
+        recolherEntrada();
+        renderizarRanking(parsed);
+
+    } catch (error) {
+        console.error(error);
+        document.getElementById("loading-card")?.remove();
+        display.insertAdjacentHTML("afterbegin", alertaErro(`Não deu pra analisar: ${error.message}`));
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Gerar Pódio de Bilhetes`;
+    }
+}
+window.analisarComGroq = analisarComGroq;
+
+function alertaErro(msg) {
+    return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
+}
+
+function renderizarRanking(data) {
+    const display = document.getElementById("display-area");
+    if (!display) return;
+    const cardId = "resultado-" + Date.now();
+
+    const recs = data.recomendacoes || {};
+    const pio = [
+        { key: 'ouro', label: 'TOP PICK — OURO', badgeStyle: 'bg-accent/20 text-accent border-accent/40', data: recs.ouro },
+        { key: 'prata', label: 'PICK — PRATA', badgeStyle: 'bg-slate-300/15 text-slate-200 border-slate-400/30', data: recs.prata },
+        { key: 'bronze', label: 'PICK — BRONZE', badgeStyle: 'bg-orange-800/20 text-orange-300 border-orange-700/40', data: recs.bronze }
+    ].filter(item => item.data);
+
+    const htmlItens = pio.map((p, idx) => {
+        const item = p.data;
+        const score = item.msc_score || item.msc || 'N/A';
+
+        return `
+        <div class="p-4 bg-base-card rounded-xl border border-accent/20 space-y-3 fade-up" style="animation-delay:${idx * 60}ms">
+            <div class="flex justify-between items-start gap-2 flex-wrap">
+                <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p.badgeStyle}">${p.label}</span>
+                ${item.odd ? `<span class="text-xs font-mono text-white font-bold bg-base-panel px-2 py-0.5 rounded border border-base-border">@${item.odd}</span>` : ''}
+            </div>
+            
+            <div>
+                <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">${item.mercado || 'Mercado'}</p>
+                <p class="text-accent font-black text-base mt-0.5">${item.selecao || 'Seleção'}</p>
+            </div>
+
+            ${item.motivo ? `<p class="text-xs text-slate-300 leading-relaxed italic border-l-2 border-accent/30 pl-3">${item.motivo}</p>` : ''}
+
+            <!-- BLOCO MSC SCORE -->
+            <div class="flex items-center justify-between pt-2.5 border-t border-base-border/60">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <i class="fa-solid fa-gauge-high text-accent"></i> Moneyball Score
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/30 text-accent font-black text-xs font-mono">
+                    MSC ${score}/100
+                </span>
+            </div>
+        </div>
+    `;
+    }).join("");
+
+    const htmlResultado = `
+        <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
+            <div class="betslip rounded-2xl p-5 md:p-6 space-y-3 fade-up" style="--slip-bg:#171307;">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest"><i class="fa-solid fa-ranking-star mr-1"></i> Pódio Quantitativo (Ouro, Prata, Bronze)</span>
+                    <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <p class="text-[13px] text-slate-300 leading-relaxed font-serif tracking-wide border-t border-accent/10 pt-3">${data.perfil_geral || ''}</p>
+            </div>
+
+            <div class="space-y-3">
+                ${htmlItens || '<p class="text-xs text-slate-500 text-center py-4">Nenhuma recomendação gerada.</p>'}
+            </div>
+        </div>
+    `;
+    display.insertAdjacentHTML("afterbegin", htmlResultado);
+}
+</script>
+</body>
+</html>
