@@ -160,109 +160,72 @@ function selecionarSport(key) {
 window.selecionarSport = selecionarSport;
 
 function montarSystemPrompt(esporte) {
-  const CATALOGOS_COLETIVO = {
-    futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
-    beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)"',
-    basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"',
-    nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
-  };
-  const CATALOGOS_PROP = {
-    futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
-    beisebol: '"Strikeouts do Arremessador"',
-    basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
-    nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
-  };
+    const CATALOGOS_COLETIVO = {
+        futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
+        beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)"',
+        basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"',
+        nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
+    };
+    const CATALOGOS_PROP = {
+        futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
+        beisebol: '"Strikeouts do Arremessador"',
+        basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
+        nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
+    };
 
-  return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
+    return `Você é o Moneyball Bet Builder V2 para o esporte: ${esporte.toUpperCase()}.
 
 FILOSOFIA:
-Você recebe UM dossiê único do Nexus, com um bloco "analise_coletiva" e um array "analises_prop". Sua missão é aplicar o FUNIL DE DECISÃO para devolver uma construção final do estilo "Moneyball": uma aposta combinada (Bet Builder) inteligente, focada em correlações lógicas (idealmente 2 a 3 pernas) baseadas em assimetrias provadas.
+Sua missão é extrair do dossiê do Nexus as 3 MELHORES e mais seguras construções quantitativas (Ouro, Prata, Bronze).
+Caso os dados perfeitos não estejam disponíveis, NÃO descarte tudo. Monte o pódio com as melhores opções relativas, ajustando a nota MSC Score de acordo com o nível de confiança.
 
 REGRA DE OURO (LEITURA DE DADOS): 
-Você deve extrair os nomes dos mercados e os valores numéricos das odds EXCLUSIVAMENTE do array "mercados_disponiveis" (ou da lista estruturada de odds enviada no JSON). NUNCA invente odds e nunca procure odds soltas no meio do texto da análise.
+Extraia nomes de mercados e odds EXCLUSIVAMENTE dos dados enviados. NUNCA invente odds. Converta odds americanas para decimais se necessário (+120 = 2.20, -150 = 1.67).
 
 ------------------------------------------------
 
-[0. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA (CLASSIFICAÇÃO EXCLUSIVA)]
-Antes de avaliar qualquer odd, classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses abaixo.
+[0. HIPÓTESE E CATÁLOGOS PERMITIDOS]
+Foque em mercados de alta sustentabilidade estatística:
+- Coletivo: ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
+- Props: ${CATALOGOS_PROP[esporte] || 'mercados de props do esporte'}
 
-1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída)
-   - Pergunta: "Quanto este jogo tende a produzir com ambas as partes contribuindo?"
-   - Módulos: Controle de Ritmo, Criação, Conversão e Defesa.
-   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos na Partida" (Over/Under) | "Ambas as Equipes Marcam" (BTTS).
-   - EXCLUI AUTOMATICAMENTE: Team Totals isolados. PROIBIDO Moneyline e Handicap.
-
-2. TIPO B — DOMÍNIO (Superioridade e Controle de Resultado)
-   - Pergunta: "Existe superioridade e controle suficiente para garantir a vantagem?"
-   - Módulos: Controle de Jogo, Territorial, Posse e Fragilidade do Adversário.
-   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total) focado na equipe dominante.
-   - EXCLUI AUTOMATICAMENTE: Over/Under Geral e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline, Handicap, Spread ou Chance Dupla.
-
-3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração de Performance)
-   - Pergunta: "A alta produção ou vulnerabilidade está concentrada predominantemente em APENAS UM dos lados?"
-   - FAMÍLIA PERMITIDA: "Total de Gols/Pontos/Corridas do Time" (Team Total).
-   - EXCLUI AUTOMATICAMENTE: Over/Under Geral da Partida e BTTS. É ESTRITAMENTE PROIBIDO usar Moneyline e Handicap.
+PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
-[1. CATÁLOGO DE MERCADOS PERMITIDOS]
-Pra assimetrias "coletivas", os ÚNICOS mercados permitidos são da FAMÍLIA PERMITIDA definida na ETAPA 0, restritos a:
-${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
+[1. AVALIAÇÃO DE ASSIMETRIA E PÓDIO]
+- **OURO (Top Pick):** Maior assimetria do dossiê. Requer maior convergência de dados e consistência. (MSC 85-99).
+- **PRATA:** Segunda melhor assimetria. Pode ter confiança média ou menor volume de amostra. (MSC 70-84).
+- **BRONZE:** Terceira melhor opção ou aposta de valor marginal/complementar. (MSC 50-69).
 
-Pra assimetrias "props", os ÚNICOS mercados permitidos são:
-${CATALOGOS_PROP[esporte] || 'nenhum catálogo de prop definido pra esse esporte'}
-
-GATEKEEPER (REGRA ABSOLUTA): É terminantemente PROIBIDO selecionar, recomendar ou listar mercados de Vencedor da Partida (Moneyline), Handicap (Spread) ou Chance Dupla. Se as únicas odds disponíveis forem essas, retorne "sem_conversao".
+DIRETRIZ DE EXECUÇÃO: Sempre forneça as 3 recomendações (Ouro, Prata, Bronze) se houver qualquer assimetria mínima aproveitável no dossiê. Apenas retorne "sem_conversao" se o dossiê for totalmente vago ou sem odds válidas.
 
 ------------------------------------------------
-
-[2. GATE OBRIGATÓRIO — MESMA REGRA PRO COLETIVO E PRA CADA PROP]
-Para CADA assimetria (coletiva ou prop), uma perna só é elegível se, simultaneamente:
-- O bloco de origem tem "resultado_principal.cenario_definido" == true;
-- "resultado_principal.forca" == "alta" (ou média, dependendo do valor da odd);
-- A assimetria específica tem "persistencia" == "media" OU "alta";
-- "precificacao_local.confianca_do_julgamento" == "alta" pra essa assimetria;
-- "deliberacao.apenas_espelha_mercado" == false.
-
-Se nenhuma assimetria passar, retorne: "status_geral": "sem_conversao".
-
-------------------------------------------------
-
-[3. NORMALIZAÇÃO DE ODDS]
-SEMPRE converta as odds americanas (+120, -150) para formato decimal europeu no campo final.
-- Positiva (+120): (120 / 100) + 1 = 2.20
-- Negativa (-150): (100 / 150) + 1 = 1.67
-
-------------------------------------------------
-
-[4. SÍNTESE MONEYBALL & CÁLCULO MSC SCORE]
-A saída final deve priorizar a montagem de um bilhete correlacionado de 2 a 3 pernas, combinando o Macro com o Micro.
-Atribua a cada recomendação um MSC (Moneyball Score) de 1 a 100, baseado na força da assimetria e na taxa de convergência dos dados do Nexus.
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
-  "perfil_geral": "Síntese analítica quantitativa do jogo, destacando onde está a maior assimetria matemática...",
+  "perfil_geral": "Síntese analítica do confronto destacando onde reside a maior vantagem quantitativa...",
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
       "odd": "1.85",
-      "msc_score": 94,
-      "motivo": "Justificativa puramente quantitativa baseada no cruzamento de dados do Nexus."
+      "msc_score": 90,
+      "motivo": "Justificativa quantitativa dos dados do Nexus."
     },
     "prata": {
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
-      "odd": "1.90",
-      "msc_score": 86,
+      "odd": "1.75",
+      "msc_score": 78,
       "motivo": "Justificativa quantitativa..."
     },
     "bronze": {
       "mercado": "Nome exato do mercado",
       "selecao": "Seleção exata",
-      "odd": "2.00",
-      "msc_score": 78,
+      "odd": "1.95",
+      "msc_score": 65,
       "motivo": "Justificativa quantitativa..."
     }
   }
@@ -330,7 +293,7 @@ async function analisarComGroq() {
                     { role: "system", content: montarSystemPrompt(sportAtivo) },
                     { role: "user", content: raw }
                 ],
-                temperature: 0,
+                temperature: 0.1,
                 response_format: { type: "json_object" }
             })
         });
@@ -342,6 +305,11 @@ async function analisarComGroq() {
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || "";
         const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
+
+        if (parsed.status_geral === "sem_conversao") {
+            display.insertAdjacentHTML("afterbegin", alertaErro("O Nexus não encontrou nenhuma assimetria suficiente neste dossiê para gerar palpites com segurança."));
+            return;
+        }
 
         recolherEntrada();
         renderizarRanking(parsed);
