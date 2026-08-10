@@ -282,7 +282,7 @@ function comprimirImagem(file) {
 
 // Visão Computacional Gemini OCR (Múltiplas Fotos)
 async function processarPrintComGemini(apiKey) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     // Mapeia todas as imagens para o array de parts da API
     const parts = imagensBase64Selecionadas.map(img => ({
