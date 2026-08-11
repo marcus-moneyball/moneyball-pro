@@ -323,7 +323,7 @@ async function processarPrintComGemini(apiKey) {
 
 function montarSystemPrompt(esporte) {
     const CATALOGOS_COLETIVO = {
-        futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
+        futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla (1X, X2, 12)"',
         beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)"',
         basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"',
         nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
@@ -346,7 +346,8 @@ Sua missão é extrair do dossiê do Nexus as melhores construções quantitativ
 - Coletivo: ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
 - Props: ${CATALOGOS_PROP[esporte] || 'mercados de props do esporte'}
 
-PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
+PROIBIDO: Moneyline (Vencedor Direto) ou Handicap/Spread simples.
+(NOTA: Chance Dupla [1X, X2, 12] é PERMITIDA EXCLUSIVAMENTE no Futebol).
 
 ------------------------------------------------
 
@@ -375,6 +376,7 @@ PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 FUTEBOL:
 - CÁLCULO DE LAMBDA (λ) E xG: NUNCA some isoladamente as médias de gols marcados do Time A e Time B. O xG projetado DEVE ser ajustado cruzando a força de ataque com a média de gols sofridos (xGA) do adversário.
 - TRAVA DE OVER 3.5 GOLS: ESTRITAMENTE PROIBIDO sugerir "Over 3.5 Gols" se o λ_Total (xG ajustado da partida) for menor que 3.70. Para "Over 2.5 Gols", exige-se λ_Total >= 2.75. Para "Time Over 2.5 Gols", exige-se xG_Time >= 2.30.
+- CHANCE DUPLA (1X / X2): Recomendado para fortalecer o pódio quando o time selecionado possui probabilidade de não-derrota superior a 70% com base no xG defensivo/ofensivo.
 - FILTRO ANTI-ABAFA (BET BUILDER): É ESTRITAMENTE PROIBIDO combinar "Under Gols" com "Under Escanteios" no mesmo bilhete (jogos de placar magro geram pressão e abafa no final, estourando a linha de cantos).
 - PROIBIÇÃO DE H2H FICTÍCIO: Se o histórico de confrontos diretos (H2H) não constar explicitamente nos dados de entrada, FICA ESTRITAMENTE PROIBIDO citar retrospectos anteriores ("2 dos últimos 3 jogos").
 
@@ -392,18 +394,18 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
-      "mercado": "Total de Corridas na Partida",
-      "selecao": "Under 7.5",
-      "odd": "1.90", 
-      "msc_score": 88,
+      "mercado": "Chance Dupla",
+      "selecao": "Fluminense ou Empate (1X)",
+      "odd": "1.45", 
+      "msc_score": 85,
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa quantitativa..."
+      "motivo": "Justificativa quantitativa baseada em xG..."
     },
     "prata": {
-      "mercado": "Strikeouts do Arremessador (Jack Flaherty)",
-      "selecao": "Jack Flaherty — Over 5.5 Ks",
-      "odd": "1.80", 
-      "msc_score": 75,
+      "mercado": "Total de Gols na Partida",
+      "selecao": "Over 2.5 Gols",
+      "odd": "1.85", 
+      "msc_score": 78,
       "confiabilidade": "MÉDIA",
       "motivo": "Justificativa quantitativa..."
     },
