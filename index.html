@@ -370,6 +370,22 @@ PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
+[4. REGRAS QUANTITATIVAS E ANTI-CORRELAÇÃO POR ESPORTE]
+
+FUTEBOL:
+- CÁLCULO DE LAMBDA (λ) E xG: NUNCA some isoladamente as médias de gols marcados do Time A e Time B. O xG projetado DEVE ser ajustado cruzando a força de ataque com a média de gols sofridos (xGA) do adversário.
+- TRAVA DE OVER 3.5 GOLS: ESTRITAMENTE PROIBIDO sugerir "Over 3.5 Gols" se o λ_Total (xG ajustado da partida) for menor que 3.70. Para "Over 2.5 Gols", exige-se λ_Total >= 2.75. Para "Time Over 2.5 Gols", exige-se xG_Time >= 2.30.
+- FILTRO ANTI-ABAFA (BET BUILDER): É ESTRITAMENTE PROIBIDO combinar "Under Gols" com "Under Escanteios" no mesmo bilhete (jogos de placar magro geram pressão e abafa no final, estourando a linha de cantos).
+- PROIBIÇÃO DE H2H FICTÍCIO: Se o histórico de confrontos diretos (H2H) não constar explicitamente nos dados de entrada, FICA ESTRITAMENTE PROIBIDO citar retrospectos anteriores ("2 dos últimos 3 jogos").
+
+BEISEBOL (MLB):
+- CORRELAÇÃO RUNS vs K's: Se a leitura principal for "Under de Corridas" (jogo dominado pelos arremessadores), evite sugerir "Under K" para o arremessador principal, pois ele tenderá a lançar mais innings e acumular mais strikeouts.
+
+BASQUETE (NBA / WNBA):
+- CORRELAÇÃO DE PACE: Partidas projetadas para alto volume de pontos (Pace elevado) possuem forte correlação positiva com "Over de Assistências" ou "Over de Pontos" do armador principal.
+
+------------------------------------------------
+
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
 {
   "perfil_geral": "Síntese concisa da leitura estatística do confronto...",
@@ -385,7 +401,7 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
     },
     "prata": {
       "mercado": "Strikeouts do Arremessador (Jack Flaherty)",
-      "selecao": "Jack Flaherty — Over 5.5 K",
+      "selecao": "Jack Flaherty — Over 5.5 Ks",
       "odd": "1.80", 
       "msc_score": 75,
       "confiabilidade": "MÉDIA",
