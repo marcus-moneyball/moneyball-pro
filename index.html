@@ -373,20 +373,22 @@ REGRA DE CONFIABILIDADE (Derivada estritamente do MSC Score):
 
 ------------------------------------------------
 
-[3. FILTROS QUANTITATIVOS E ANTI-CORRELAÇÃO POR ESPORTE]
+[3. FILTROS QUANTITATIVOS E VALIDAÇÃO MATEMÁTICA - HARD CONSTRAINTS]
+
+ANTES DE SELECIONAR QUALQUER MERCADO, FAÇA A CHECAGEM MATEMÁTICA ESTRITA:
 
 FUTEBOL:
-- xG AJUSTADO (λ): Projeção de gols exige cruzar o xG de ataque do Time A com o xGA (gols esperados sofridos) do Time B.
-- TRAVA DE GOLS: 
-  * "Over 3.5 Gols" -> Exige λ_Total >= 3.70 no dossiê MIE.
-  * "Over 2.5 Gols" -> Exige λ_Total >= 2.75.
-- FILTRO ANTI-ABAFA: PROIBIDO combinar "Under Gols" com "Under Escanteios" no mesmo pódio (jogos travados costumam gerar abafa e cantos no final).
+1. OVER GOLS DA PARTIDA:
+   - "Over 3.5 Gols" -> REQUER RIGOROSAMENTE λ_Total >= 3.70. (Se λ_Total < 3.70, PROIBIDO sugerir).
+   - "Over 2.5 Gols" -> REQUER RIGOROSAMENTE λ_Total >= 2.75. (Se λ_Total < 2.75, PROIBIDO sugerir).
 
-BASQUETE (NBA/WNBA):
-- PACE & USAGE: Props de pontos/assistências exigem confirmação de Pace acelerado (projeção de mais posses de bola) ou alta taxa de Usage Rate na ausência de outro titular.
+2. OVER GOLS DO TIME (TEAM TOTAL):
+   - "Time Over 2.5 Gols" -> REQUER RIGOROSAMENTE xG_Time >= 2.30. (Se xG_Time < 2.30, PROIBIDO sugerir).
+   - "Time Over 1.5 Gols" -> REQUER RIGOROSAMENTE xG_Time >= 1.50. (Se xG_Time < 1.50, PROIBIDO sugerir).
 
-BEISEBOL (MLB):
-- ARREMESSSADOR vs LINEUP: Props de Strikeouts (K) exigem cruzar a taxa K% do arremessador contra a taxa K% de at-bats da escalação adversária.
+3. CHECKLIST ANTI-DRIBLE (OBRIGATÓRIO):
+   - Se uma métrica for menor que o threshold exigido, É TERMINANTEMENTE PROIBIDO rebaixar ou mudar o mercado apenas para encaixar a mesma linha.
+   - Caso nenhum mercado atinja os requisitos quantitativos mínimos, RETORNE O CAMPO COMO NULL. É preferível não indicar um palpite do que indicar uma entrada fora do padrão matemático.
 
 [REGRA DE COMPLIANCE OBRIGATÓRIA - HARD CONSTRAINT]
 Se a métrica calculada não atingir o limiar (threshold) mínimo estabelecido (ex: λ_Total < 2.75 para Over 2.5), VOCÊ É PROIBIDO DE SUGERIR ESSA SELEÇÃO. 
