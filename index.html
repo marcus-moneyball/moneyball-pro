@@ -323,7 +323,7 @@ async function processarPrintComGemini(apiKey) {
 
 function montarSystemPrompt(esporte) {
     const CATALOGOS_COLETIVO = {
-        futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)" | "Chance Dupla (1X, X2, 12)"',
+        futebol: '"Total de Gols na Partida" (Over/Under) | "Total de Gols do Time" (Team Total) | "Ambas as Equipes Marcam (BTTS)"',
         beisebol: '"Total de Corridas na Partida" (Over/Under) | "Total de Corridas do Time" (Team Total)"',
         basquete: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"',
         nfl: '"Total de Pontos na Partida" (Over/Under) | "Total de Pontos do Time" (Team Total)"'
@@ -346,13 +346,12 @@ Sua missão é extrair do dossiê do Nexus as melhores construções quantitativ
 - Coletivo: ${CATALOGOS_COLETIVO[esporte] || CATALOGOS_COLETIVO.futebol}
 - Props: ${CATALOGOS_PROP[esporte] || 'mercados de props do esporte'}
 
-PROIBIDO: Moneyline (Vencedor Direto) ou Handicap/Spread simples.
-(NOTA: Chance Dupla [1X, X2, 12] é PERMITIDA EXCLUSIVAMENTE no Futebol).
+PROIBIDO: Moneyline (Vencedor), Handicap/Spread simples ou Chance Dupla.
 
 ------------------------------------------------
 
 [1. FORMATO DE ODDS E GRAU DE CONFIABILIDADE]
-- O campo 'odd' DEVE ESTAR ESTREITAMENTE no formato DECIMAL (Exemplo: "1.90", "2.15", "1.72"). Se houver odds americanas (+110, -120), CONVERTA para decimal.
+- O campo 'odd' DEVE ESTAR ESCRITO ESTRITAMENTE no formato DECIMAL (Exemplo: "1.90", "2.15", "1.72"). Se houver odds americanas (+110, -120), CONVERTA para decimal.
 - O campo 'confiabilidade' deve ser preenchido estritamente com base no 'msc_score':
   * MSC >= 80 -> "ALTA"
   * MSC entre 70 e 79 -> "MÉDIA"
@@ -376,7 +375,6 @@ PROIBIDO: Moneyline (Vencedor Direto) ou Handicap/Spread simples.
 FUTEBOL:
 - CÁLCULO DE LAMBDA (λ) E xG: NUNCA some isoladamente as médias de gols marcados do Time A e Time B. O xG projetado DEVE ser ajustado cruzando a força de ataque com a média de gols sofridos (xGA) do adversário.
 - TRAVA DE OVER 3.5 GOLS: ESTRITAMENTE PROIBIDO sugerir "Over 3.5 Gols" se o λ_Total (xG ajustado da partida) for menor que 3.70. Para "Over 2.5 Gols", exige-se λ_Total >= 2.75. Para "Time Over 2.5 Gols", exige-se xG_Time >= 2.30.
-- CHANCE DUPLA (1X / X2): Recomendado para fortalecer o pódio quando o time selecionado possui probabilidade de não-derrota superior a 70% com base no xG defensivo/ofensivo.
 - FILTRO ANTI-ABAFA (BET BUILDER): É ESTRITAMENTE PROIBIDO combinar "Under Gols" com "Under Escanteios" no mesmo bilhete (jogos de placar magro geram pressão e abafa no final, estourando a linha de cantos).
 - PROIBIÇÃO DE H2H FICTÍCIO: Se o histórico de confrontos diretos (H2H) não constar explicitamente nos dados de entrada, FICA ESTRITAMENTE PROIBIDO citar retrospectos anteriores ("2 dos últimos 3 jogos").
 
@@ -394,18 +392,18 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO:
   "status_geral": "processado_com_sucesso",
   "recomendacoes": {
     "ouro": {
-      "mercado": "Chance Dupla",
-      "selecao": "Fluminense ou Empate (1X)",
-      "odd": "1.45", 
-      "msc_score": 85,
+      "mercado": "Total de Corridas na Partida",
+      "selecao": "Under 7.5",
+      "odd": "1.90", 
+      "msc_score": 88,
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa quantitativa baseada em xG..."
+      "motivo": "Justificativa quantitativa..."
     },
     "prata": {
-      "mercado": "Total de Gols na Partida",
-      "selecao": "Over 2.5 Gols",
-      "odd": "1.85", 
-      "msc_score": 78,
+      "mercado": "Strikeouts do Arremessador (Jack Flaherty)",
+      "selecao": "Jack Flaherty — Over 5.5 Ks",
+      "odd": "1.80", 
+      "msc_score": 75,
       "confiabilidade": "MÉDIA",
       "motivo": "Justificativa quantitativa..."
     },
@@ -513,8 +511,8 @@ function alertaErro(msg) {
     return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
 }
 
-function copiarPodioFormatado() {
-    if (!ultimosDadosAnalise) return;
+function gerarTextoFormatadoPodio() {
+    if (!ultimosDadosAnalise) return "";
     const data = ultimosDadosAnalise;
     const recs = data.recomendacoes || {};
     
@@ -544,6 +542,12 @@ function copiarPodioFormatado() {
     });
 
     texto += `📊 *Análise baseada em convergência estatística.*`;
+    return texto;
+}
+
+function copiarPodioFormatado() {
+    const texto = gerarTextoFormatadoPodio();
+    if (!texto) return;
 
     navigator.clipboard.writeText(texto).then(() => {
         alert("Pódio copiado! Pronto para colar no WhatsApp ou Telegram.");
@@ -551,6 +555,20 @@ function copiarPodioFormatado() {
         console.error("Erro ao copiar: ", err);
         alert("Não foi possível copiar automaticamente.");
     });
+}
+
+function compartilharWhatsApp() {
+    const texto = gerarTextoFormatadoPodio();
+    if (!texto) return;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
+}
+
+function compartilharTelegram() {
+    const texto = gerarTextoFormatadoPodio();
+    if (!texto) return;
+    const url = `https://t.me/share/url?url=${encodeURIComponent("https://moneyballpro.app")}&text=${encodeURIComponent(texto)}`;
+    window.open(url, '_blank');
 }
 
 function renderizarRanking(data) {
@@ -569,7 +587,6 @@ function renderizarRanking(data) {
         const item = p.data;
         const score = item.msc_score || item.msc || 0;
         
-        // Determina grau e estilo da badge de confiabilidade
         const confiabilidade = item.confiabilidade || (score >= 80 ? 'ALTA' : score >= 70 ? 'MÉDIA' : 'MODERADA');
         let confStyle = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
         if (confiabilidade === "MÉDIA") confStyle = "bg-amber-500/10 text-amber-400 border-amber-500/20";
@@ -614,8 +631,14 @@ function renderizarRanking(data) {
                         <i class="fa-solid fa-ranking-star"></i> Pódio Quantitativo (Ouro, Prata, Bronze)
                     </span>
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="copiarPodioFormatado()" class="px-2.5 py-1 bg-accent/20 hover:bg-accent/30 border border-accent/40 rounded-lg text-accent text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer">
-                            <i class="fa-solid fa-share-nodes"></i> Copiar Pódio
+                        <button type="button" onclick="copiarPodioFormatado()" class="px-2.5 py-1 bg-accent/20 hover:bg-accent/30 border border-accent/40 rounded-lg text-accent text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer" title="Copiar texto formatado">
+                            <i class="fa-solid fa-copy"></i> Copiar
+                        </button>
+                        <button type="button" onclick="compartilharWhatsApp()" class="px-2.5 py-1 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 rounded-lg text-emerald-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer" title="Compartilhar no WhatsApp">
+                            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                        </button>
+                        <button type="button" onclick="compartilharTelegram()" class="px-2.5 py-1 bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 rounded-lg text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer" title="Compartilhar no Telegram">
+                            <i class="fa-brands fa-telegram"></i> Telegram
                         </button>
                         <button type="button" onclick="document.getElementById('${cardId}').remove()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
                     </div>
