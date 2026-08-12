@@ -330,7 +330,7 @@ function montarSystemPrompt(esporte) {
     };
     const CATALOGOS_PROP = {
         futebol: '"Escanteios do Time" | "Cartões da Partida" | "Chutes a Gol do Jogador"',
-        beisebol: '"Strikeouts do Arremessador"',
+        beisebol: '"Strikeouts do Arremessador" | "Rebatidas do Jogador (Hits / Total Bases)" | "Rebatidas Cedidas pelo Arremessador"',
         basquete: '"Pontos do Jogador" | "Rebotes do Jogador" | "Assistências do Jogador"',
         nfl: '"Jardas Aéreas do Quarterback" | "Jardas Corridas do Corredor" | "Recepções do Recebedor" | "Touchdowns do Jogador"'
     };
@@ -373,13 +373,21 @@ REGRA DE CONFIABILIDADE (Derivada estritamente do MSC Score):
 - Se a seleção for uma Prop Individual, O NOME DO JOGADOR DEVE CONSTAR EXPLICITAMENTE no mercado ou na seleção (Ex: "Jack Flaherty — Over 5.5 Ks").
 - As odds DEVEM ESTAR strictly em formato DECIMAL (ex: "1.85", "2.10"). Se o input trouxer formato americano (+110, -120), converta para decimal.
 
+[2.1 REGRA ESPECÍFICA DE DIVERSIFICAÇÃO PARA BEISEBOL (MLB)]
+Na MLB, são consideradas CATEGORIAS DISTINTAS para preencher o Pódio:
+1. Volume de Corridas (Total de Corridas na Partida / Total do Time).
+2. Performance do Arremessador A (Strikeouts ou Outs Gravados do Starter A).
+3. Performance do Arremessador B (Strikeouts ou Outs Gravados do Starter B oposto).
+4. Mercado de Rebatidas de Rebatedor (ex: "A. Judge — Over 0.5 Hits" ou "Over 1.5 Total Bases").
+*NOTA: O mercado de "Over 0.5 Hits" para um jogador do Top 4 da ordem enfrentando um Starter frágil (xBA/AVG cedido > .260) é uma seleção VÁLIDA para o Bronze e NÃO deve ser descartada por percepção subjetiva de volatilidade se cumprir a Margem de Segurança.
+
 ------------------------------------------------
 
 [3. REGRA MATEMÁTICA UNIVERSAL DE MARGEM DE SEGURANÇA - ANTI-DRIBLE]
 
 Para QUALQUER esporte ou mercado do catálogo, você DEVE aplicar a trava matemática de Margem de Segurança (Delta) antes de aprovar uma seleção:
 
-1. MERCADOS DE ESCALA PEQUENA (Gols, Corridas, Cartões, Escanteios):
+1. MERCADOS DE ESCALA PEQUENA (Gols, Corridas, Cartões, Escanteios, Hits/Rebatidas):
    - Sugerir OVER X: A projeção quantitativa do MIE DEVE ser >= (X + 0.20).
    - Sugerir UNDER X: A projeção quantitativa do MIE DEVE ser <= (X - 0.20).
    (Exemplo: Para sugerir Palmeiras Over 2.5 Gols, o xG do Palmeiras DEVE ser >= 2.70).
@@ -442,6 +450,7 @@ FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (SEM MARKDOWN DE CÓDIGO):
   }
 }`;
 }
+    
 async function executarAnalise() {
     const groqKey = document.getElementById("groq-key")?.value.trim() || localStorage.getItem("moneyball_groq_key");
     const geminiKey = document.getElementById("gemini-key")?.value.trim() || localStorage.getItem("moneyball_gemini_key");
