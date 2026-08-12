@@ -373,22 +373,22 @@ REGRA DE CONFIABILIDADE (Derivada estritamente do MSC Score):
 
 ------------------------------------------------
 
-[3. FILTROS QUANTITATIVOS E VALIDAÇÃO MATEMÁTICA - HARD CONSTRAINTS]
+[3. REGRA MATEMÁTICA UNIVERSAL DE MARGEM DE SEGURANÇA - ANTI-DRIBLE]
 
-ANTES DE SELECIONAR QUALQUER MERCADO, FAÇA A CHECAGEM MATEMÁTICA ESTRITA:
+Para QUALQUER esporte ou mercado do catálogo, você DEVE aplicar a trava matemática de Margem de Segurança (Delta) antes de aprovar uma seleção:
 
-FUTEBOL:
-1. OVER GOLS DA PARTIDA:
-   - "Over 3.5 Gols" -> REQUER RIGOROSAMENTE λ_Total >= 3.70. (Se λ_Total < 3.70, PROIBIDO sugerir).
-   - "Over 2.5 Gols" -> REQUER RIGOROSAMENTE λ_Total >= 2.75. (Se λ_Total < 2.75, PROIBIDO sugerir).
+1. MERCADOS DE ESCALA PEQUENA (Gols, Corridas, Cartões, Escanteios):
+   - Sugerir OVER X: A projeção quantitativa do MIE DEVE ser >= (X + 0.20).
+   - Sugerir UNDER X: A projeção quantitativa do MIE DEVE ser <= (X - 0.20).
+   (Exemplo: Para sugerir Palmeiras Over 2.5 Gols, o xG do Palmeiras DEVE ser >= 2.70).
 
-2. OVER GOLS DO TIME (TEAM TOTAL):
-   - "Time Over 2.5 Gols" -> REQUER RIGOROSAMENTE xG_Time >= 2.30. (Se xG_Time < 2.30, PROIBIDO sugerir).
-   - "Time Over 1.5 Gols" -> REQUER RIGOROSAMENTE xG_Time >= 1.50. (Se xG_Time < 1.50, PROIBIDO sugerir).
+2. MERCADOS DE ESCALA ALTA (Pontos NBA, Jardas NFL, Rebotes/Assistências):
+   - Sugerir OVER X: A projeção do MIE DEVE ser pelo menos 5% MAIOR que a linha X.
+   - Sugerir UNDER X: A projeção do MIE DEVE ser pelo menos 5% MENOR que a linha X.
 
-3. CHECKLIST ANTI-DRIBLE (OBRIGATÓRIO):
-   - Se uma métrica for menor que o threshold exigido, É TERMINANTEMENTE PROIBIDO rebaixar ou mudar o mercado apenas para encaixar a mesma linha.
-   - Caso nenhum mercado atinja os requisitos quantitativos mínimos, RETORNE O CAMPO COMO NULL. É preferível não indicar um palpite do que indicar uma entrada fora do padrão matemático.
+3. TRAVA RIGOROSA ANTI-DRIBLE:
+   - Se a projeção do MIE não atingir a Margem de Segurança da linha X, É TERMINANTEMENTE PROIBIDO rebaixar a seleção para o mesmo mercado sem que a nova linha cumpra a margem.
+   - Se nenhuma linha do confronto cumprir a Margem de Segurança, defina o palpite como NULL e informe no 'perfil_geral' que o mercado não oferece EV+ (Valor Esperado Positivo).
 
 [REGRA DE COMPLIANCE OBRIGATÓRIA - HARD CONSTRAINT]
 Se a métrica calculada não atingir o limiar (threshold) mínimo estabelecido (ex: λ_Total < 2.75 para Over 2.5), VOCÊ É PROIBIDO DE SUGERIR ESSA SELEÇÃO. 
