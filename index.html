@@ -388,6 +388,11 @@ BASQUETE (NBA/WNBA):
 BEISEBOL (MLB):
 - ARREMESSSADOR vs LINEUP: Props de Strikeouts (K) exigem cruzar a taxa K% do arremessador contra a taxa K% de at-bats da escalação adversária.
 
+[REGRA DE COMPLIANCE OBRIGATÓRIA - HARD CONSTRAINT]
+Se a métrica calculada não atingir o limiar (threshold) mínimo estabelecido (ex: λ_Total < 2.75 para Over 2.5), VOCÊ É PROIBIDO DE SUGERIR ESSA SELEÇÃO. 
+Caso não encontre 3 seleções que cumpram as regras, retorne o campo correspondente como null e use limitations para explicar a ausência de valor estatístico. 
+A segurança do capital é prioridade sobre a obrigatoriedade de preencher os campos.
+
 ------------------------------------------------
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (SEM MARKDOWN DE CÓDIGO):
