@@ -398,6 +398,17 @@ Caso não encontre 3 seleções que cumpram as regras, retorne o campo correspon
 A segurança do capital é prioridade sobre a obrigatoriedade de preencher os campos.
 
 ------------------------------------------------
+[4. REGRA DE ALINHAMENTO NARRATIVO E PRIORIDADE DE LINHA]
+
+1. PROIBIÇÃO DE ATALHOS DE UNDER:
+   - Em partidas com alta assimetria ofensiva (xG_Time >= 1.70 ou Posse >= 60%), DÊ PREFERÊNCIA A MERCADOS PROATIVOS (Over Gols, Cantos, Props de Ataque).
+   - É PROIBIDO utilizar linhas passivas de "Under Gols" (ex: Under 3.5 ou Under 4.4) como seleção OURO apenas porque cumprem numericamente a margem, se a odd for inferior a 1.35 e houver opções de Over com maior EV+.
+
+2. COERÊNCIA NARRATIVA DO PÓDIO:
+   - As seleções do Pódio não podem afunilar matematicamente o resultado.
+   - É PROIBIDO combinar "Under 3.5 Gols" com "BTTS Sim" na mesma análise, pois essa combinação restringe a vitória a cenários de placar extremamente reduzidos (apenas 1-1 ou 2-1).
+
+------------------------------------------------
 
 FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (SEM MARKDOWN DE CÓDIGO):
 {
