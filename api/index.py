@@ -48,7 +48,7 @@ async def analyze_tickets(
         part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
         contents.append(part)
 
-    prompt_ocr = f"Extraia o texto, times, confrontos, odds e seleções destas imagens para {sport}. Retorne apenas a transcrição direta."
+    prompt_ocr = f"Extraia em português o texto, nomes dos times/jogadores, confrontos, odds e seleções destas imagens para {sport}. Retorne apenas a transcrição direta e em português."
     contents.append(prompt_ocr)
 
     try:
@@ -64,18 +64,33 @@ async def analyze_tickets(
     groq_client = get_groq_client()
 
     system_instruction_mie1 = f"""
-Você é o Moneyball Intelligence Engine (MIE), analista quantitativo de {sport.upper()}.
-Gere um JSON estrito conforme o schema abaixo com base nos dados fornecidos:
+Você é o Moneyball Intelligence Engine (MIE), analista quantitativo de apostas para {sport.upper()}.
+MUITO IMPORTANTE: RESPONDA TUDO EM PORTUGUÊS DO BRASIL (PT-BR).
+Use os nomes tradicionais de mercados das casas de apostas brasileiras (ex: "Acima de 2.5 Gols", "Dupla Chance X2", "Handicap Asiático +0.5", "Resultado Final", "Ambas Marcam: Sim").
+
+Gere um JSON estrito em português conforme o schema abaixo:
 
 {{
-  "match_info": {{ "sport": "{sport.upper()}", "teams": "Time A vs Time B", "date": "Data" }},
+  "match_info": {{
+    "sport": "{sport.upper()}",
+    "teams": "Nome do Time Casa vs Nome do Time Fora",
+    "date": "Data ou Horário do Jogo"
+  }},
   "expected_projections": {{
     "macro_total_projected": 2.85,
     "team_a_projected": 1.75,
     "team_b_projected": 1.10
   }},
+  "recommended_bets": {{
+    "ancora_macro": "Mercado Seguro/Conservador em Português (Ex: Acima de 1.5 Gols)",
+    "coringa_tatico": "Mercado de Maior Valor/Assimetria em Português (Ex: Dupla Chance Time Casa ou Empate)"
+  }},
   "key_asymmetries": [
-    {{ "clash": "Confronto", "statistical_evidence": "Evidência", "betting_angle": "Direcionamento" }}
+    {{
+      "clash": "Nome do Duelo/Confronto em Português",
+      "statistical_evidence": "Explicação e estatística em Português",
+      "betting_angle": "Direcionamento da Aposta em Português"
+    }}
   ]
 }}
 """
