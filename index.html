@@ -37,61 +37,24 @@
         }
     </script>
     <style>
-        .betslip {
-            position: relative;
-            background:
-                radial-gradient(circle at 0 14px, transparent 8px, var(--slip-bg, #14110a) 8.5px) top left / 100% 28px repeat-y,
-                var(--slip-bg, #14110a);
-            border: 1px solid rgba(242,177,52,0.35);
-        }
-        .betslip::before, .betslip::after {
-            content: "";
-            position: absolute;
-            top: 0; bottom: 0;
-            width: 14px;
-            background: radial-gradient(circle at center, #0a0c10 8px, transparent 8.5px);
-            background-size: 14px 28px;
-            background-repeat: repeat-y;
-        }
-        .betslip::before { left: -7px; }
-        .betslip::after { right: -7px; }
-        @media (prefers-reduced-motion: no-preference) {
-            .fade-up { animation: fadeUp .4s ease-out both; }
-            @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        }
+        .fade-up { animation: fadeUp .4s ease-out both; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-base-bg text-slate-200 font-sans min-h-screen" style="background-image: radial-gradient(circle at 50% -10%, rgba(242,177,52,0.07), transparent 55%);">
     <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6">
 
-       <!-- HEADER -->
+        <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Moneyball Engine — Dupla de Elite (Δ EV+)
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Envie os prints da partida ou cole o dossiê JSON para extrair as 2 maiores assimetrias puras do confronto.</p>
+            <p class="text-xs text-slate-500">Envie os prints do bilhete/partida ou cole o dossiê JSON para extrair as 2 maiores assimetrias puras do confronto.</p>
         </div>
 
-        <!-- CONFIGURAÇÃO DAS CHAVES DAS APIS -->
-        <details class="bg-base-panel border border-base-border rounded-2xl p-4">
-            <summary class="cursor-pointer text-sm font-semibold text-slate-300 flex items-center gap-2">
-                <i class="fa-solid fa-key text-accent"></i> Configuração das Chaves de API
-            </summary>
-            <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GROQ (Análise)</label>
-                    <input type="password" id="groq-key" placeholder="gsk_..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono mt-1" onchange="salvarKey('moneyball_groq_key', this.value)">
-                </div>
-                <div>
-                    <label class="text-[10px] text-slate-500 font-bold tracking-widest">CHAVE GEMINI (Visão / Prints)</label>
-                    <input type="password" id="gemini-key" placeholder="AIzaSy..." class="w-full bg-base-bg p-2.5 rounded-lg border border-base-border text-white text-sm font-mono mt-1" onchange="salvarKey('moneyball_gemini_key', this.value)">
-                </div>
-            </div>
-        </details>
-
-        <!-- SELEÇÃO DE ESPORTE -->
-        <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        <!-- SELEÇÃO DE ESPORTE (Apenas 3 Esportes) -->
+        <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
         <!-- CAIXA PRINCIPAL DE ENTRADA -->
         <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
@@ -106,28 +69,27 @@
                 </button>
             </div>
 
-            <!-- CONTEÚDO DA ABA 1: PRINT (MÚLTIPLOS) -->
+            <!-- CONTEÚDO DA ABA 1: PRINT -->
             <div id="sec-print" class="space-y-3">
                 <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-bg/50 transition-all" onclick="document.getElementById('print-input').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
                     <p class="text-xs font-semibold text-slate-300">Clique para selecionar os prints (até 10 fotos)</p>
-                    <p class="text-[10px] text-slate-500">Formatos aceitos: JPG, PNG, WEBP (Redimensionamento automático)</p>
+                    <p class="text-[10px] text-slate-500">Formatos aceitos: JPG, PNG, WEBP</p>
                     <input type="file" id="print-input" accept="image/*" multiple class="hidden" onchange="previewImagens(this)">
                 </div>
 
-                <!-- PREVIEW EM GRID DE MINIATURAS -->
+                <!-- PREVIEW EM GRID -->
                 <div id="img-preview-container" class="hidden space-y-2">
                     <div id="img-preview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-60 overflow-y-auto p-1 bg-base-bg/80 rounded-xl border border-base-border"></div>
                     <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
                         <span id="img-counter" class="text-accent font-bold">0 / 10 fotos selecionadas</span>
-                        <span id="img-size-info"></span>
                     </div>
                 </div>
             </div>
 
             <!-- CONTEÚDO DA ABA 2: JSON -->
             <div id="sec-json" class="space-y-3 hidden">
-                <textarea id="json-input" class="w-full h-44 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON gerado pelo MIE/Engine 1..."></textarea>
+                <textarea id="json-input" class="w-full h-44 bg-base-bg p-3 rounded-lg border border-base-border font-mono text-xs text-value leading-relaxed focus:outline-none focus:border-accent/50" placeholder="Cole aqui o JSON do dossiê..."></textarea>
             </div>
 
             <!-- BOTÃO DE AÇÃO -->
@@ -156,29 +118,21 @@
 
 <script>
 let modoEntradaAtivo = "print"; 
-let imagensBase64Selecionadas = []; 
+let imagensArquivosSelecionados = []; 
 let ultimosDadosAnalise = null; 
 
-function salvarKey(chave, val) {
-    if (val) localStorage.setItem(chave, val.trim());
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    buildSportTabs();
-    const savedGroqKey = localStorage.getItem("moneyball_groq_key");
-    const savedGeminiKey = localStorage.getItem("moneyball_gemini_key");
-    
-    if (savedGroqKey && document.getElementById("groq-key")) document.getElementById("groq-key").value = savedGroqKey;
-    if (savedGeminiKey && document.getElementById("gemini-key")) document.getElementById("gemini-key").value = savedGeminiKey;
-});
-
+// Apenas os 3 esportes do escopo
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
-    beisebol: { label: "MLB", icon: "fa-baseball" },
-    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
+    beisebol: { label: "MLB (Beisebol)", icon: "fa-baseball" },
+    basquete: { label: "NBA/WNBA", icon: "fa-basketball" }
 };
 
 let sportAtivo = "futebol";
+
+document.addEventListener("DOMContentLoaded", () => {
+    buildSportTabs();
+});
 
 function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
@@ -225,239 +179,65 @@ async function previewImagens(input) {
         arquivos = files.slice(0, 10);
     }
 
-    imagensBase64Selecionadas = [];
+    imagensArquivosSelecionados = arquivos;
     const grid = document.getElementById("img-preview-grid");
     const container = document.getElementById("img-preview-container");
     const counter = document.getElementById("img-counter");
-    const sizeInfo = document.getElementById("img-size-info");
 
     grid.innerHTML = "";
-    let totalKB = 0;
 
     for (const file of arquivos) {
-        const base64Data = await comprimirImagem(file);
-        imagensBase64Selecionadas.push({
-            mimeType: "image/jpeg",
-            data: base64Data
-        });
-
-        totalKB += Math.round(base64Data.length / 1024);
-
+        const url = URL.createObjectURL(file);
         const imgEl = document.createElement("img");
-        imgEl.src = `data:image/jpeg;base64,${base64Data}`;
+        imgEl.src = url;
         imgEl.className = "w-full h-20 object-cover rounded-lg border border-accent/40 shadow";
         grid.appendChild(imgEl);
     }
 
-    counter.innerText = `${imagensBase64Selecionadas.length} / 10 fotos selecionadas`;
-    sizeInfo.innerText = `Total: ~${totalKB} KB`;
+    counter.innerText = `${imagensArquivosSelecionados.length} / 10 fotos selecionadas`;
     container.classList.remove("hidden");
 }
 
-function comprimirImagem(file) {
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.src = e.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1080;
-                let scale = 1;
-                if (img.width > MAX_WIDTH) scale = MAX_WIDTH / img.width;
+// Dispara a leitura para a Engine FastAPI na Vercel
+async function processarPrintComEngine() {
+    const formData = new FormData();
+    formData.append("sport", sportAtivo);
 
-                canvas.width = img.width * scale;
-                canvas.height = img.height * scale;
+    for (const file of imagensArquivosSelecionados) {
+        formData.append("files", file);
+    }
 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', 0.8).split(',')[1]);
-            };
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-async function processarPrintComGemini(apiKey) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${apiKey}`;
-    
-    const parts = imagensBase64Selecionadas.map(img => {
-        const base64Pura = img.data.includes(',') ? img.data.split(',')[1] : img.data;
-        return {
-            inline_data: { 
-                mime_type: img.mimeType || 'image/png', 
-                data: base64Pura 
-            }
-        };
-    });
-
-    parts.push({ 
-        text: `Analise todas as ${imagensBase64Selecionadas.length} imagens/prints anexados sobre a partida e extraia TODOS os dados visíveis (times, estatísticas, médias, linhas, odds) em formato JSON limpo. Se houver odds no formato americano (ex: +110, -120), converta-as para o formato DECIMAL (ex: 2.10, 1.83).` 
-    });
-
-    const body = {
-        contents: [{ parts }],
-        generationConfig: { response_mime_type: "application/json" }
-    };
-
-    const res = await fetch(url, {
+    const res = await fetch("/api/v1/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
+        body: formData
     });
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        if (res.status === 429) {
-            throw new Error("Muitas requisições (Erro 429). Aguarde uns 30 segundos e tente novamente.");
-        }
-        throw new Error(`Erro no Gemini OCR (${res.status}): ${errorData.error?.message || 'Falha na requisição'}`);
+        throw new Error(errorData.detail || `Falha no processamento da Engine (${res.status})`);
     }
 
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+    return JSON.stringify(data);
 }
 
-function montarSystemPrompt(esporte) {
-    const CATALOGOS_MACRO = {
-        futebol: '"Jogo Todo": Total de Gols na Partida | Total de Escanteios na Partida | Total de Cartões na Partida | Ambas Marcam (BTTS)',
-        beisebol: '"Visão Geral": Total de Corridas na Partida (Total Runs) | Total de Corridas do Time (Team Runs)',
-        basquete: '"Visão Geral": Total de Pontos na Partida | Total de Pontos do Time',
-        nfl: '"Visão Geral": Total de Pontos na Partida | Total de Pontos do Time | Total de Touchdowns da Partida'
-    };
-
-    const CATALOGOS_MICRO = {
-        futebol: '"Time Isolado": Total de Gols do Time | Total de Escanteios do Time | Total de Cartões do Time | Total de Chutes a Gol do Time',
-        beisebol: '"Player Props / Starter": Strikeouts do Arremessador (Pitcher K\'s) | Rebatidas/Bases Totais do Rebatidor | Hits Permitidos pelo Starter',
-        basquete: '"Player Props": Pontos Individuais do Jogador | Rebotes Individuais | Assistências Individuais',
-        nfl: '"Player Props": Jardas de Passe do QB | Jardas Corridas ou Recebidas do Jogador'
-    };
-
-    return `Você é o Moneyball Decision Engine (Engine 2), o Motor Quantitativo de Decisão e Precificação Esportiva para o esporte: ${esporte.toUpperCase()}.
-
-Sua missão é processar o dossiê analítico de UMA ÚNICA PARTIDA gerado pelo MIE (Engine 1) e extrair EXCLUSIVAMENTE a DUPLA DE ELITE (2 Seleções para a partida) focando nas 2 maiores assimetrias puras (Δ EV+) encontradas no confronto.
-
-------------------------------------------------
-
-[0. ESTRUTURA DA DUPLA DE ELITE DA PARTIDA]
-A sua recomendação para esta partida DEVE ser composta por exatamente 2 entradas complementares:
-
-1. ENTRADA 1 (Macro / Jogo Todo): ${CATALOGOS_MACRO[esporte] || CATALOGOS_MACRO.futebol}
-2. ENTRADA 2 (Micro / ${esporte === 'futebol' ? 'Time Isolado' : 'Player Props'}): ${CATALOGOS_MICRO[esporte] || CATALOGOS_MICRO.futebol}
-
-REGRAS DE ESTRUTURAÇÃO:
-- Ambas as entradas pertencem à MESMA PARTIDA analisada no dossiê.
-- É ESTRITAMENTE PROIBIDO escolher duas entradas da mesma categoria (ex: dois mercados Macro ou dois mercados Micro).
-- PROIBIDO: Moneyline Seco (Vencedor final sem proteção), Apostas de Longo Prazo, ou selecionar 3 ou mais entradas.
-
-------------------------------------------------
-
-[1. ALGORITMO RÍGIDO DO MSC SCORE (0 a 100) E GESTÃO DE STAKE ENXUTA]
-Você DEVE calcular o 'msc_score' de cada uma das 2 seleções com base nos dados estatísticos do MIE:
-
-Pontuação Base: 50 pontos
-+ ASSIMETRIA ESTATÍSTICA (Δ EV+) (+15 a +25 pts): Pela disparidade de métricas da partida em relação às odds da casa.
-+ TAMANHO DA AMOSTRA (+10 a +15 pts): Métricas sustentadas por amostra sólida (mínimo 5 a 10 jogos recentes).
-+ CONTEXTO FAVORÁVEL (+5 a +10 pts): Fatores táticos, repouso, clima ou desfalques favoráveis.
-- LIMITAÇÕES E INCERTEZAS (-10 a -25 pts): Subtraia se houver dúvidas relevantes (ex: rotação/minutagem incerta, lesões no elenco).
-
-DEFINIÇÃO RIGOROSA DE STAKE EM UNIDADES POR ENTRADA (0.5u, 1.0u, 1.5u - TETO MÁXIMO 1.5u):
-- 1.5u (Alta Convicção / Stake Máxima): MSC >= 88 (Maior assimetria com alta consistência).
-- 1.0u (Stake Padrão / Equilibrada): MSC entre 80 e 87 (Assimetria sólida).
-- 0.5u (Risco Controlado / Alavancagem): MSC entre 70 e 79 (Assimetria presente, com volatilidade ajustada).
-
-REGRA DE CONFIABILIDADE:
-- MSC >= 88 -> "ALTA (1.5u)"
-- MSC entre 80 e 87 -> "MÉDIA-ALTA (1.0u)"
-- MSC entre 70 e 79 -> "MÉDIA (0.5u)"
-- MSC < 70 -> "MODERADA" (Abaixo da régua de corte)
-
-------------------------------------------------
-
-[2. UNICIDADE RIGOROSA E REGRAS DE INTEGRIDADE]
-- Entrada 1 e Entrada 2 DEVEM pertencer a categorias distintas (Macro vs Micro/Time Isolado) dentro do mesmo confronto.
-- É TERMINANTEMENTE PROIBIDO fazer "Hedge" (indicar lados opostos do mesmo mercado na partida).
-- Em Props de Jogador ou Ações de Time, O ALVO DEVE CONSTAR EXPLICITAMENTE (Ex: "Tyler Mahle — Over 4.5 Strikeouts" ou "Flamengo — Over 5.5 Escanteios").
-- As odds DEVEM ESTAR strictly em formato DECIMAL (ex: "1.85", "2.10"). Converta se o input trouxer formato americano (+110, -120).
-
-------------------------------------------------
-
-[3. REGRA MATEMÁTICA UNIVERSAL DE MARGEM DE SEGURANÇA - ANTI-DRIBLE]
-1. MERCADOS DE ESCALA PEQUENA (Gols, Corridas, Cartões, Escanteios, Hits, Chutes do Time):
-   - Sugerir OVER X: A projeção quantitativa do MIE DEVE ser >= (X + 0.20).
-   - Sugerir UNDER X: A projeção quantitativa do MIE DEVE ser <= (X - 0.20).
-2. MERCADOS DE ESCALA ALTA (Pontos NBA, Jardas NFL, Rebotes/Assistências):
-   - Sugerir OVER X: Projeção DEVE ser pelo menos 5% MAIOR que a linha X.
-   - Sugerir UNDER X: Projeção DEVE ser pelo menos 5% MENOR que a linha X.
-3. TRAVA RIGOROSA ANTI-DRIBLE:
-   - Se a projeção não atingir a Margem de Segurança da linha X, É TERMINANTEMENTE PROIBIDO selecionar a linha sem cumpri-la.
-
-------------------------------------------------
-
-[4. REGRA DE ALINHAMENTO NARRATIVO E PRIORIDADE DE LINHA]
-1. PROIBIÇÃO DE ATALHOS DE UNDER PASSIVO:
-   - Em partidas com alta assimetria ofensiva, DÊ PREFERÊNCIA A MERCADOS PROATIVOS (Over).
-   - É PROIBIDO utilizar "Under Gols" passivo apenas para cumprir margem se a odd for < 1.35 e houver opção de Over com maior EV+.
-
-------------------------------------------------
-
-FORMATO DE SAÍDA — EXCLUSIVAMENTE JSON VÁLIDO (SEM MARKDOWN DE CÓDIGO):
-{
-  "perfil_geral": "Síntese quantitativa da partida destacando as 2 maiores assimetrias puras (Δ EV+) encontradas no confronto...",
-  "status_geral": "processado_com_sucesso",
-  "stake_medio_partida": "1.0u",
-  "dupla_de_elite": {
-    "entrada_1_macro": {
-      "mercado": "Nome do Mercado",
-      "selecao": "Seleção Exata",
-      "odd": "1.85",
-      "msc_score": 89,
-      "stake_recomendada": "1.5u",
-      "confiabilidade": "ALTA",
-      "motivo": "Justificativa embasada na assimetria quantitativa do jogo todo."
-    },
-    "entrada_2_micro": {
-      "mercado": "Nome do Mercado",
-      "selecao": "Seleção Exata (incluindo nome do jogador ou do time isolado)",
-      "odd": "1.90",
-      "msc_score": 84,
-      "stake_recomendada": "1.0u",
-      "confiabilidade": "MÉDIA-ALTA",
-      "motivo": "Justificativa embasada na assimetria quantitativa individual ou do time isolado."
-    }
-  }
-}`;
-}
-    
 async function executarAnalise() {
-    const groqKey = document.getElementById("groq-key")?.value.trim() || localStorage.getItem("moneyball_groq_key");
-    const geminiKey = document.getElementById("gemini-key")?.value.trim() || localStorage.getItem("moneyball_gemini_key");
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
-
-    if (!groqKey) {
-        display.innerHTML = alertaErro("Configure a sua chave da API Groq antes de continuar.");
-        return;
-    }
 
     let conteudoParaAnalisar = "";
     btn.disabled = true;
 
     try {
         if (modoEntradaAtivo === "print") {
-            if (!imagensBase64Selecionadas || imagensBase64Selecionadas.length === 0) {
+            if (!imagensArquivosSelecionados || imagensArquivosSelecionados.length === 0) {
                 display.innerHTML = alertaErro("Selecione ao menos 1 print antes de gerar a análise.");
                 btn.disabled = false;
                 return;
             }
-            if (!geminiKey) {
-                display.innerHTML = alertaErro("Configure a chave da API Gemini para usar a leitura por Print.");
-                btn.disabled = false;
-                return;
-            }
 
-            btn.innerHTML = `<i class="fa-solid fa-eye fa-spin mr-2"></i> Lendo ${imagensBase64Selecionadas.length} print(s) via Gemini OCR...`;
-            conteudoParaAnalisar = await processarPrintComGemini(geminiKey);
+            btn.innerHTML = `<i class="fa-solid fa-eye fa-spin mr-2"></i> Lendo prints e buscando dados via Engine...`;
+            conteudoParaAnalisar = await processarPrintComEngine();
 
         } else {
             conteudoParaAnalisar = document.getElementById("json-input")?.value.trim();
@@ -468,34 +248,19 @@ async function executarAnalise() {
             }
         }
 
-        btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Extraindo Assimetrias no Groq...`;
-
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${groqKey}`
-            },
-            body: JSON.stringify({
-                model: "openai/gpt-oss-120b",
-                messages: [
-                    { role: "system", content: montarSystemPrompt(sportAtivo) },
-                    { role: "user", content: conteudoParaAnalisar }
-                ],
-                temperature: 0.1,
-                response_format: { type: "json_object" }
-            })
-        });
-
-        if (!response.ok) throw new Error(`Erro na API Groq (${response.status})`);
-
-        const data = await response.json();
-        const content = data.choices?.[0]?.message?.content || "";
-        const parsed = JSON.parse(content.replace(/```json\n?|```/g, "").trim());
-
-        ultimosDadosAnalise = parsed;
+        // Exibe o Dossiê Estruturado vindo da Engine
         recolherEntrada();
-        renderizarRanking(parsed);
+        display.innerHTML = `
+            <div class="bg-base-panel border border-accent/30 rounded-2xl p-6 space-y-4 fade-up">
+                <div class="flex items-center justify-between border-b border-base-border pb-3">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-check-circle text-accent"></i> Dossiê Extraído com Sucesso
+                    </h2>
+                    <span class="text-xs bg-accent/10 border border-accent/30 text-accent font-mono px-2.5 py-1 rounded-lg font-bold uppercase">${sportAtivo}</span>
+                </div>
+                <pre class="bg-base-bg p-4 rounded-xl border border-base-border text-emerald-400 font-mono text-xs overflow-x-auto max-h-96">${JSON.stringify(JSON.parse(conteudoParaAnalisar), null, 2)}</pre>
+            </div>
+        `;
 
     } catch (error) {
         console.error(error);
@@ -514,7 +279,7 @@ function recolherEntrada() {
 function resetarEntrada() {
     document.getElementById("input-box")?.classList.remove("hidden");
     document.getElementById("new-analysis-bar")?.classList.add("hidden");
-    imagensBase64Selecionadas = [];
+    imagensArquivosSelecionados = [];
     document.getElementById("img-preview-container")?.classList.add("hidden");
     const grid = document.getElementById("img-preview-grid");
     if (grid) grid.innerHTML = "";
@@ -522,160 +287,11 @@ function resetarEntrada() {
     if (printInput) printInput.value = "";
     const jsonInput = document.getElementById("json-input");
     if (jsonInput) jsonInput.value = "";
+    document.getElementById("display-area").innerHTML = "";
 }
 
 function alertaErro(msg) {
     return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
-}
-
-function gerarTextoFormatadoDupla() {
-    if (!ultimosDadosAnalise) return "";
-    const data = ultimosDadosAnalise;
-    const dupla = data.dupla_de_elite || {};
-    
-    let texto = `⚡ *MONEYBALL PRO — DUPLA DE ELITE (Δ EV+)* ⚡\n\n`;
-    if (data.perfil_geral) {
-        texto += `📝 *Visão Geral:* ${data.perfil_geral}\n\n`;
-    }
-
-    const mapa = [
-        { k: 'entrada_1_macro', label: '1️⃣ *ENTRADA 1 (MACRO / JOGO TODO)*' },
-        { k: 'entrada_2_micro', label: '2️⃣ *ENTRADA 2 (MICRO / TIME OU ATHLETE)*' }
-    ];
-
-    mapa.forEach(m => {
-        if (dupla[m.k]) {
-            const item = dupla[m.k];
-            const confiabilidade = item.confiabilidade || (item.msc_score >= 88 ? "ALTA" : item.msc_score >= 80 ? "MÉDIA-ALTA" : "MÉDIA");
-            
-            texto += `${m.label}\n`;
-            texto += `🎯 *Seleção:* ${item.selecao}\n`;
-            texto += `📌 *Mercado:* ${item.mercado}\n`;
-            if (item.odd) texto += `💰 *Odd:* @ ${item.odd}\n`;
-            if (item.stake_recomendada) texto += `📊 *Stake:* ${item.stake_recomendada}\n`;
-            texto += `🛡️ *Confiabilidade:* ${confiabilidade} (MSC ${item.msc_score || item.msc}/100)\n`;
-            if (item.motivo) texto += `💡 *Motivo:* ${item.motivo}\n`;
-            texto += `\n`;
-        }
-    });
-
-    texto += `📊 *Análise baseada na Maior Assimetria Pura do Confronto.*`;
-    return texto;
-}
-
-function copiarDuplaFormatada() {
-    const texto = gerarTextoFormatadoDupla();
-    if (!texto) return;
-
-    navigator.clipboard.writeText(texto).then(() => {
-        alert("Dupla de Elite copiada! Pronta para enviar.");
-    }).catch(err => {
-        console.error("Erro ao copiar: ", err);
-        alert("Não foi possível copiar automaticamente.");
-    });
-}
-
-function compartilharWhatsApp() {
-    const texto = gerarTextoFormatadoDupla();
-    if (!texto) return;
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
-    window.open(url, '_blank');
-}
-
-function compartilharTelegram() {
-    const texto = gerarTextoFormatadoDupla();
-    if (!texto) return;
-    const url = `https://t.me/share/url?url=${encodeURIComponent("https://moneyballpro.app")}&text=${encodeURIComponent(texto)}`;
-    window.open(url, '_blank');
-}
-
-function renderizarRanking(data) {
-    const display = document.getElementById("display-area");
-    if (!display) return;
-    const cardId = "resultado-" + Date.now();
-
-    const dupla = data.dupla_de_elite || {};
-    const entradas = [
-        { key: 'entrada_1_macro', label: 'ENTRADA 1 — MACRO (JOGO TODO)', badgeStyle: 'bg-accent/20 text-accent border-accent/40', data: dupla.entrada_1_macro },
-        { key: 'entrada_2_micro', label: 'ENTRADA 2 — MICRO / SPECIFIC', badgeStyle: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40', data: dupla.entrada_2_micro }
-    ].filter(item => item.data);
-
-    const htmlItens = entradas.map((p, idx) => {
-        const item = p.data;
-        const score = item.msc_score || item.msc || 0;
-        
-        const confiabilidade = item.confiabilidade || (score >= 88 ? 'ALTA' : score >= 80 ? 'MÉDIA-ALTA' : score >= 70 ? 'MÉDIA' : 'MODERADA');
-        let confStyle = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-        if (confiabilidade.includes("MÉDIA")) confStyle = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-        if (confiabilidade === "MODERADA") confStyle = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-
-        return `
-        <div class="p-4 bg-base-card rounded-xl border border-accent/20 space-y-3 fade-up" style="animation-delay:${idx * 60}ms">
-            <div class="flex justify-between items-center gap-2 flex-wrap">
-                <span class="text-[9px] font-black px-2 py-0.5 rounded border uppercase ${p.badgeStyle}">${p.label}</span>
-                <div class="flex items-center gap-2">
-                    ${item.stake_recomendada ? `<span class="text-xs font-mono text-accent font-bold bg-accent/10 px-2 py-0.5 rounded border border-accent/30">${item.stake_recomendada}</span>` : ''}
-                    ${item.odd ? `<span class="text-xs font-mono text-white font-bold bg-base-panel px-2.5 py-1 rounded-lg border border-base-border shadow-inner">@ ${item.odd}</span>` : ''}
-                </div>
-            </div>
-            
-            <div>
-                <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">${item.mercado || 'Mercado'}</p>
-                <p class="text-accent font-black text-base mt-0.5">${item.selecao || 'Seleção'}</p>
-            </div>
-
-            ${item.motivo ? `<p class="text-xs text-slate-300 leading-relaxed italic border-l-2 border-accent/30 pl-3">${item.motivo}</p>` : ''}
-
-            <!-- BARRA DE SCORE E CONFIABILIDADE -->
-            <div class="flex items-center justify-between gap-2 pt-2.5 border-t border-base-border/60 flex-wrap">
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider border flex items-center gap-1 ${confStyle}">
-                    <i class="fa-solid fa-shield-halved text-[9px]"></i> ${confiabilidade}
-                </span>
-
-                <div class="flex items-center gap-2">
-                    <div class="w-16 sm:w-20 bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-                        <div class="bg-accent h-full rounded-full" style="width: ${Math.min(100, Math.max(0, score))}%"></div>
-                    </div>
-                    <span class="font-mono text-xs font-bold text-accent">MSC ${score}/100</span>
-                </div>
-            </div>
-        </div>
-        `;
-    }).join("");
-
-    const htmlResultado = `
-        <div id="${cardId}" class="space-y-4 mb-6 pb-6 border-b border-base-border/60">
-            <div class="betslip p-4 rounded-2xl space-y-3">
-                <div class="flex items-center justify-between border-b border-accent/20 pb-2">
-                    <span class="text-xs font-bold text-accent tracking-widest uppercase flex items-center gap-1.5">
-                        <i class="fa-solid fa-bolt"></i> Dupla de Elite (Δ EV+)
-                    </span>
-                    ${data.stake_medio_partida ? `<span class="text-xs font-mono text-slate-400">Stake Recomendada: <b class="text-white">${data.stake_medio_partida}</b></span>` : ''}
-                </div>
-
-                ${data.perfil_geral ? `<p class="text-xs text-slate-300 bg-base-bg/60 p-3 rounded-lg border border-base-border leading-relaxed">${data.perfil_geral}</p>` : ''}
-
-                <div class="space-y-3">
-                    ${htmlItens}
-                </div>
-
-                <!-- BOTÕES DE COMPARTILHAMENTO -->
-                <div class="pt-3 flex flex-wrap gap-2">
-                    <button onclick="copiarDuplaFormatada()" class="flex-1 py-2 px-3 bg-base-panel hover:bg-base-card border border-base-border rounded-lg text-xs font-bold text-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                        <i class="fa-regular fa-copy text-accent"></i> Copiar
-                    </button>
-                    <button onclick="compartilharWhatsApp()" class="flex-1 py-2 px-3 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 rounded-lg text-xs font-bold text-emerald-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                        <i class="fa-brands fa-whatsapp"></i> WhatsApp
-                    </button>
-                    <button onclick="compartilharTelegram()" class="flex-1 py-2 px-3 bg-sky-600/20 hover:bg-sky-600/30 border border-sky-500/40 rounded-lg text-xs font-bold text-sky-400 flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-                        <i class="fa-brands fa-telegram"></i> Telegram
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    display.innerHTML = htmlResultado;
 }
 </script>
 </body>
