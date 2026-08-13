@@ -256,6 +256,23 @@ async function executarAnalise() {
     }
 }
 
+// FUNÇÃO AUXILIAR DE FORMATAÇÃO DE TÍTULO
+function formatarTituloEntrada(entrada) {
+    let selecao = (entrada.selecao || "").trim();
+    let mercado = (entrada.mercado || "").trim();
+
+    if (!selecao && !mercado) return "Seleção Específica";
+
+    const termosGenericos = ["mais de", "menos de", "over", "under"];
+    const ehGenerico = termosGenericos.some(termo => selecao.toLowerCase().startsWith(termo));
+
+    if (ehGenerico && mercado && !selecao.toLowerCase().includes(mercado.toLowerCase())) {
+        return `${mercado} — ${selecao}`;
+    }
+
+    return selecao || mercado;
+}
+
 function renderizarBilhetesFormatados(dados) {
     const display = document.getElementById("display-area");
     const match = dados.match_info || {};
@@ -265,8 +282,8 @@ function renderizarBilhetesFormatados(dados) {
     const e2 = dupla.entrada_2_micro || {};
     const asym = dados.key_asymmetries || [];
 
-    const titulo1 = e1.selecao || e1.mercado || "Seleção Macro";
-    const titulo2 = e2.selecao || e2.mercado || "Seleção Micro";
+    const titulo1 = formatarTituloEntrada(e1);
+    const titulo2 = formatarTituloEntrada(e2);
 
     const score1 = e1.msc_score || 88;
     const score2 = e2.msc_score || 82;
@@ -377,10 +394,13 @@ function compartilharResultado() {
     const e1 = dupla.entrada_1_macro || {};
     const e2 = dupla.entrada_2_micro || {};
 
+    const t1 = formatarTituloEntrada(e1);
+    const t2 = formatarTituloEntrada(e2);
+
     const texto = `🎯 *MONEYBALLPRO - DUPLA DE ELITE*\n` +
                   `🏆 *Jogo:* ${match.teams || 'Confronto Analisado'}\n\n` +
-                  `🟢 *Bilhete #1 (Macro - MSC ${e1.msc_score || 88} | Δ ${e1.delta_edge || '+6%'}):* ${e1.selecao || e1.mercado} (@${e1.odd || '1.80'})\n` +
-                  `🟡 *Bilhete #2 (Micro - MSC ${e2.msc_score || 82} | Δ ${e2.delta_edge || '+7%'}):* ${e2.selecao || e2.mercado} (@${e2.odd || '1.90'})\n\n` +
+                  `🟢 *Bilhete #1 (Macro - MSC ${e1.msc_score || 88} | Δ ${e1.delta_edge || '+6%'}):* ${t1} (@${e1.odd || '1.80'})\n` +
+                  `🟡 *Bilhete #2 (Micro - MSC ${e2.msc_score || 82} | Δ ${e2.delta_edge || '+7%'}):* ${t2} (@${e2.odd || '1.90'})\n\n` +
                   `⚡ *Análise Quantitativa MoneyballPro Engine v2.0*`;
 
     if (navigator.share) {
