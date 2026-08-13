@@ -25,7 +25,7 @@ def get_groq_client():
 def health_check():
     return {
         "status": "ok",
-        "engine": "MoneyballPro Engine v2.0 (Full Matrix & Safety Locks)",
+        "engine": "MoneyballPro FastAPI v2.0",
         "gemini_key_set": bool(GEMINI_API_KEY),
         "groq_key_set": bool(GROQ_API_KEY)
     }
@@ -38,7 +38,7 @@ async def analyze_tickets(
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    # 1. OCR VIA GEMINI 3.5 FLASH
+    # 1. OCR COM GEMINI 3.5 FLASH
     gemini_client = get_gemini_client()
     contents = []
 
@@ -48,7 +48,7 @@ async def analyze_tickets(
         part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
         contents.append(part)
 
-    prompt_ocr = f"Extraia em PORTUGUÊS todo o texto, nomes de times, jogadores, confrontos, odds/cotações e linhas destas imagens para a modalidade: {sport}. Retorne apenas a transcrição direta e limpa."
+    prompt_ocr = f"Extraia em PORTUGUÊS todo o texto, nomes de times, jogadores, confrontos, odds/cotações e linhas destas imagens para a modalidade: {sport}. Retorne apenas a transcrição direta do conteúdo presente nas imagens."
     contents.append(prompt_ocr)
 
     try:
@@ -60,41 +60,46 @@ async def analyze_tickets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # 2. ANÁLISE QUANTITATIVA COM MODELO DE RIGOR E TRAVAS DE SEGURANÇA VIA GROQ
+    # 2. ANÁLISE QUANTITATIVA RIGOROSA VIA GROQ (GPT-OSS 120B)
     groq_client = get_groq_client()
 
     system_instruction_mie2 = f"""
-Você é o Moneyball Intelligence Engine (MIE - Versão 2.0), analista quantitativo de elite especialista em apostas esportivas.
-Sua missão é analisar o texto OCR dos bilhetes/partidas para a modalidade: {sport.upper()}.
+Você é o Moneyball Intelligence Engine (MIE), analista quantitativo de apostas de alta precisão para a modalidade {sport.upper()}.
 
-MATRIZ OFICIAL DE MERCADOS POR ESPORTE:
+[MATRIZ OFICIAL DE MERCADOS POR ESPORTE]
 - FUTEBOL:
-  * MACRO (Entrada 1): Gols (Over/Under), BTTS (Ambas Marcam), Chance Dupla, Handicap (Asiático/Europeu - acionado se Chance Dupla tiver Odd < 1.60).
-  * MICRO (Entrada 2): Escanteios (Jogo ou Time), Chutes a Gol (Jogo ou Time), Cartões (Jogo ou Time).
+  * MACRO: Gols (Over/Under), BTTS (Ambas Marcam), Chance Dupla
+  * MICRO: Escanteios, Chutes a Gol (Time/Jogador), Cartões
 - BEISEBOL (MLB):
-  * MACRO (Entrada 1): Moneyline (ML), Run Line (Spread), Total de Runs.
-  * MICRO (Entrada 2): Strikeouts (Pitcher), Outs / Eliminações, Hits Permitidos (Pitcher), Hits (Rebatedor).
+  * MACRO: Vencedor (ML), Total de Corridas (Runs), F5 (ML/Total 5 Innings)
+  * MICRO: Strikeouts do Arremessador, Eliminações (Pitcher), Hits (Rebatedor)
 - BASQUETE (NBA):
-  * MACRO (Entrada 1): Vencedor (Moneyline), Spread (Handicap), Total de Pontos, Team Total.
-  * MICRO (Entrada 2): Pontos do Jogador, Rebotes do Jogador, Assistências do Jogador.
+  * MACRO: Total de Pontos, Team Total, Total/Handicap 1º Tempo
+  * MICRO: Pontos do Jogador, Rebotes do Jogador, Assistências do Jogador
 - FUTEBOL AMERICANO (NFL):
-  * Selecionar as 2 maiores assimetrias (Delta >= 5.0%) em jogos/mercados distintos cobrindo ML, Spread, Total de Pontos ou Props Individuais (Jardas, Anytime TD).
+  * MACRO: Vencedor (Moneyline), Spread (Handicap), Total de Pontos
+  * MICRO: Props de Atletas (Jardas Passing/Rushing/Receiving, Anytime TD)
 
-REGRAS ESTRITAS E TRAVAS DE SEGURANÇA (OBRIGATÓRIO):
-1. IDIOMA E PADRÃO: 100% em PORTUGUÊS DO BRASIL (PT-BR). Nomes de times, jogadores e mercados EXPLICITAMENTE indicados na seleção (Ex: "Mirassol ou Empate (1X)", "Michael Estrada - Over 1.5 Chutes").
-2. JANELA DE ODDS OPERÁVEL: 1.60 <= Odd <= 2.80.
-   - Rejeite cotações < 1.60 ou > 2.80 (Exceção MLB/NFL ML: Odd até 3.00 se Delta >= 10%).
-3. EDGE MÍNIMO (DELTA >= 5.0%):
-   - Calcule a Assimetria / Delta = Probabilidade_Modelo - Probabilidade_Odd.
-   - Se Delta < 5.0%, a aposta DEVE SER REJEITADA.
-4. CALCULE O MSC SCORE (MONEYBALL SCORE): Integer de 0 a 100 baseado no Delta e EV+.
-5. CONTEXTO TÁTICO E COPEIRO (LIVRE DE HEDGE):
-   - Jogos amarrados/mata-mata (ex: Libertadores, playoffs): Ajuste margem de segurança para Under em mercados inflacionados.
-   - Fator Desfalques/Blowout: Penalize em 20% o Delta se houver desfalque crítico ou falta de motivação.
+[FILTROS DE SEGURANÇA E TRAVAS OPERACIONAIS]
+1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min):
+   - A assimetria (Δ) é: Δ = Prob_Modelo - Prob_Odd.
+   - SÓ ELEGÍVEL PARA A DUPLA ENTRADAS COM Δ >= 5.0%.
+   - Se 5.0% <= Δ < 8.0%: Stake recomendada 1.0u.
+   - Se Δ >= 8.0%: Stake recomendada de 1.5u a 2.0u.
+2. JANELA DE ODDS:
+   - Filte apenas seleções com Odds decimais entre 1.60 e 2.80.
+   - Exceção MLB/F5 e NFL ML: Permitir Odds até 3.00 se Δ >= 10.0%.
+3. DIVERSIFICAÇÃO OBRIGATÓRIA:
+   - Entrada 1 (MACRO): A maior assimetria (Δ >= 5.0%) do Bloco MACRO.
+   - Entrada 2 (MICRO): A maior assimetria (Δ >= 5.0%) do Bloco MICRO.
+4. REGRA DO NOME EXPLÍCITO:
+   - Nomes de times, jogadores e mercados DEVEM ser descritos sem ambiguidades. Ex: "Mirassol ou Empate (1X)", "Michael Estrada — Over 1.5 Chutes".
 
-Retorne EXCLUSIVAMENTE um objeto JSON válido (sem textos antes ou depois, sem markdown extra):
+[REGRA DE RETORNO JSON STRICT]
+Sua resposta DEVE SER ESTRITAMENTE um JSON válido com a seguinte estrutura JSON exata (sem markdown extras, apenas o JSON):
+
 {{
-  "perfil_geral": "Síntese quantitativa da partida e contexto tático...",
+  "perfil_geral": "Síntese quantitativa da partida e análise tática...",
   "status_geral": "processado_com_sucesso",
   "stake_medio_partida": "1.0u",
   "match_info": {{
@@ -103,36 +108,36 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem textos antes ou depois, sem m
     "date": "Hoje"
   }},
   "expected_projections": {{
-    "macro_projected": "Projeção Macro",
-    "micro_projected": "Projeção Micro"
+    "macro_projected": "Projeção Macro relevante com delta",
+    "micro_projected": "Projeção Micro relevante com delta"
   }},
   "dupla_de_elite": {{
     "entrada_1_macro": {{
       "mercado": "Nome do Mercado Macro",
-      "selecao": "Seleção Explícita com Nome",
+      "selecao": "Seleção Explícita",
       "odd": "1.85",
-      "delta_edge": "6.8%",
+      "delta_edge": "6.5%",
       "msc_score": 88,
       "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa quantitativa detalhando o Delta e valor esperado."
+      "motivo": "Justificativa detalhada informando prob modelo vs prob odd..."
     }},
     "entrada_2_micro": {{
       "mercado": "Nome do Mercado Micro",
-      "selecao": "Seleção Explícita com Nome",
+      "selecao": "Seleção Explícita",
       "odd": "1.95",
-      "delta_edge": "8.2%",
+      "delta_edge": "7.2%",
       "msc_score": 84,
-      "stake_recomendada": "1.5u",
+      "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa quantitativa detalhando o Delta e volume."
+      "motivo": "Justificativa detalhada..."
     }}
   }},
   "key_asymmetries": [
     {{
-      "clash": "Ponto Tático Analisado",
-      "statistical_evidence": "Evidência estatística em PT-BR com margem aplicada",
-      "betting_angle": "Direcionamento final"
+      "clash": "Confronto Analisado",
+      "statistical_evidence": "Evidência estatística com delta",
+      "betting_angle": "Direcionamento da aposta"
     }}
   ]
 }}
@@ -143,13 +148,14 @@ Retorne EXCLUSIVAMENTE um objeto JSON válido (sem textos antes ou depois, sem m
             model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
-                {"role": "user", "content": f"TEXTO EXTRAÍDO DOS PRINTS:\n{texto_extraido_ocr}"}
+                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}"}
             ],
             temperature=0.1,
             response_format={"type": "json_object"}
         )
 
-        return json.loads(completion.choices[0].message.content.strip())
+        content_str = completion.choices[0].message.content.strip()
+        return json.loads(content_str)
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro no processamento quântico (Groq): {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no processamento (Groq): {str(e)}")
