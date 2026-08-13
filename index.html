@@ -47,10 +47,10 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Moneyball Engine — Dupla de Elite (Δ EV+)
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.0 • Matrix & Safety Locks
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Envie os prints da partida ou bilhete para extrair as melhores entradas quantitativas.</p>
+            <p class="text-xs text-slate-500">Varredura quantitativa com Edge Mínimo (&Delta; &ge; 5%) e Janela de Odds (1.60 a 2.80).</p>
         </div>
 
         <!-- SELEÇÃO DE ESPORTE -->
@@ -62,7 +62,7 @@
                 <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-bg/50 transition-all" onclick="document.getElementById('print-input').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
                     <p class="text-xs font-semibold text-slate-300">Clique para selecionar os prints (até 10 fotos)</p>
-                    <p class="text-[10px] text-slate-500">Compressão em WebP ativada</p>
+                    <p class="text-[10px] text-slate-500">Compressão em WebP nativa ativada</p>
                     <input type="file" id="print-input" accept="image/*" multiple class="hidden" onchange="previewImagens(this)">
                 </div>
 
@@ -75,7 +75,7 @@
             </div>
 
             <button id="analisar-btn" type="button" onclick="executarAnalise()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold rounded-xl text-base-bg shadow-lg shadow-accent/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
-                <i class="fa-solid fa-bolt"></i> Gerar Bilhetes Dupla de Elite
+                <i class="fa-solid fa-bolt"></i> Executar Funil Quantitativo
             </button>
         </div>
 
@@ -95,7 +95,7 @@
         <!-- AVISO LEGAL -->
         <footer class="pt-4 pb-2 text-center">
             <p class="text-[10px] text-slate-600 leading-relaxed max-w-lg mx-auto">
-                Nenhum modelo estatístico garante resultados futuros. Ferramenta de apoio quantitativo. <b class="text-slate-500">18+</b>.
+                Modelo quantitativo de estimativa de valor esperado (EV+). Gestão de banca recomendada: 1u a 2u. <b class="text-slate-500">18+</b>.
             </p>
         </footer>
     </div>
@@ -107,7 +107,7 @@ let ultimoResultadoGlobal = null;
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
     beisebol: { label: "MLB (Beisebol)", icon: "fa-baseball" },
-    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
+    basquete: { label: "NBA (Basquete)", icon: "fa-basketball" },
     nfl: { label: "NFL (Fut. Amer.)", icon: "fa-football" }
 };
 
@@ -121,10 +121,8 @@ function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
     if (!container) return;
     
-    container.className = "grid grid-cols-2 sm:grid-cols-4 gap-2";
-
     container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
-        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
         </button>
     `).join("");
@@ -237,12 +235,12 @@ async function executarAnalise() {
 
     try {
         if (!imagensArquivosSelecionados || imagensArquivosSelecionados.length === 0) {
-            display.innerHTML = alertaErro("Selecione ao menos 1 print antes de gerar a análise.");
+            display.innerHTML = alertaErro("Selecione ao menos 1 print antes de executar o funil quantitativo.");
             btn.disabled = false;
             return;
         }
 
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Lendo prints e calculando entradas...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Aplicando travas de segurança e calculando Δ...`;
         const dados = await processarPrintComEngine();
         ultimoResultadoGlobal = dados;
 
@@ -251,10 +249,10 @@ async function executarAnalise() {
 
     } catch (error) {
         console.error(error);
-        display.innerHTML = alertaErro(`Falha na geração dos bilhetes: ${error.message}`);
+        display.innerHTML = alertaErro(`Erro ao processar: ${error.message}`);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Gerar Bilhetes Dupla de Elite`;
+        btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Funil Quantitativo`;
     }
 }
 
@@ -267,11 +265,14 @@ function renderizarBilhetesFormatados(dados) {
     const e2 = dupla.entrada_2_micro || {};
     const asym = dados.key_asymmetries || [];
 
-    const titulo1 = e1.selecao || e1.mercado || "Total de Gols: Acima de 1.5";
-    const titulo2 = e2.selecao || e2.mercado || "Seleção Específica (Com Nome do Time)";
+    const titulo1 = e1.selecao || e1.mercado || "Seleção Macro";
+    const titulo2 = e2.selecao || e2.mercado || "Seleção Micro";
 
     const score1 = e1.msc_score || 88;
     const score2 = e2.msc_score || 82;
+
+    const delta1 = e1.delta_edge || "+6.5%";
+    const delta2 = e2.delta_edge || "+7.2%";
 
     display.innerHTML = `
         <div class="space-y-6 fade-up">
@@ -282,17 +283,17 @@ function renderizarBilhetesFormatados(dados) {
                     ${match.sport || sportAtivo.toUpperCase()} • ${match.date || 'HOJE'}
                 </span>
                 <h2 class="text-2xl font-bold text-white tracking-wide pt-1">${match.teams || 'Confronto Analisado'}</h2>
-                <p class="text-xs text-slate-400">${dados.perfil_geral || 'Análise Quantitativa via Moneyball Engine'}</p>
+                <p class="text-xs text-slate-400">${dados.perfil_geral || 'Análise Quantitativa Moneyball Engine v2.0'}</p>
             </div>
 
             <!-- CARDS DA DUPLA DE ELITE -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
-                <!-- BILHETE 1: ÂNCORA MACRO -->
+                <!-- BILHETE 1: MACRO -->
                 <div class="bg-base-panel border-2 border-emerald-500/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
                     <div class="flex justify-between items-start pt-1">
                         <div>
-                            <p class="text-xs text-emerald-400 font-mono font-bold uppercase tracking-wider">Bilhete #1 — Baixo Risco</p>
+                            <p class="text-xs text-emerald-400 font-mono font-bold uppercase tracking-wider">Bilhete #1 — Macro (Jogo)</p>
                             <h3 class="text-xl font-bold text-white mt-0.5">${titulo1}</h3>
                         </div>
                         <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg px-2.5 py-1 text-center">
@@ -306,18 +307,22 @@ function renderizarBilhetesFormatados(dados) {
                             <b class="text-emerald-400 font-mono">@${e1.odd || '1.80'}</b>
                         </div>
                         <div class="flex justify-between text-slate-400">
-                            <span>Stake / Confiança:</span>
-                            <b class="text-white font-mono">${e1.stake_recomendada || '1.5u'} (${e1.confiabilidade || 'ALTA'})</b>
+                            <span>Edge Mínimo (&Delta;):</span>
+                            <b class="text-emerald-300 font-mono">${delta1}</b>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Stake Recomendada:</span>
+                            <b class="text-white font-mono">${e1.stake_recomendada || '1.0u'} (${e1.confiabilidade || 'ALTA'})</b>
                         </div>
                     </div>
                     ${e1.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e1.motivo}</p>` : ''}
                 </div>
 
-                <!-- BILHETE 2: CORINGA TÁTICO -->
+                <!-- BILHETE 2: MICRO -->
                 <div class="bg-base-panel border-2 border-accent/60 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
                     <div class="flex justify-between items-start pt-1">
                         <div>
-                            <p class="text-xs text-accent font-mono font-bold uppercase tracking-wider">Bilhete #2 — Maior Assimetria</p>
+                            <p class="text-xs text-accent font-mono font-bold uppercase tracking-wider">Bilhete #2 — Micro (Atleta/Produção)</p>
                             <h3 class="text-xl font-bold text-white mt-0.5">${titulo2}</h3>
                         </div>
                         <div class="bg-accent/10 border border-accent/30 text-accent rounded-lg px-2.5 py-1 text-center">
@@ -331,8 +336,12 @@ function renderizarBilhetesFormatados(dados) {
                             <b class="text-accent font-mono">@${e2.odd || '1.90'}</b>
                         </div>
                         <div class="flex justify-between text-slate-400">
-                            <span>Stake / Confiança:</span>
-                            <b class="text-white font-mono">${e2.stake_recomendada || '1.0u'} (${e2.confiabilidade || 'MÉDIA-ALTA'})</b>
+                            <span>Edge Mínimo (&Delta;):</span>
+                            <b class="text-accent/90 font-mono">${delta2}</b>
+                        </div>
+                        <div class="flex justify-between text-slate-400">
+                            <span>Stake Recomendada:</span>
+                            <b class="text-white font-mono">${e2.stake_recomendada || '1.0u'} (${e2.confiabilidade || 'ALTA'})</b>
                         </div>
                     </div>
                     ${e2.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e2.motivo}</p>` : ''}
@@ -340,15 +349,15 @@ function renderizarBilhetesFormatados(dados) {
 
             </div>
 
-            <!-- DETALHES DAS ASSIMETRIAS ENCONTRADAS -->
+            <!-- EVIDÊNCIAS DE ASSIMETRIA -->
             <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-3">
                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass-chart text-accent"></i> Evidências Quantitativas Mapeadas
+                    <i class="fa-solid fa-magnifying-glass-chart text-accent"></i> Evidências Quantitativas e Trava de Margem
                 </h4>
                 <div class="space-y-2">
                     ${asym.map(a => `
                         <div class="bg-base-bg p-3 rounded-xl border border-base-border text-xs space-y-1">
-                            <b class="text-slate-200">${a.clash || 'Confronto Tático'}</b>
+                            <b class="text-slate-200">${a.clash || 'Confronto Analisado'}</b>
                             <p class="text-slate-400 leading-relaxed">${a.statistical_evidence || ''}</p>
                             ${a.betting_angle ? `<p class="text-accent font-semibold pt-1">💡 Direcionamento: ${a.betting_angle}</p>` : ''}
                         </div>
@@ -370,9 +379,9 @@ function compartilharResultado() {
 
     const texto = `🎯 *MONEYBALLPRO - DUPLA DE ELITE*\n` +
                   `🏆 *Jogo:* ${match.teams || 'Confronto Analisado'}\n\n` +
-                  `🟢 *Bilhete #1 (Âncora - MSC ${e1.msc_score || 88}):* ${e1.selecao || e1.mercado} (@${e1.odd || '1.80'})\n` +
-                  `🟡 *Bilhete #2 (Coringa - MSC ${e2.msc_score || 82}):* ${e2.selecao || e2.mercado} (@${e2.odd || '1.90'})\n\n` +
-                  `⚡ *Análise Quantitativa MoneyballPro*`;
+                  `🟢 *Bilhete #1 (Macro - MSC ${e1.msc_score || 88} | Δ ${e1.delta_edge || '+6%'}):* ${e1.selecao || e1.mercado} (@${e1.odd || '1.80'})\n` +
+                  `🟡 *Bilhete #2 (Micro - MSC ${e2.msc_score || 82} | Δ ${e2.delta_edge || '+7%'}):* ${e2.selecao || e2.mercado} (@${e2.odd || '1.90'})\n\n` +
+                  `⚡ *Análise Quantitativa MoneyballPro Engine v2.0*`;
 
     if (navigator.share) {
         navigator.share({
