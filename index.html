@@ -62,7 +62,14 @@
                 <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-bg/50 transition-all" onclick="document.getElementById('print-input').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
                     <p class="text-xs font-semibold text-slate-300">Clique para selecionar os prints (até 10 fotos)</p>
-                    <p class="text-[10px] text-slate-500">Otimização ultra-rápida ativada</p>
+                    
+                    <!-- AVISO DE ATENÇÃO PARA ODDS / MERCADOS -->
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-accent/10 border border-accent/30 text-[11px] text-accent font-medium mt-1">
+                        <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                        <span>Importante: inclua prints das <b>odds e linhas</b> dos mercados desejados.</span>
+                    </div>
+
+                    <p class="text-[10px] text-slate-500 pt-1">Otimização ultra-rápida ativada</p>
                     <input type="file" id="print-input" accept="image/*" multiple class="hidden" onchange="previewImagens(this)">
                 </div>
 
@@ -127,7 +134,7 @@
 <script>
 let imagensArquivosSelecionados = []; 
 let ultimoResultadoGlobal = null;
-let focoAtivo = "misto"; // Estado do foco da análise (padrão: misto)
+let focoAtivo = "misto";
 
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
@@ -174,7 +181,6 @@ function selecionarFoco(foco) {
     });
 }
 
-// REDIMENSIONAMENTO E COMPRESSÃO OTIMIZADOS PARA PRINTS
 function comprimirEConverterParaWebP(file, maxDimension = 1080, quality = 0.70) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -243,7 +249,6 @@ async function previewImagens(input) {
     container.classList.remove("hidden");
 }
 
-// FETCH RESILIENTE COM RETRY AUTOMÁTICO E TIMEOUT CONTROLADO
 async function fetchComTimeoutERetry(url, options, retries = 2, timeoutMs = 90000) {
     for (let i = 0; i < retries; i++) {
         const controller = new AbortController();
@@ -272,7 +277,7 @@ async function fetchComTimeoutERetry(url, options, retries = 2, timeoutMs = 9000
 async function processarPrintComEngine() {
     const formData = new FormData();
     formData.append("sport", sportAtivo);
-    formData.append("foco", focoAtivo); // <--- ENVIA O FOCO SELECIONADO PARA A API
+    formData.append("foco", focoAtivo);
 
     for (const file of imagensArquivosSelecionados) {
         try {
