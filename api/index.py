@@ -2,11 +2,21 @@ import os
 import json
 from typing import List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
 from groq import Groq
 
 app = FastAPI(title="MoneyballPro Engine", version="2.0.0")
+
+# Habilita CORS para liberar requisições do frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -21,49 +31,7 @@ def get_groq_client():
         raise HTTPException(status_code=500, detail="GROQ_API_KEY não configurada na Vercel.")
     return Groq(api_key=GROQ_API_KEY)
 
-@app.get("/api/health")
-def health_check():
-    return {
-        "status": "ok",
-        "engine": "MoneyballPro FastAPI v2.0",
-        "gemini_key_set": bool(GEMINI_API_KEY),
-        "groq_key_set": bool(GROQ_API_KEY)
-    }
-
-@app.post("/api/v1/analyze")
-async def analyze_tickets(
-    sport: str = Form(...),
-    files: List[UploadFile] = File(...)
-):
-    if not files:
-        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
-
-    # 1. OCR COM GEMINI 3.5 FLASH
-    gemini_client = get_gemini_client()
-    contents = []
-
-    for file in files:
-        file_bytes = await file.read()
-        mime_type = file.content_type or "image/jpeg"
-        part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
-        contents.append(part)
-
-    prompt_ocr = f"Extraia em PORTUGUÊS todo o texto, nomes de times, jogadores, confrontos, odds/cotações e linhas destas imagens para a modalidade: {sport}. Retorne apenas a transcrição direta do conteúdo presente nas imagens."
-    contents.append(prompt_ocr)
-
-    try:
-        res_ocr = gemini_client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=contents
-        )
-        texto_extraido_ocr = res_ocr.text.strip()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
-
-    # 2. ANÁLISE QUANTITATIVA RIGOROSA VIA GROQ (GPT-OSS 120B)
-    groq_client = get_groq_client()
-
-    def montar_system_prompt_mie2(sport: str) -> str:
+def montar_system_prompt_mie2(sport: str, foco: str = "misto") -> str:
     return f"""Você é o Moneyball Intelligence Engine (MIE v2.5), analista quantitativo de alta precisão para a modalidade {sport.upper()}.
 
 Você recebe um JSON estruturado com dados táticos, probabilísticos e odds reais capturadas. Sua missão é aplicar o funil quantitativo sobre essas estruturas de dados e devolver a melhor tomada de decisão no formato JSON padronizado.
@@ -111,6 +79,7 @@ Antes de calcular deltas de odds, classifique a partida do JSON recebido em EXCL
      * SELEÇÃO DE UNDER (Menos de): Avalie a linha estipulada no JSON. Se houver risco de teto ou ausência de folga estatística, descarte a entrada.
      * NUNCA invente linhas ou projeções que não existam no JSON de entrada.
 4. DIVERSIFICAÇÃO OU ADAPTAÇÃO DINÂMICA (FOCO DA REQUISIÇÃO):
+   - O foco atual da requisição é: '{foco}'.
    - Se o parâmetro "foco" for 'macro': Priorize a maior assimetria do Bloco MACRO.
    - Se o parâmetro "foco" for 'micro': Priorize a maior assimetria do Bloco MICRO.
    - Se o parâmetro "foco" for 'misto':
@@ -178,6 +147,52 @@ Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (se
   ]
 }}
 """
+
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "ok",
+        "engine": "MoneyballPro FastAPI v2.0",
+        "gemini_key_set": bool(GEMINI_API_KEY),
+        "groq_key_set": bool(GROQ_API_KEY)
+    }
+
+@app.post("/api/v1/analyze")
+async def analyze_tickets(
+    sport: str = Form(...),
+    foco: str = Form("misto"),
+    files: List[UploadFile] = File(...)
+):
+    if not files:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+
+    # 1. OCR COM GEMINI 3.5 FLASH
+    gemini_client = get_gemini_client()
+    contents = []
+
+    for file in files:
+        file_bytes = await file.read()
+        mime_type = file.content_type or "image/jpeg"
+        part = types.Part.from_bytes(data=file_bytes, mime_type=mime_type)
+        contents.append(part)
+
+    prompt_ocr = f"Extraia em PORTUGUÊS todo o texto, nomes de times, jogadores, confrontos, odds/cotações e linhas destas imagens para a modalidade: {sport}. Retorne apenas a transcrição direta do conteúdo presente nas imagens."
+    contents.append(prompt_ocr)
+
+    try:
+        res_ocr = gemini_client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=contents
+        )
+        texto_extraido_ocr = res_ocr.text.strip()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
+
+    # 2. ANÁLISE QUANTITATIVA VIA GROQ (GPT-OSS 120B)
+    groq_client = get_groq_client()
+    
+    # Gera o prompt dinâmico chamando a função
+    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco)
 
     try:
         completion = groq_client.chat.completions.create(
