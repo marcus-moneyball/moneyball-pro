@@ -53,8 +53,8 @@
             <p class="text-xs text-slate-500">Envie os prints do bilhete/partida ou cole o dossiê JSON para extrair as 2 maiores assimetrias puras do confronto.</p>
         </div>
 
-        <!-- SELEÇÃO DE ESPORTE (Apenas 3 Esportes) -->
-        <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
+        <!-- SELEÇÃO DE ESPORTE (Grade para 4 Esportes) -->
+        <div id="sport-tabs" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
 
         <!-- CAIXA PRINCIPAL DE ENTRADA -->
         <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
@@ -121,11 +121,12 @@ let modoEntradaAtivo = "print";
 let imagensArquivosSelecionados = []; 
 let ultimosDadosAnalise = null; 
 
-// Apenas os 3 esportes do escopo
+// Os 4 esportes do escopo
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
     beisebol: { label: "MLB (Beisebol)", icon: "fa-baseball" },
-    basquete: { label: "NBA/WNBA", icon: "fa-basketball" }
+    basquete: { label: "NBA/WNBA", icon: "fa-basketball" },
+    nfl: { label: "NFL (Fut. Amer.)", icon: "fa-football" }
 };
 
 let sportAtivo = "futebol";
@@ -137,8 +138,12 @@ document.addEventListener("DOMContentLoaded", () => {
 function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
     if (!container) return;
+    
+    // Grid adaptável: 2 colunas no mobile, 4 colunas em telas médias/grandes
+    container.className = "grid grid-cols-2 sm:grid-cols-4 gap-2";
+
     container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
-        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-4 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
         </button>
     `).join("");
