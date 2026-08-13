@@ -1,5 +1,5 @@
 fastapi
 python-multipart
 google-genai
-duckduckgo_search
+groq
 pydantic
