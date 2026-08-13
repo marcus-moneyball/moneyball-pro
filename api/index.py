@@ -38,7 +38,7 @@ async def analyze_tickets(
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    # 1. OCR RÁPIDO COM GEMINI
+    # 1. OCR COM GEMINI 3.5 FLASH
     gemini_client = get_gemini_client()
     contents = []
 
@@ -53,14 +53,14 @@ async def analyze_tickets(
 
     try:
         res_ocr = gemini_client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.5-flash",
             contents=contents
         )
         texto_extraido_ocr = res_ocr.text.strip()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro no OCR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # 2. ANÁLISE QUANTITATIVA VIA GROQ
+    # 2. ANÁLISE QUANTITATIVA VIA GROQ (GPT-OSS 120B)
     groq_client = get_groq_client()
 
     system_instruction_mie1 = f"""
@@ -82,7 +82,7 @@ Gere um JSON estrito conforme o schema abaixo com base nos dados fornecidos:
 
     try:
         completion = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_instruction_mie1},
                 {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}"}
