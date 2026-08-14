@@ -46,7 +46,7 @@
 
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.0 • Matrix & Safety Locks
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
@@ -59,12 +59,12 @@
         <!-- CAIXA PRINCIPAL DE ENTRADA -->
         <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-4">
             <div id="sec-print" class="space-y-3">
-                <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-bg/50 transition-all" onclick="document.getElementById('print-input').click()">
+                <div class="border-2 border-dashed border-base-border hover:border-accent/50 rounded-xl p-6 text-center space-y-2 cursor-pointer bg-base-card/50 transition-all" onclick="document.getElementById('print-input').click()">
                     <i class="fa-solid fa-cloud-arrow-up text-accent text-2xl"></i>
                     <p class="text-xs font-semibold text-slate-300">Clique para selecionar os prints (até 5 fotos)</p>
                     
                     <!-- AVISO DE ATENÇÃO PARA ODDS / MERCADOS -->
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-accent/10 border border-accent/30 text-[11px] text-accent font-medium mt-1">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-accent-soft border border-accent/30 text-[11px] text-accent font-medium mt-1">
                         <i class="fa-solid fa-triangle-exclamation text-xs"></i>
                         <span>Importante: inclua prints das <b>odds e linhas</b> dos mercados desejados.</span>
                     </div>
@@ -74,7 +74,7 @@
                 </div>
 
                 <div id="img-preview-container" class="hidden space-y-2">
-                    <div id="img-preview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-60 overflow-y-auto p-1 bg-base-bg/80 rounded-xl border border-base-border"></div>
+                    <div id="img-preview-grid" class="grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-60 overflow-y-auto p-1 bg-base-card rounded-xl border border-base-border"></div>
                     <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
                         <span id="img-counter" class="text-accent font-bold">0 / 5 fotos selecionadas</span>
                     </div>
@@ -91,7 +91,7 @@
             <button type="button" onclick="resetarEntrada()" class="py-3 bg-base-panel hover:bg-base-card border border-accent/40 rounded-xl text-accent font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg">
                 <i class="fa-solid fa-plus"></i> Nova Análise
             </button>
-            <button type="button" onclick="compartilharResultado()" class="py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg">
+            <button type="button" onclick="compartilharResultado()" class="py-3 bg-value/20 hover:bg-value/30 border border-value/40 text-value font-bold text-sm rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg">
                 <i class="fa-solid fa-share-nodes"></i> Compartilhar Dossiê
             </button>
         </div>
@@ -110,7 +110,7 @@
 <script>
 let imagensArquivosSelecionados = []; 
 let ultimoResultadoGlobal = null;
-const focoAtivo = "misto"; // Valor padrão para requisição ao backend
+const focoAtivo = "misto";
 
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
@@ -130,7 +130,7 @@ function buildSportTabs() {
     if (!container) return;
     
     container.innerHTML = Object.entries(MODULES).map(([key, mod]) => `
-        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent/15 border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+        <button type="button" onclick="selecionarSport('${key}')" id="tab-${key}" class="py-3 px-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${key === sportAtivo ? 'bg-accent-soft border-accent text-accent shadow-lg shadow-accent/10' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
             <i class="fa-solid ${mod.icon}"></i> ${mod.label}
         </button>
     `).join("");
@@ -188,7 +188,6 @@ async function previewImagens(input) {
     const files = Array.from(input.files);
     if (!files || files.length === 0) return;
 
-    // Limita estritamente a 5 fotos
     let arquivos = files.slice(0, 5);
     imagensArquivosSelecionados = arquivos;
 
@@ -333,7 +332,7 @@ function renderizarBilhetesFormatados(dados) {
             
             <!-- CABEÇALHO DO JOGO -->
             <div class="bg-base-panel border border-accent/40 rounded-2xl p-5 text-center space-y-1 shadow-lg">
-                <span class="text-[10px] font-mono text-accent bg-accent/10 px-3 py-1 rounded-full uppercase font-bold border border-accent/20">
+                <span class="text-[10px] font-mono text-accent bg-accent-soft px-3 py-1 rounded-full uppercase font-bold border border-accent/20">
                     ${match.sport || sportAtivo.toUpperCase()} • ${match.date || 'HOJE'}
                 </span>
                 <h2 class="text-2xl font-bold text-white tracking-wide pt-1">${match.teams || 'Confronto Analisado'}</h2>
@@ -344,25 +343,25 @@ function renderizarBilhetesFormatados(dados) {
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
                 <!-- BILHETE 1: MACRO -->
-                <div class="bg-base-panel border-2 border-emerald-500/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+                <div class="bg-base-panel border-2 border-value/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
                     <div class="flex justify-between items-start pt-1">
                         <div>
-                            <p class="text-xs text-emerald-400 font-mono font-bold uppercase tracking-wider">Bilhete #1 — Macro (Jogo)</p>
+                            <p class="text-xs text-value font-mono font-bold uppercase tracking-wider">Bilhete #1 — Macro (Jogo)</p>
                             <h3 class="text-xl font-bold text-white mt-0.5">${titulo1}</h3>
                         </div>
-                        <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg px-2.5 py-1 text-center">
-                            <span class="block text-[8px] font-bold uppercase tracking-widest text-emerald-300">MSC SCORE</span>
+                        <div class="bg-value/10 border border-value/30 text-value rounded-lg px-2.5 py-1 text-center">
+                            <span class="block text-[8px] font-bold uppercase tracking-widest text-value/80">MSC SCORE</span>
                             <span class="text-sm font-black font-mono">${score1}/100</span>
                         </div>
                     </div>
-                    <div class="bg-base-bg p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
+                    <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
                         <div class="flex justify-between text-slate-400">
                             <span>Odd Estimada:</span>
-                            <b class="text-emerald-400 font-mono">@${e1.odd || '1.80'}</b>
+                            <b class="text-value font-mono">@${e1.odd || '1.80'}</b>
                         </div>
                         <div class="flex justify-between text-slate-400">
                             <span>Edge Mínimo (&Delta;):</span>
-                            <b class="text-emerald-300 font-mono">${delta1}</b>
+                            <b class="text-value/90 font-mono">${delta1}</b>
                         </div>
                         <div class="flex justify-between text-slate-400">
                             <span>Stake Recomendada:</span>
@@ -379,12 +378,12 @@ function renderizarBilhetesFormatados(dados) {
                             <p class="text-xs text-accent font-mono font-bold uppercase tracking-wider">Bilhete #2 — Micro (Atleta/Produção)</p>
                             <h3 class="text-xl font-bold text-white mt-0.5">${titulo2}</h3>
                         </div>
-                        <div class="bg-accent/10 border border-accent/30 text-accent rounded-lg px-2.5 py-1 text-center">
+                        <div class="bg-accent-soft border border-accent/30 text-accent rounded-lg px-2.5 py-1 text-center">
                             <span class="block text-[8px] font-bold uppercase tracking-widest text-accent/80">MSC SCORE</span>
                             <span class="text-sm font-black font-mono">${score2}/100</span>
                         </div>
                     </div>
-                    <div class="bg-base-bg p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
+                    <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
                         <div class="flex justify-between text-slate-400">
                             <span>Odd Estimada:</span>
                             <b class="text-accent font-mono">@${e2.odd || '1.90'}</b>
@@ -410,7 +409,7 @@ function renderizarBilhetesFormatados(dados) {
                 </h4>
                 <div class="space-y-2">
                     ${asym.map(a => `
-                        <div class="bg-base-bg p-3 rounded-xl border border-base-border text-xs space-y-1">
+                        <div class="bg-base-card p-3 rounded-xl border border-base-border text-xs space-y-1">
                             <b class="text-slate-200">${a.clash || 'Confronto Analisado'}</b>
                             <p class="text-slate-400 leading-relaxed">${a.statistical_evidence || ''}</p>
                             ${a.betting_angle ? `<p class="text-accent font-semibold pt-1">💡 Direcionamento: ${a.betting_angle}</p>` : ''}
@@ -470,7 +469,7 @@ function resetarEntrada() {
 }
 
 function alertaErro(msg) {
-    return `<div class="bg-red-950/40 border border-red-900 text-red-300 text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
+    return `<div class="bg-risk/10 border border-risk/30 text-risk text-sm p-4 rounded-xl mb-5">⚠️ ${msg}</div>`;
 }
 </script>
 </body>
