@@ -66,16 +66,16 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 [3. FILTROS DE SEGURANÇA E REGRA DOS DOIS MELHORES EDGES]
 1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min):
    - A assimetria (Δ) é: Δ = Prob_Modelo - Prob_Odd.
-   - SÓ É ELEGÍVEL PARA A DUPLA QUALQUER SELEÇÃO COM Δ >= 5.0%.
-   - Se 5.0% <= Δ < 8.0%: Stake recomendada 1.0u.
-   - Se Δ >= 8.0%: Stake recomendada de 1.5u a 2.0u.
+   - SÓ É ELEGÍVEL PARA A DUPLA QUALQUER SELEÇÃO COM Δ >= 2.5%.
+   - Se 2.5% <= Δ < 6.0%: Stake recomendada 0.5u.
+   - Se Δ >= 6.0%: Stake recomendada de 1.0u a 1.5u.
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
    - Entrada 1: A maior assimetria validada (Δ >= 3.0%) entre os mercados permitidos.
    - Entrada 2: A segunda maior assimetria validada (Δ >= 2.5%) entre os mercados permitidos.
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
-   - Se houver apenas 1 mercado elegível com Δ >= 5.0% em todas as fotos, retorne "entrada_2" como null.
+   - Se houver apenas 1 mercado elegível com Δ >= 2.5% em todas as fotos, retorne "entrada_2" como null.
 
 3. JANELA DE ODDS E NORMALIZAÇÃO AMERICANA:
    - Cotações entre 1.60 e 2.80 (Exceção MLB/F5 e NFL ML: até 3.00 se Δ >= 10.0%).
