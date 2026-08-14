@@ -47,7 +47,7 @@
         <!-- HEADER -->
         <div class="text-center space-y-1.5 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.0 • Matrix & Safety Locks
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.5 • Matrix & Safety Locks
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
             <p class="text-xs text-slate-500">Varredura quantitativa com Edge Mínimo (&Delta; &ge; 5%) e Janela de Odds (1.60 a 2.80).</p>
@@ -294,6 +294,7 @@ async function executarAnalise() {
 }
 
 function formatarTituloEntrada(entrada) {
+    if (!entrada) return "Seleção Específica";
     let selecao = (entrada.selecao || "").trim();
     let mercado = (entrada.mercado || "").trim();
 
@@ -314,18 +315,102 @@ function renderizarBilhetesFormatados(dados) {
     const match = dados.match_info || {};
     const dupla = dados.dupla_de_elite || {};
     
-    const e1 = dupla.entrada_1_macro || {};
-    const e2 = dupla.entrada_2_micro || {};
+    // Suporta o novo padrão (entrada_1 / entrada_2) com suporte ao legado caso necessário
+    const e1 = dupla.entrada_1 || dupla.entrada_1_macro || null;
+    const e2 = dupla.entrada_2 || dupla.entrada_2_micro || null;
     const asym = dados.key_asymmetries || [];
 
-    const titulo1 = formatarTituloEntrada(e1);
-    const titulo2 = formatarTituloEntrada(e2);
+    // RENDERIZAR CARD 1
+    let htmlEntrada1 = '';
+    if (e1 && (e1.selecao || e1.mercado)) {
+        const titulo1 = formatarTituloEntrada(e1);
+        const score1 = e1.msc_score || 88;
+        const delta1 = e1.delta_edge || "+5.0%";
+        const cat1 = (e1.categoria || "OPORTUNIDADE").toUpperCase();
 
-    const score1 = e1.msc_score || 88;
-    const score2 = e2.msc_score || 82;
+        htmlEntrada1 = `
+            <div class="bg-base-panel border-2 border-value/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-start pt-1">
+                    <div>
+                        <p class="text-xs text-value font-mono font-bold uppercase tracking-wider">Bilhete #1 — ${cat1}</p>
+                        <h3 class="text-xl font-bold text-white mt-0.5">${titulo1}</h3>
+                    </div>
+                    <div class="bg-value/10 border border-value/30 text-value rounded-lg px-2.5 py-1 text-center">
+                        <span class="block text-[8px] font-bold uppercase tracking-widest text-value/80">MSC SCORE</span>
+                        <span class="text-sm font-black font-mono">${score1}/100</span>
+                    </div>
+                </div>
+                <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Odd Estimada:</span>
+                        <b class="text-value font-mono">@${e1.odd || '1.80'}</b>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Edge Mínimo (&Delta;):</span>
+                        <b class="text-value/90 font-mono">${delta1}</b>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Stake Recomendada:</span>
+                        <b class="text-white font-mono">${e1.stake_recomendada || '1.0u'} (${e1.confiabilidade || 'ALTA'})</b>
+                    </div>
+                </div>
+                ${e1.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e1.motivo}</p>` : ''}
+            </div>
+        `;
+    } else {
+        htmlEntrada1 = `
+            <div class="bg-base-panel border border-risk/40 rounded-2xl p-5 text-center text-slate-400 space-y-2">
+                <p class="text-xs text-risk font-bold">⚠️ Nenhuma oportunidade elegível encontrada para o Bilhete #1 (Δ ≥ 5.0%).</p>
+            </div>
+        `;
+    }
 
-    const delta1 = e1.delta_edge || "+6.5%";
-    const delta2 = e2.delta_edge || "+7.2%";
+    // RENDERIZAR CARD 2
+    let htmlEntrada2 = '';
+    if (e2 && (e2.selecao || e2.mercado)) {
+        const titulo2 = formatarTituloEntrada(e2);
+        const score2 = e2.msc_score || 82;
+        const delta2 = e2.delta_edge || "+5.0%";
+        const cat2 = (e2.categoria || "OPORTUNIDADE").toUpperCase();
+
+        htmlEntrada2 = `
+            <div class="bg-base-panel border-2 border-accent/60 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+                <div class="flex justify-between items-start pt-1">
+                    <div>
+                        <p class="text-xs text-accent font-mono font-bold uppercase tracking-wider">Bilhete #2 — ${cat2}</p>
+                        <h3 class="text-xl font-bold text-white mt-0.5">${titulo2}</h3>
+                    </div>
+                    <div class="bg-accent-soft border border-accent/30 text-accent rounded-lg px-2.5 py-1 text-center">
+                        <span class="block text-[8px] font-bold uppercase tracking-widest text-accent/80">MSC SCORE</span>
+                        <span class="text-sm font-black font-mono">${score2}/100</span>
+                    </div>
+                </div>
+                <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Odd Estimada:</span>
+                        <b class="text-accent font-mono">@${e2.odd || '1.90'}</b>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Edge Mínimo (&Delta;):</span>
+                        <b class="text-accent/90 font-mono">${delta2}</b>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Stake Recomendada:</span>
+                        <b class="text-white font-mono">${e2.stake_recomendada || '1.0u'} (${e2.confiabilidade || 'ALTA'})</b>
+                    </div>
+                </div>
+                ${e2.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e2.motivo}</p>` : ''}
+            </div>
+        `;
+    } else {
+        htmlEntrada2 = `
+            <div class="bg-base-panel border border-base-border rounded-2xl p-5 flex flex-col justify-center items-center text-center space-y-2 min-h-[200px]">
+                <i class="fa-solid fa-shield-halved text-slate-500 text-2xl mb-1"></i>
+                <p class="text-xs font-bold text-slate-300">Sem Segunda Entrada Validada</p>
+                <p class="text-[11px] text-slate-500 max-w-xs">Apenas 1 mercado atingiu a margem de segurança de Edge (Δ ≥ 5.0%) nos prints analisados.</p>
+            </div>
+        `;
+    }
 
     display.innerHTML = `
         <div class="space-y-6 fade-up">
@@ -336,73 +421,17 @@ function renderizarBilhetesFormatados(dados) {
                     ${match.sport || sportAtivo.toUpperCase()} • ${match.date || 'HOJE'}
                 </span>
                 <h2 class="text-2xl font-bold text-white tracking-wide pt-1">${match.teams || 'Confronto Analisado'}</h2>
-                <p class="text-xs text-slate-400">${dados.perfil_geral || 'Análise Quantitativa Moneyball Engine v2.0'}</p>
+                <p class="text-xs text-slate-400">${dados.perfil_geral || 'Análise Quantitativa Moneyball Engine v2.5'}</p>
             </div>
 
             <!-- CARDS DA DUPLA DE ELITE -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                <!-- BILHETE 1: MACRO -->
-                <div class="bg-base-panel border-2 border-value/40 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
-                    <div class="flex justify-between items-start pt-1">
-                        <div>
-                            <p class="text-xs text-value font-mono font-bold uppercase tracking-wider">Bilhete #1 — Macro (Jogo)</p>
-                            <h3 class="text-xl font-bold text-white mt-0.5">${titulo1}</h3>
-                        </div>
-                        <div class="bg-value/10 border border-value/30 text-value rounded-lg px-2.5 py-1 text-center">
-                            <span class="block text-[8px] font-bold uppercase tracking-widest text-value/80">MSC SCORE</span>
-                            <span class="text-sm font-black font-mono">${score1}/100</span>
-                        </div>
-                    </div>
-                    <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
-                        <div class="flex justify-between text-slate-400">
-                            <span>Odd Estimada:</span>
-                            <b class="text-value font-mono">@${e1.odd || '1.80'}</b>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Edge Mínimo (&Delta;):</span>
-                            <b class="text-value/90 font-mono">${delta1}</b>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Stake Recomendada:</span>
-                            <b class="text-white font-mono">${e1.stake_recomendada || '1.0u'} (${e1.confiabilidade || 'ALTA'})</b>
-                        </div>
-                    </div>
-                    ${e1.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e1.motivo}</p>` : ''}
-                </div>
-
-                <!-- BILHETE 2: MICRO -->
-                <div class="bg-base-panel border-2 border-accent/60 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
-                    <div class="flex justify-between items-start pt-1">
-                        <div>
-                            <p class="text-xs text-accent font-mono font-bold uppercase tracking-wider">Bilhete #2 — Micro (Atleta/Produção)</p>
-                            <h3 class="text-xl font-bold text-white mt-0.5">${titulo2}</h3>
-                        </div>
-                        <div class="bg-accent-soft border border-accent/30 text-accent rounded-lg px-2.5 py-1 text-center">
-                            <span class="block text-[8px] font-bold uppercase tracking-widest text-accent/80">MSC SCORE</span>
-                            <span class="text-sm font-black font-mono">${score2}/100</span>
-                        </div>
-                    </div>
-                    <div class="bg-base-card p-3 rounded-xl border border-base-border space-y-1.5 text-xs">
-                        <div class="flex justify-between text-slate-400">
-                            <span>Odd Estimada:</span>
-                            <b class="text-accent font-mono">@${e2.odd || '1.90'}</b>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Edge Mínimo (&Delta;):</span>
-                            <b class="text-accent/90 font-mono">${delta2}</b>
-                        </div>
-                        <div class="flex justify-between text-slate-400">
-                            <span>Stake Recomendada:</span>
-                            <b class="text-white font-mono">${e2.stake_recomendada || '1.0u'} (${e2.confiabilidade || 'ALTA'})</b>
-                        </div>
-                    </div>
-                    ${e2.motivo ? `<p class="text-xs text-slate-400 leading-relaxed">${e2.motivo}</p>` : ''}
-                </div>
-
+                ${htmlEntrada1}
+                ${htmlEntrada2}
             </div>
 
             <!-- EVIDÊNCIAS DE ASSIMETRIA -->
+            ${asym && asym.length > 0 ? `
             <div class="bg-base-panel border border-base-border rounded-2xl p-5 space-y-3">
                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                     <i class="fa-solid fa-magnifying-glass-chart text-accent"></i> Evidências Quantitativas e Trava de Margem
@@ -416,7 +445,7 @@ function renderizarBilhetesFormatados(dados) {
                         </div>
                     `).join('')}
                 </div>
-            </div>
+            </div>` : ''}
 
         </div>
     `;
@@ -427,21 +456,31 @@ function compartilharResultado() {
 
     const match = ultimoResultadoGlobal.match_info || {};
     const dupla = ultimoResultadoGlobal.dupla_de_elite || {};
-    const e1 = dupla.entrada_1_macro || {};
-    const e2 = dupla.entrada_2_micro || {};
+    const e1 = dupla.entrada_1 || dupla.entrada_1_macro || null;
+    const e2 = dupla.entrada_2 || dupla.entrada_2_micro || null;
 
-    const t1 = formatarTituloEntrada(e1);
-    const t2 = formatarTituloEntrada(e2);
+    let texto = `🎯 *MONEYBALLPRO - SELEÇÕES DE ELITE*\n` +
+                `🏆 *Jogo:* ${match.teams || 'Confronto Analisado'}\n\n`;
 
-    const texto = `🎯 *MONEYBALLPRO - DUPLA DE ELITE*\n` +
-                  `🏆 *Jogo:* ${match.teams || 'Confronto Analisado'}\n\n` +
-                  `🟢 *Bilhete #1 (Macro - MSC ${e1.msc_score || 88} | Δ ${e1.delta_edge || '+6%'}):* ${t1} (@${e1.odd || '1.80'})\n` +
-                  `🟡 *Bilhete #2 (Micro - MSC ${e2.msc_score || 82} | Δ ${e2.delta_edge || '+7%'}):* ${t2} (@${e2.odd || '1.90'})\n\n` +
-                  `⚡ *Análise Quantitativa MoneyballPro Engine v2.0*`;
+    if (e1 && (e1.selecao || e1.mercado)) {
+        const t1 = formatarTituloEntrada(e1);
+        const cat1 = (e1.categoria || 'OPORTUNIDADE').toUpperCase();
+        texto += `🟢 *Bilhete #1 (${cat1} - MSC ${e1.msc_score || 88} | Δ ${e1.delta_edge || '+5%'}):* ${t1} (@${e1.odd || '1.80'})\n`;
+    }
+
+    if (e2 && (e2.selecao || e2.mercado)) {
+        const t2 = formatarTituloEntrada(e2);
+        const cat2 = (e2.categoria || 'OPORTUNIDADE').toUpperCase();
+        texto += `🟡 *Bilhete #2 (${cat2} - MSC ${e2.msc_score || 82} | Δ ${e2.delta_edge || '+5%'}):* ${t2} (@${e2.odd || '1.90'})\n\n`;
+    } else {
+        texto += `🟡 *Bilhete #2:* Sem 2ª entrada com Edge ≥ 5.0%\n\n`;
+    }
+
+    texto += `⚡ *Análise Quantitativa MoneyballPro Engine v2.5*`;
 
     if (navigator.share) {
         navigator.share({
-            title: 'MoneyballPro - Dupla de Elite',
+            title: 'MoneyballPro - Seleções de Elite',
             text: texto
         }).catch(() => {});
     } else {
