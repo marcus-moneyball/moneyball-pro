@@ -181,7 +181,7 @@ async def analyze_tickets(
 
     try:
         res_ocr = gemini_client.models.generate_content(
-            model="gemini-3.5-flash",
+            model="gemini-3.5-flash-lite",
             contents=contents
         )
         texto_extraido_ocr = res_ocr.text.strip()
