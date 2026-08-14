@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from typing import List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,14 @@ app.add_middleware(
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+# DICIONÁRIO NECESSÁRIO PARA A FUNÇÃO montar_system_prompt_mie2
+REGRAS_ESPORTES = {
+    "futebol": "Mercados: Vencedor do Jogo (1X2), Both Teams to Score (BTTS), Over/Under Gols, Escanteios, Cartões e Mercado de Jogadores (Chutes/Gols).",
+    "basquete": "Mercados: Vencedor (Moneyline), Handicap (Spread), Total de Pontos (Over/Under), Player Props (Pontos, Rebotes, Assistências, Bolas de 3).",
+    "beisebol": "Mercados: Moneyline, Run Line (Handicap), Total de Runs (Over/Under), F5 (Primeiras 5 Entradas), Strikeouts do Pitcher, Hits de Rebatidor.",
+    "nfl": "Mercados: Vencedor (Moneyline), Spread (Handicap), Total de Pontos, Yardas de Passe/Corrida/Recepção, Touchdown Qualquer Momento."
+}
 
 def get_gemini_client():
     if not GEMINI_API_KEY:
@@ -177,8 +186,6 @@ async def analyze_tickets(
 
     # 2. ANÁLISE QUANTITATIVA VIA GROQ (GPT-OSS 120B)
     groq_client = get_groq_client()
-    
-    # Gera o prompt dinâmico chamando a função
     system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco)
 
     try:
@@ -193,7 +200,16 @@ async def analyze_tickets(
         )
 
         content_str = completion.choices[0].message.content.strip()
+
+        # Limpeza defensiva de blocos Markdown (evita crash no json.loads)
+        if "```" in content_str:
+            content_str = re.sub(r"^```(?:json)?\s*", "", content_str)
+            content_str = re.sub(r"\s*```$", "", content_str)
+            content_str = content_str.strip()
+
         return json.loads(content_str)
 
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Erro de formatação JSON retornado pela IA: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no processamento (Groq): {str(e)}")
