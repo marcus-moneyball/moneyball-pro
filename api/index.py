@@ -49,7 +49,7 @@ def montar_system_prompt_mie2(sport: str, foco: str = "misto") -> str:
 Você recebe a transcrição OCR de 2 a 5 prints contendo dados táticos, probabilísticos e odds reais capturadas. Sua missão é aplicar o funil quantitativo sobre TODOS os mercados presentes nos prints e devolver as 2 melhores tomadas de decisão gerais no formato JSON padronizado.
 
 [1. MATRIZ OFICIAL DE MERCADOS]
-Analise livremente qualquer mercado capturado nos prints dentro da modalidade {sport.upper()}:
+Analise livremente os mercados permitidos dentro da modalidade {sport.upper()}:
 
 {catalogo_esporte}
 
@@ -72,9 +72,8 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
-   - Entrada 1: A maior assimetria validada (Δ >= 5.0%) entre TODOS os mercados extraídos (pode ser Macro ou Micro).
-   - Entrada 2: A segunda maior assimetria validada (Δ >= 5.0%) entre TODOS os mercados extraídos (pode ser Macro ou Micro).
-   - NÃO FORCE que uma entrada seja de atleta. Se as duas melhores oportunidades forem do jogo (ex: Vencedor + Total de Gols/Pontos), RETORNE AS DUAS DO JOGO.
+   - Entrada 1: A maior assimetria validada (Δ >= 5.0%) entre os mercados permitidos.
+   - Entrada 2: A segunda maior assimetria validada (Δ >= 5.0%) entre os mercados permitidos.
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
    - Se houver apenas 1 mercado elegível com Δ >= 5.0% em todas as fotos, retorne "entrada_2" como null.
 
@@ -83,18 +82,32 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
    - Se as odds no JSON estiverem em formato americano (+120, -150), CONVERTA para decimal na saída.
 
 4. REGRA DO NOME EXPLÍCITO:
-   - Identifique nominalmente o atleta/equipe e a linha exata. Ex: "Las Vegas Aces — Vencedor", "A'ja Wilson — Over 20.5 Pontos".
+   - Identifique nominalmente o atleta/equipe e a linha exata. Ex: "Las Vegas Aces — Margem", "A'ja Wilson — Over 20.5 Pontos".
 
 ------------------------------------------------
 
-[4. LINGUAGEM E TOM DE VOZ]
+[4. REGRAS DE BLOQUEIO E PROTEÇÃO - MONEYBALL 2.0]
+1. BLOQUEIO TOTAL DE MONEYLINE (ML):
+   - O mercado de Vencedor (Moneyline / 1x2 / ML) está ESTRITAMENTE PROIBIDO. Sob nenhuma circunstância o sistema deve sugerir vitória seca de equipes. Foque apenas em mercados de volume, totais, handicaps ou estatísticas.
+2. FILTRO ANTI-ESTRELA (ODDS ESMAGADAS):
+   - Proibido sugerir apostas em favoritos com cotações abaixo de @1.50, a menos que venham acompanhadas de uma linha de segurança robusta (como Handicap Asiático ou Escanteios) validada pelo Delta.
+3. PROTEÇÃO CONTRA JOGOS TRUNCADOS (GOLS E PROPS DE FUTEBOL):
+   - No Futebol, NUNCA sugira "Mais de 2.5 Gols" (Over 2.5) se houver indício de jogo travado ou média baixa; priorize linhas de segurança (ex: Mais de 1.5 ou Escanteios).
+   - No Futebol, é ESTRITAMENTE PROIBIDO sugerir props individuais de atletas (chutes, passes, desarmes), devido à alta variância. Props individuais são permitidas apenas em esportes americanos (NBA/NFL/MLB).
+4. ISOLAMENTO DE CONTEXTO E VALIDAÇÃO CRUZADA DE ESPORTE:
+   - Trate cada print de forma totalmente independente. NÃO misture dados de jogos diferentes.
+   - Valide se o esporte real identificado no print bate com o esporte selecionado na interface ({sport.upper()}). Se houver divergência (ex: usuário selecionou Futebol mas enviou Basquete), INTERROMPA o fluxo imediatamente e retorne status de erro por incompatibilidade de esporte, sem tentar adivinhar resultados.
+
+------------------------------------------------
+
+[5. LINGUAGEM E TOM DE VOZ]
 - Comunique-se de forma SIMPLES, DIRETA e PRÁTICA.
 - Conecte o dado numérico à realidade tática do jogo de forma convincente.
 
 ------------------------------------------------
 
-[5. REGRA DE RETORNO JSON STRICT]
-Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (sem marcações markdown antes ou depois, apenas o JSON bruto):
+[6. REGRA DE RETORNO JSON STRICT]
+Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (sem marcações markdown antes ou depois, apenas o JSON bruto). Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` com "erro_divergencia_esporte" e detalhe no `perfil_geral`:
 
 {{
   "perfil_geral": "Síntese quantitativa da partida e leitura tática...",
