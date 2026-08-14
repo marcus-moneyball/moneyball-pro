@@ -82,8 +82,11 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
    - Cotações entre 1.60 e 2.80 (Exceção MLB/F5 e NFL ML: até 3.00 se Δ >= 10.0%).
    - Se as odds no JSON estiverem em formato americano (+120, -150), CONVERTA para decimal na saída.
 
-4. REGRA DO NOME EXPLÍCITO:
-   - Identifique nominalmente o atleta/equipe e a linha exata. Ex: "Las Vegas Aces — Margem", "A'ja Wilson — Over 20.5 Pontos".
+4. REGRA DO NOME EXPLÍCITO E COMPLETO:
+   - É ESTRITAMENTE PROIBIDO retornar termos soltos como "Sim", "Não", "Mais" ou "Menos".
+   - O campo "seleção" deve conter o nome completo e claro do mercado atrelado à escolha. 
+   - Exemplo ERRADO: "Sim" ou "Mais de 2.5".
+   - Exemplo CORRETO: "Ambas as Equipes Marcam — Sim" ou "Total de Gols — Mais de 2.5 Gols".
 
 ------------------------------------------------
 
