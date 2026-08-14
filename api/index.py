@@ -72,8 +72,8 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
-   - Entrada 1: A maior assimetria validada (Δ >= 5.0%) entre os mercados permitidos.
-   - Entrada 2: A segunda maior assimetria validada (Δ >= 5.0%) entre os mercados permitidos.
+   - Entrada 1: A maior assimetria validada (Δ >= 3.0%) entre os mercados permitidos.
+   - Entrada 2: A segunda maior assimetria validada (Δ >= 2.5%) entre os mercados permitidos.
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
    - Se houver apenas 1 mercado elegível com Δ >= 5.0% em todas as fotos, retorne "entrada_2" como null.
 
