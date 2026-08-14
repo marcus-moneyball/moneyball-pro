@@ -74,6 +74,7 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
    - Entrada 1: A maior assimetria validada (Δ >= 3.0%) entre os mercados permitidos.
    - Entrada 2: A segunda maior assimetria validada (Δ >= 2.5%) entre os mercados permitidos.
+   - UNICIDADE DE MERCADO: É ESTRITAMENTE PROIBIDO sugerir duas entradas do mesmo mercado base (ex: não pode repetir "Total de Gols" para as duas entradas, mesmo que sejam linhas diferentes como 1.5 e 2.5). A Entrada 1 e a Entrada 2 devem ser de mercados DIFERENTES (ex: uma de Gols, outra de Escanteios ou Handicap).
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
    - Se houver apenas 1 mercado elegível com Δ >= 2.5% em todas as fotos, retorne "entrada_2" como null.
 
