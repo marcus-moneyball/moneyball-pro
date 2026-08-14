@@ -207,7 +207,7 @@ async def analyze_tickets(
 
     try:
         completion = groq_client.chat.completions.create(
-            model="openai/gpt-oss-120b",
+            model="qwen/qwen3.6-27b",
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
                 {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}"}
