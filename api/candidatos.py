@@ -3,6 +3,9 @@ Monta os candidatos de aposta a partir do lambda (esperado_partida) calculado
 pelo Python e das linhas/odds reais extraídas dos prints. Essa é a ponte entre
 a camada de cálculo (calc.py) e o texto que vai pro MIE2 (Groq).
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from typing import Optional
 from calc import (
