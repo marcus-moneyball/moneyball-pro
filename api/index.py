@@ -204,13 +204,13 @@ PERFIS_ANALISTA = {
         ],
     },
     "cris": {
-        "delta_min": 5.0,
-        "odd_min": 1.60,
+        "delta_min": 4.0,
+        "odd_min": 1.20,
         "odd_max": 2.80,
         "faixas_stake": [
-            (5.0, 7.5, "1.0u"),
-            (7.5, 10.0, "1.5u"),
-            (10.0, float("inf"), "2.0u"),
+            (4.0, 6.5, "1.0u"),
+            (6.5, 9.0, "1.5u"),
+            (9.0, float("inf"), "2.0u"),
         ],
     },
 }
