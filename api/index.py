@@ -8,7 +8,14 @@ from google import genai
 from google.genai import types
 from groq import Groq
 
-app = FastAPI(title="MoneyballPro Engine", version="2.1.0")
+# Camada de cálculo determinístico (Poisson + Kelly fracionado).
+# Importado como módulo Python normal dentro do MESMO app FastAPI —
+# de propósito, para que só exista UM arquivo servindo a pasta api/
+# (este). Rodar isso como uma segunda função Flask separada foi o que
+# causou o 405: dois entrypoints competindo pela mesma rota base.
+from mie2_calc import calcular_dossie
+
+app = FastAPI(title="MoneyballPro Engine", version="2.2.0")
 
 # Habilita CORS para liberar requisições do frontend
 app.add_middleware(
@@ -271,6 +278,23 @@ def health_check():
     }
 
 
+@app.post("/api/v1/calc")
+async def calcular_mercados(payload: dict):
+    """
+    Camada de cálculo determinístico (Poisson + Kelly fracionado), sem LLM.
+    Espera: { "mercados": [ {...}, {...} ] } — mesmo formato que o Léo
+    definiu em mie2_calc.py. Cada mercado é calculado isoladamente; falta
+    de dado em um não derruba os outros.
+    """
+    mercados = payload.get("mercados")
+    if not mercados or not isinstance(mercados, list):
+        raise HTTPException(
+            status_code=400,
+            detail='Corpo inválido. Esperado: { "mercados": [ {...}, {...} ] }'
+        )
+    return {"resultados": calcular_dossie(mercados)}
+
+
 @app.post("/api/v1/analyze")
 async def analyze_tickets(
     sport: str = Form(...),
@@ -296,12 +320,20 @@ async def analyze_tickets(
     contents.append(prompt_ocr)
 
     try:
-       res_ocr = gemini_client.models.generate_content(
-    model="gemini-3.5-flash-lite",
-    contents=contents,
-    config=types.GenerateContentConfig(temperature=0)
-)
+        res_ocr = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=contents,
+            # temperature=0: a etapa de OCR é puramente extrativa (ler o que já
+            # está escrito na imagem). Sem isso, o mesmo print pode ser lido de
+            # formas diferentes em execuções diferentes — foi o que causou a
+            # odd @2.27 vs @1.65 para o mesmo mercado no mesmo print.
+            config=types.GenerateContentConfig(temperature=0)
+        )
         texto_extraido_ocr = res_ocr.text.strip()
+        # Log de auditoria: se uma odd/linha parecer errada depois, dá pra
+        # conferir aqui se o erro nasceu na leitura do print (OCR) ou na
+        # análise em cima do texto (Groq). Aparece nos logs da Vercel.
+        print(f"[OCR DEBUG] sport={sport} analyst={analyst}\n{texto_extraido_ocr}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
