@@ -68,9 +68,9 @@ def calcular_ev(prob_real: float, odd_decimal: float):
     return round((prob_real * odd_decimal) - 1, 4)
 
 
-def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[str]:
+def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[float]:
     """
-    Calcula o Critério de Kelly Fracionado e traduz o resultado em unidades reais (ex: '1.5u').
+    Calcula o Critério de Kelly Fracionado e retorna o resultado em número decimal limpo (ex: 1.5).
     """
     if prob_real is None or odd_decimal is None or odd_decimal <= 1:
         return None
@@ -88,10 +88,10 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
     # Aplicar o teto de segurança
     stake_final = min(teto_unidades, max(0.5, unidades_calculadas))
     
-    # Arredondar para múltiplos de 0.25u
-    stake_arredondada = round(stake_final * 4) / 4
+    # Arredondar para múltiplos de 0.25 e retornar float
+    stake_arredondada = round(round(stake_final * 4) / 4, 2)
     
-    return f"{stake_arredondada:.1f}u"
+    return float(stake_arredondada)
 
 
 def estimar_lambda(mercado: dict) -> Optional[float]:
