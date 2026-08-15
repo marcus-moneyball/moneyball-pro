@@ -236,7 +236,7 @@ async def analyze_tickets(
 
     # 2. ANÁLISE QUANTITATIVA VIA GROQ COM GPT-OSS-120B
     groq_client = get_groq_client()
-    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
+    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, analyst=analyst)
 
     try:
         completion = groq_client.chat.completions.create(
