@@ -297,9 +297,10 @@ async def analyze_tickets(
 
     try:
         res_ocr = gemini_client.models.generate_content(
-            model="gemini-3.1-flash-lite",  # Ou o modelo flash atual que você usa no seu ambiente
-            contents=contents
-        )
+    model="gemini-3.5-flash-lite",
+    contents=contents
+    config=types.GenerateContentConfig(temperature=0)
+)
         texto_extraido_ocr = res_ocr.text.strip()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
