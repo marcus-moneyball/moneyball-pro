@@ -171,12 +171,12 @@
 <script>
 let imagensArquivosSelecionados = [];
 let ultimoResultadoGlobal = null;
-const focoAtivo = "misto";
 
 let sportAtivo = "futebol";
 let analistaAtivo = "carlos";
 let usosHoje = 0;
 const LIMITE_DIARIO = 5;
+const CHAVE_USO_DIARIO = "mb_uso_diario"; // { data: "YYYY-MM-DD", contagem: N }
 
 // ============================================================
 // MODO DESENVOLVEDOR
@@ -204,8 +204,47 @@ const MODULES = {
 
 document.addEventListener("DOMContentLoaded", () => {
     buildSportTabs();
+    carregarUsoDoDia();
     atualizarContadorUso();
 });
+
+// Data local do navegador em YYYY-MM-DD, pra comparar "é o mesmo dia?"
+function obterDataLocalYYYYMMDD() {
+    const agora = new Date();
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, "0");
+    const dia = String(agora.getDate()).padStart(2, "0");
+    return `${ano}-${mes}-${dia}`;
+}
+
+// Lê o uso salvo no localStorage. Se a data salva for de um dia anterior
+// (comparando com a data local atual), reseta a contagem pra 0 -- reset
+// automático à meia-noite, sem precisar de timer nem servidor.
+function carregarUsoDoDia() {
+    const hoje = obterDataLocalYYYYMMDD();
+    let registro = null;
+    try {
+        registro = JSON.parse(localStorage.getItem(CHAVE_USO_DIARIO) || "null");
+    } catch (e) {
+        registro = null;
+    }
+
+    if (!registro || registro.data !== hoje) {
+        registro = { data: hoje, contagem: 0 };
+        localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify(registro));
+    }
+
+    usosHoje = registro.contagem;
+}
+
+// Persiste +1 uso no dia de hoje. Em modo dev, não persiste --
+// pra não "gastar" cota real enquanto está testando.
+function registrarUsoDoDia() {
+    if (isDevMode) return;
+    const hoje = obterDataLocalYYYYMMDD();
+    usosHoje += 1;
+    localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify({ data: hoje, contagem: usosHoje }));
+}
 
 function buildSportTabs() {
     const container = document.getElementById("sport-tabs");
@@ -283,7 +322,7 @@ function atualizarContadorUso() {
     const restantes = LIMITE_DIARIO - usosHoje;
     counter.innerText = `Usos Restantes Hoje: ${restantes}/${LIMITE_DIARIO}`;
 
-    if (restantes === 0) {
+    if (restantes <= 0) {
         counter.classList.replace('text-slate-300', 'text-risk');
         counter.parentElement.classList.replace('border-base-border', 'border-risk/40');
     }
@@ -292,7 +331,6 @@ function atualizarContadorUso() {
 async function processarPrintComEngine() {
     const formData = new FormData();
     formData.append("sport", sportAtivo);
-    formData.append("foco", focoAtivo);
     formData.append("analyst", analistaAtivo);
 
     for (const file of imagensArquivosSelecionados) {
@@ -341,7 +379,7 @@ async function executarAnalise() {
         const dados = await processarPrintComEngine();
         ultimoResultadoGlobal = dados;
 
-        usosHoje++;
+        registrarUsoDoDia();
         atualizarContadorUso();
 
         recolherEntrada();
@@ -412,8 +450,6 @@ function compartilharResultado() {
     }
 }
 
-// Monta o card de uma entrada (1 ou 2), ou o estado vazio caso não exista.
-// accentClass controla a cor da barra lateral e do rótulo (value = verde, accent = dourado).
 function renderEntradaCard(entrada, numeroLabel, accentClass) {
     const temEntrada = entrada && entrada.mercado;
 
@@ -454,7 +490,6 @@ function renderEntradaCard(entrada, numeroLabel, accentClass) {
     `;
 }
 
-// RENDERIZAÇÃO COMPLETA DOS BILHETES E DOSSIÊ
 function renderizarBilhetesFormatados(dados) {
     const display = document.getElementById("display-area");
     if (!dados) return;
@@ -479,7 +514,6 @@ function renderizarBilhetesFormatados(dados) {
 
     display.innerHTML = `
         <div class="space-y-4 fade-up">
-            <!-- CABEÇALHO DO DOSSIÊ -->
             <div class="bg-base-panel border border-accent/30 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-value to-accent"></div>
 
@@ -510,7 +544,6 @@ function renderizarBilhetesFormatados(dados) {
                 </div>
             </div>
 
-            <!-- DUPLA DE ELITE -->
             <div class="space-y-3">
                 <div class="flex items-center justify-between px-1">
                     <h3 class="font-display text-lg text-white tracking-wide flex items-center gap-2">
@@ -532,7 +565,6 @@ function renderizarBilhetesFormatados(dados) {
                 `}
             </div>
 
-            <!-- ASSIMETRIAS CHAVE -->
             ${asymmetries.length > 0 ? `
                 <div class="space-y-2 pt-2">
                     <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Assimetrias Estatísticas Detalhadas</h4>
