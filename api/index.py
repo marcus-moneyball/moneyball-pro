@@ -54,7 +54,7 @@ def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "c
 - TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
     else:
         # Default: Carlos Rivera
-        persona_nome = "Carlos Rivera (O Estrategista Técnico)"
+        persona_nome = "Carlos (O Estrategista Técnico)"
         persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
 - ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
 - TOM DE VOZ: Analítico, astuto, confiante, tático, usando o jargão de inteligência de mercado de forma fluida."""
@@ -216,20 +216,26 @@ async def analyze_tickets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # 2. ANÁLISE QUANTITATIVA VIA GROQ (INCLUINDO A PERSONA)
-    groq_client = get_groq_client()
-    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
-
-    try:
+    # Chamada GROQ QWEN
         completion = groq_client.chat.completions.create(
-            model="qwen/qwen3.6-27b",
+            model="qwen/qwen3.6-27b", # Verifique se o nome está exato na Groq
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
-                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}"}
+                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
             ],
-            temperature=0.1,
-            response_format={"type": "json_object"}
+            temperature=0.1
+            # REMOVIDO: response_format={"type": "json_object"}
         )
+
+        content_str = completion.choices[0].message.content.strip()
+
+        # LIMPEZA UNIVERSAL (Isso aqui ignora qualquer saudação ou Markdown que ele invente)
+        match = re.search(r'\{.*\}', content_str, re.DOTALL)
+        if match:
+            content_str = match.group(0)
+        
+        # Agora sim, faz o load
+        return json.loads(content_str)
 
         content_str = completion.choices[0].message.content.strip()
 
