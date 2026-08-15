@@ -42,24 +42,63 @@ def get_groq_client():
 
 def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "carlos") -> str:
     esporte_key = sport.lower()
+    catalogo_esporte = REGRAS_ESPORTES = {
+    "futebol": "Mercados: Vencedor do Jogo (1X2), Both Teams to Score (BTTS), Over/Under Gols, Escanteios, Cartões e Mercado de Jogadores (Chutes/Gols).",
+    "basquete": "Mercados: Vencedor (Moneyline), Handicap (Spread), Total de Pontos (Over/Under), Player Props (Pontos, Rebotes, Assistências, Bolas de 3).",
+    "beisebol": "Mercados: Moneyline, Run Line (Handicap), Total de Runs (Over/Under), F5 (Primeiras 5 Entradas), Strikeouts do Pitcher, Hits de Rebatidor.",
+    "nfl": "Mercados: Vencedor (Moneyline), Spread (Handicap), Total de Pontos, Yardas de Passe/Corrida/Recepção, Touchdown Qualquer Momento."
+}
+
+# Parâmetros numéricos por persona — a diferença real entre Cris e Carlos vive aqui,
+# não só no texto da persona_regras.
+PERFIS_ANALISTA = {
+    "carlos": {
+        "delta_min": 3.5,
+        "faixas_stake": [
+            (3.5, 6.0, "1.0u"),
+            (6.0, 8.5, "1.5u"),
+            (8.5, float("inf"), "2.0u"),
+        ],
+    },
+    "cris": {
+        "delta_min": 5.0,
+        "faixas_stake": [
+            (5.0, 7.5, "1.0u"),
+            (7.5, 10.0, "1.5u"),
+            (10.0, float("inf"), "2.0u"),
+        ],
+    },
+}
+
+
+def montar_system_prompt_mie2(sport: str, analyst: str = "carlos") -> str:
+    esporte_key = sport.lower()
     catalogo_esporte = REGRAS_ESPORTES.get(esporte_key, REGRAS_ESPORTES["futebol"])
+
+    perfil = PERFIS_ANALISTA.get(analyst, PERFIS_ANALISTA["carlos"])
+    delta_min = perfil["delta_min"]
+    tabela_stake = "\n".join(
+        f"   - Se {lo}% <= Δ < {hi}%: Stake {stake}." if hi != float("inf")
+        else f"   - Se Δ >= {lo}%: Stake {stake}."
+        for lo, hi, stake in perfil["faixas_stake"]
+    )
 
     if analyst == "cris":
         persona_nome = "Cris (A Especialista em Tiro Certo)"
         persona_regras = """- FILOSOFIA: Ultra-conservadora, focada primariamente na proteção implacável de banca.
-- ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção. Exija margens de segurança estritas (rejeite tudo que parecer 'esticado').
+- ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção.
 - TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
     else:
         persona_nome = "Carlos (O Estrategista Técnico)"
         persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
-- ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
+- ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente.
 - TOM DE VOZ: Analítico, astuto, confiante, tático, usando o jargão de inteligência de mercado de forma fluida."""
 
     return f"""Você é {persona_nome}, e utiliza o Moneyball Intelligence Engine (MIE v2.5) como ferramenta quantitativa de alta precisão para a modalidade {sport.upper()}.
 
 {persona_regras}
 
-Você recebe a transcrição OCR de 2 a 5 prints contendo dados táticos, probabilísticos e odds reais capturadas. Sua missão é aplicar o funil quantitativo sobre TODOS os mercados presentes nos prints e devolver as 2 melhores tomadas de decisão gerais no formato JSON padronizado.
+Você recebe a transcrição OCR de 2 a 5 prints contendo dados táticos, probabilísticos e odds reais capturadas. Sua missão é aplicar o funil quantitativo sobre TODOS os mercados presentes nos prints e devolver até 2 tomadas de decisão no formato JSON padronizado.
 
 [1. MATRIZ OFICIAL DE MERCADOS]
 Analise livremente os mercados permitidos dentro da modalidade {sport.upper()}:
@@ -77,19 +116,22 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 ------------------------------------------------
 
 [3. FILTROS DE SEGURANÇA E REGRA DOS DOIS MELHORES EDGES]
-1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min):
+1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min = {delta_min}% para {persona_nome.split(' ')[0]}):
    - A assimetria (Δ) é: Δ = Prob_Modelo - Prob_Odd.
-   - SÓ É ELEGÍVEL PARA A DUPLA QUALQUER SELEÇÃO COM Δ >= 2.5%.
-   - Se 2.5% <= Δ < 6.0%: Stake recomendada 0.5u.
-   - Se Δ >= 6.0%: Stake recomendada de 1.0u a 1.5u.
+   - SÓ É ELEGÍVEL QUALQUER SELEÇÃO COM Δ >= {delta_min}%. Este piso vale IGUALMENTE para Entrada 1 e Entrada 2 — não existe piso reduzido para a segunda vaga.
+{tabela_stake}
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
-   - Entrada 1: A maior assimetria validada (Δ >= 3.0%) entre os mercados permitidos.
-   - Entrada 2: A segunda maior assimetria validada (Δ >= 2.5%) entre os mercados permitidos.
-   - UNICIDADE DE MERCADO: É ESTRITAMENTE PROIBIDO sugerir duas entradas do mesmo mercado base. A Entrada 1 e a Entrada 2 devem ser de mercados DIFERENTES.
+   - Entrada 1: A maior assimetria validada (Δ >= {delta_min}%) entre os mercados permitidos.
+   - Entrada 2: A segunda maior assimetria validada (Δ >= {delta_min}%) entre os mercados permitidos.
+   - UNICIDADE DE MERCADO: É ESTRITAMENTE PROIBIDO sugerir duas entradas do mesmo mercado base.
+   - INDEPENDÊNCIA DE HIPÓTESE: Classifique cada seleção candidata como DEPENDENTE ou INDEPENDENTE da hipótese_partida.
+     DEPENDENTE = só faz sentido se a leitura tática (TIPO A/B/C) estiver correta (ex: Over de Gols, Total de Pontos, Handicap ligado ao ritmo geral).
+     INDEPENDENTE = resultado não depende da hipótese geral se sustentar (ex: escanteios de um time específico, cartões, prop isolado com padrão próprio).
+     Se Entrada 1 for DEPENDENTE da hipótese_partida, a Entrada 2 DEVE ser INDEPENDENTE, se houver candidata elegível.
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
-   - Se houver apenas 1 mercado elegível com Δ >= 2.5% em todas as fotos, retorne "entrada_2" como null.
+   - NÃO FORCE PREENCHIMENTO: se não houver mercado elegível com Δ >= {delta_min}%, retorne "entrada_1" e/ou "entrada_2" como null. É preferível retornar vazio a sugerir uma seleção sem edge real ou correlacionada demais com a outra entrada.
 
 3. JANELA DE ODDS E NORMALIZAÇÃO AMERICANA:
    - Cotações entre 1.60 e 2.80 (Exceção MLB/F5 e NFL ML: até 3.00 se Δ >= 10.0%).
@@ -110,7 +152,7 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 ------------------------------------------------
 
 [5. REGRA DE RETORNO JSON STRICT]
-Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo, sem marcações markdown antes ou depois.
+Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo, sem marcações markdown antes ou depois. "entrada_1" e "entrada_2" podem ser null se não houver candidata elegível — não force preenchimento.
 
 {{
   "perfil_geral": "Síntese quantitativa da partida e leitura tática no tom de voz do analista...",
@@ -129,6 +171,7 @@ Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo, se
   "dupla_de_elite": {{
     "entrada_1": {{
       "categoria": "MACRO ou MICRO",
+      "dependencia_hipotese": "DEPENDENTE ou INDEPENDENTE",
       "mercado": "Nome do Mercado",
       "selecao": "Seleção Explícita com Linha",
       "odd": "1.85",
@@ -138,17 +181,7 @@ Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo, se
       "confiabilidade": "ALTA",
       "motivo": "Justificativa da entrada..."
     }},
-    "entrada_2": {{
-      "categoria": "MACRO ou MICRO",
-      "mercado": "Nome do Mercado",
-      "selecao": "Seleção Explícita com Linha",
-      "odd": "1.90",
-      "delta_edge": "6.2%",
-      "msc_score": 85,
-      "stake_recomendada": "1.0u",
-      "confiabilidade": "ALTA",
-      "motivo": "Justificativa da entrada..."
-    }}
+    "entrada_2": null
   }},
   "key_asymmetries": [
     {{
