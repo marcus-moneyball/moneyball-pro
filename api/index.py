@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from groq import Groq
 
-app = FastAPI(title="MoneyballPro Engine", version="2.3.0")
+app = FastAPI(title="MoneyballPro Engine", version="2.4.0")
 
 # Habilita CORS para liberar requisições do frontend
 app.add_middleware(
@@ -254,34 +254,55 @@ def _extrair_json_de_texto(texto: str) -> Optional[dict]:
         return None
 
 
-def extrair_time_e_mercados_gols(gemini_client, contents: list, sport: str) -> Optional[dict]:
+CONFIG_MERCADO_PRINCIPAL = {
+    "futebol": {"nome_stat": "gols", "nome_mercado": "Total de Gols da Partida", "unidade_selecao": "Gols"},
+    "beisebol": {"nome_stat": "runs", "nome_mercado": "Total de Runs da Partida", "unidade_selecao": "Runs"},
+}
+
+
+def extrair_mercados_estruturados(gemini_client, contents: list, sport: str) -> Optional[dict]:
     """
     Passo estruturado (separado do OCR de texto livre já existente): pede ao
-    Gemini pra devolver JSON com os nomes dos times e os mercados de TOTAL DE
-    GOLS presentes nos prints (linha, odd, lado). Isso é o que permite montar
-    o input pro cálculo Poisson determinístico — sem isso, calcular_dossie não
-    tem como ser alimentado automaticamente.
+    Gemini pra devolver JSON com os nomes dos times e os mercados calculáveis
+    presentes nos prints (linha/odd/lado, ou odd sim/não no caso de BTTS).
+    Isso é o que permite montar o input pro cálculo Poisson determinístico —
+    sem isso, o cálculo não tem como ser alimentado automaticamente.
 
-    Escopo hoje: só Total de Gols (mercado mais comum e o que o cálculo do
-    Léo já cobre). Outros mercados continuam pela estimativa do Groq mais
-    abaixo no pipeline.
+    Escopo hoje: futebol (Gols, Escanteios, Cartões, BTTS) e beisebol (Runs
+    — mesma matemática Poisson, mas escanteios/cartões/BTTS não existem
+    nesse esporte, então ficam de fora). Basquete e NFL ainda não têm
+    fórmula (pontuação alta demais pra Poisson, precisa de modelo Normal —
+    ainda não escrito). 1X2/Moneyline fica de fora por decisão do produto
+    (bloqueio deliberado, seção 4.1 do prompt do Groq).
     """
-    if sport.lower() != "futebol":
-        return None  # Poisson de gols só se aplica a futebol por enquanto
+    cfg = CONFIG_MERCADO_PRINCIPAL.get(sport.lower())
+    if not cfg:
+        return None  # esporte ainda não tem fórmula de cálculo determinístico
 
-    prompt = """Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
-{
+    bloco_futebol_extra = ""
+    if sport.lower() == "futebol":
+        bloco_futebol_extra = """,
+  "mercados_escanteios": [
+    {"linha": 9.5, "odd": 1.90, "lado": "over"}
+  ],
+  "mercados_cartoes": [
+    {"linha": 3.5, "odd": 1.80, "lado": "over"}
+  ],
+  "mercado_btts": {"odd_sim": 1.75, "odd_nao": 2.00}"""
+
+    prompt = f"""Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
+{{
   "time_a": "Nome do primeiro time mencionado",
   "time_b": "Nome do segundo time mencionado",
-  "mercados_gols": [
-    {"linha": 2.5, "odd": 1.85, "lado": "under"},
-    {"linha": 2.5, "odd": 1.95, "lado": "over"}
-  ]
-}
+  "mercados_total_principal": [
+    {{"linha": 8.5, "odd": 1.85, "lado": "under"}}
+  ]{bloco_futebol_extra}
+}}
 Regras:
-- "mercados_gols" deve conter APENAS linhas de Total de Gols da Partida (Over/Under) que estejam explicitamente visíveis nos prints, com odd real.
+- "mercados_total_principal" deve conter APENAS linhas de {cfg['nome_mercado']} (Over/Under de {cfg['nome_stat']}) que estejam explicitamente visíveis nos prints, com odd real.
+- Cada lista deve conter APENAS linhas Over/Under desse mercado que estejam explicitamente visíveis nos prints, com odd real.
 - "lado" deve ser exatamente "over" ou "under".
-- Se não houver nenhum mercado de Total de Gols visível, retorne "mercados_gols": [].
+- Se não houver nenhuma linha de um mercado, retorne a lista vazia [] para ele.
 - NUNCA invente time, linha ou odd que não esteja no print."""
 
     try:
@@ -310,17 +331,38 @@ def executar_mie1(gemini_client, time_a: str, time_b: str, sport: str) -> Option
     """
     Estágio de investigação (MIE1): busca real via Google Search grounding,
     restrita a fontes de autoridade por esporte (mesmo princípio do MIE1
-    original, adaptado de JS pra Python). Devolve os gols esperados de cada
-    time já prontos (team_a_projected / team_b_projected) — o Poisson usa
-    esses dois números direto como λ, sem precisar decompor em "marcada" e
-    "sofrida" separadamente, porque essa parte (cruzar ataque de um time
-    com defesa do outro) já é feita aqui, com base em pesquisa real.
+    original, adaptado de JS pra Python). Devolve a expectativa principal
+    (gols ou runs, conforme o esporte) de cada time já pronta
+    (team_a_projected / team_b_projected) — o Poisson usa esses dois números
+    direto como λ, sem precisar decompor em "marcada" e "sofrida"
+    separadamente, porque essa parte (cruzar ataque de um time com defesa
+    do outro) já é feita aqui, com base em pesquisa real.
 
     Se a busca falhar ou vier incompleta, retorna None — pipeline cai de
     volta pra estimativa do Groq (fallback seguro), nunca quebra a análise.
     """
     esporte_key = sport.lower()
+    cfg = CONFIG_MERCADO_PRINCIPAL.get(esporte_key)
+    if not cfg:
+        return None
     fontes = FONTES_AUTORIZADAS_POR_ESPORTE.get(esporte_key, FONTES_AUTORIZADAS_POR_ESPORTE["futebol"])
+    nome_stat = cfg["nome_stat"]  # "gols" ou "runs"
+
+    bloco_futebol_campos = ""
+    bloco_futebol_regra = ""
+    if esporte_key == "futebol":
+        bloco_futebol_campos = """,
+  "team_a_escanteios_projected": 5.2,
+  "team_b_escanteios_projected": 4.8,
+  "team_a_cartoes_projected": 2.1,
+  "team_b_cartoes_projected": 1.9"""
+        bloco_futebol_regra = (
+            "\n- \"team_a_escanteios_projected\"/\"team_b_escanteios_projected\" e "
+            "\"team_a_cartoes_projected\"/\"team_b_cartoes_projected\" seguem a mesma "
+            "lógica, para escanteios e cartões respectivamente. Se não encontrar dado "
+            "confiável para essas categorias, retorne null APENAS nesses campos "
+            "específicos (não precisa invalidar o JSON inteiro por causa deles)."
+        )
 
     prompt = f"""Você é um Investigador Quantitativo Esportivo. Busque na internet, OBRIGATORIAMENTE
 usando o operador de busca {fontes}, as estatísticas mais recentes e confiáveis dos
@@ -332,7 +374,7 @@ no horário do jogo, fadiga de calendário.
 Retorne ESTRITAMENTE este JSON, sem markdown, sem texto fora do JSON:
 {{
   "team_a_projected": 1.4,
-  "team_b_projected": 1.1,
+  "team_b_projected": 1.1{bloco_futebol_campos},
   "fonte": "nome do site usado",
   "contextual_factors": [
     {{"factor_type": "injury", "description": "...", "impact_level": "high|medium|low", "affected_team": "..."}}
@@ -343,11 +385,12 @@ Retorne ESTRITAMENTE este JSON, sem markdown, sem texto fora do JSON:
 }}
 
 Regras:
-- "team_a_projected" e "team_b_projected" são a expectativa de GOLS (ou pontos/runs,
-  conforme o esporte) de cada time NESTE confronto — já cruzando o ataque de um time
-  com a defesa do outro, baseado em dados reais e atuais encontrados na busca.
-- Se não encontrar dado recente e confiável para os dois times nas fontes indicadas,
-  retorne null no lugar do JSON inteiro (sem inventar números)."""
+- "team_a_projected"/"team_b_projected" são a expectativa de {nome_stat.upper()} de cada
+  time NESTE confronto — já cruzando o ataque/ofensiva de um time com a defesa do
+  outro, baseado em dados reais e atuais encontrados na busca.{bloco_futebol_regra}
+- Se não encontrar dado confiável para {nome_stat.upper()} de ambos os times, retorne
+  null no lugar do JSON inteiro ({nome_stat} é o mínimo obrigatório) — sem inventar
+  números."""
 
     try:
         res = gemini_client.models.generate_content(
@@ -364,7 +407,7 @@ Regras:
         if not dados:
             return None
         if dados.get("team_a_projected") is None or dados.get("team_b_projected") is None:
-            return None  # busca incompleta — mais seguro descartar que usar parcial
+            return None  # stat principal é o mínimo obrigatório — sem isso, descarta tudo
 
         return dados
     except Exception as e:
@@ -372,17 +415,20 @@ Regras:
         return None  # falha na busca não derruba o resto — cai pro fluxo antigo
 
 
-def montar_candidatos_gols_calculados(mercados_gols: list, projecao_mie1: dict) -> list:
+def montar_candidatos_over_under_calculados(
+    mercados: list, lam_total: Optional[float], nome_mercado: str, unidade_selecao: str
+) -> list:
     """
-    Roda cada mercado de Total de Gols extraído através do cálculo Poisson
-    determinístico, usando λ = team_a_projected + team_b_projected (já
-    calculado pelo MIE1 via pesquisa real). Computa o edge real:
-    Δ = Probabilidade_Real_Calculada - Probabilidade_Implícita_da_Odd.
+    Função genérica: roda uma lista de mercados Over/Under (gols, escanteios,
+    cartões ou runs) através do cálculo Poisson determinístico, usando um λ
+    já calculado (soma das duas projeções de time). Reaproveitada por todos
+    os mercados desse tipo em vez de repetir a mesma lógica em cada um.
     """
-    lam_total = round(projecao_mie1["team_a_projected"] + projecao_mie1["team_b_projected"], 3)
+    if lam_total is None:
+        return []  # sem projeção confiável pra essa categoria — nada a calcular
 
     candidatos = []
-    for i, m in enumerate(mercados_gols):
+    for m in mercados:
         linha = m.get("linha")
         odd = m.get("odd")
         lado = m.get("lado")
@@ -397,8 +443,8 @@ def montar_candidatos_gols_calculados(mercados_gols: list, projecao_mie1: dict) 
         kelly = kelly_fracionado(prob_real, odd) if ev is not None and ev > 0 else None
 
         candidatos.append({
-            "mercado": "Total de Gols da Partida",
-            "selecao": f"{'Mais' if lado == 'over' else 'Menos'} de {linha} Gols",
+            "mercado": nome_mercado,
+            "selecao": f"{'Mais' if lado == 'over' else 'Menos'} de {linha} {unidade_selecao}",
             "odd": odd,
             "lambda_esperado_partida": lam_total,
             "probabilidade_real_calculada": prob_real,
@@ -406,6 +452,58 @@ def montar_candidatos_gols_calculados(mercados_gols: list, projecao_mie1: dict) 
             "delta_edge_pct_calculado": edge_pct,
             "ev": ev,
             "kelly_unidades_sugerido": kelly,
+        })
+
+    return candidatos
+
+
+def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], lam_b: Optional[float]) -> list:
+    """
+    BTTS (Ambos Marcam) calculado a partir das mesmas duas projeções de gols
+    por time já usadas no mercado de Total de Gols — não precisa de nenhuma
+    busca extra. P(ambos marcam) = P(A marca >=1) * P(B marca >=1), assumindo
+    independência entre os dois ataques (simplificação razoável).
+    """
+    if not mercado_btts or lam_a is None or lam_b is None:
+        return []
+
+    p_a_marca = 1 - poisson_pmf(0, lam_a)
+    p_b_marca = 1 - poisson_pmf(0, lam_b)
+    p_sim = round(p_a_marca * p_b_marca, 4)
+    p_nao = round(1 - p_sim, 4)
+
+    candidatos = []
+    odd_sim = mercado_btts.get("odd_sim")
+    odd_nao = mercado_btts.get("odd_nao")
+
+    if odd_sim:
+        prob_implicita = round(1 / odd_sim, 4)
+        edge_pct = round((p_sim - prob_implicita) * 100, 2)
+        ev = calcular_ev(p_sim, odd_sim)
+        candidatos.append({
+            "mercado": "Ambos Marcam (BTTS)",
+            "selecao": "Sim",
+            "odd": odd_sim,
+            "probabilidade_real_calculada": p_sim,
+            "probabilidade_implicita_odd": prob_implicita,
+            "delta_edge_pct_calculado": edge_pct,
+            "ev": ev,
+            "kelly_unidades_sugerido": kelly_fracionado(p_sim, odd_sim) if ev is not None and ev > 0 else None,
+        })
+
+    if odd_nao:
+        prob_implicita = round(1 / odd_nao, 4)
+        edge_pct = round((p_nao - prob_implicita) * 100, 2)
+        ev = calcular_ev(p_nao, odd_nao)
+        candidatos.append({
+            "mercado": "Ambos Marcam (BTTS)",
+            "selecao": "Não",
+            "odd": odd_nao,
+            "probabilidade_real_calculada": p_nao,
+            "probabilidade_implicita_odd": prob_implicita,
+            "delta_edge_pct_calculado": edge_pct,
+            "ev": ev,
+            "kelly_unidades_sugerido": kelly_fracionado(p_nao, odd_nao) if ev is not None and ev > 0 else None,
         })
 
     return candidatos
@@ -467,23 +565,24 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 
 [3. FILTROS DE SEGURANÇA E REGRA DOS DOIS MELHORES EDGES]
 0. DADOS JÁ CALCULADOS (se fornecidos abaixo, na mensagem do usuário, sob o
-   cabeçalho "CANDIDATOS DE TOTAL DE GOLS JÁ CALCULADOS (Poisson)"):
-   - Para o mercado de Total de Gols da Partida, o valor de Δ NÃO deve ser
-     estimado por você — ele já vem calculado deterministicamente (Poisson)
-     a partir de estatísticas reais buscadas na internet. Use EXATAMENTE
-     o "delta_edge_pct_calculado", "odd" e "selecao" fornecidos ali, sem
-     alterar nenhum número.
-   - Você pode e deve continuar estimando Δ normalmente para os DEMAIS
-     mercados (escanteios, cartões, props) — a regra acima vale só para
-     Total de Gols quando os dados calculados estiverem presentes.
-   - Se nenhum candidato de Total de Gols calculado for fornecido, estime
-     esse mercado como os demais, com a desconfiança normal já prevista
-     nas regras abaixo.
+   cabeçalho "CANDIDATOS JÁ CALCULADOS"):
+   - Para os mercados listados nesse bloco (identificados pelo campo "mercado":
+     pode ser Total de Gols, Total de Escanteios, Total de Cartões, ou Ambos
+     Marcam/BTTS), o valor de Δ NÃO deve ser estimado por você — ele já vem
+     calculado deterministicamente (Poisson) a partir de estatísticas reais
+     buscadas na internet. Use EXATAMENTE o "delta_edge_pct_calculado", "odd"
+     e "selecao" fornecidos ali, sem alterar nenhum número.
+   - Você pode e deve continuar estimando Δ normalmente para QUALQUER mercado
+     que NÃO apareça nesse bloco (ex: props de jogadores, ou os mesmos
+     mercados acima quando não houver candidato calculado disponível para
+     aquela partida) — com a desconfiança normal já prevista nas regras abaixo.
+   - Se o bloco de dados calculados não for fornecido, estime todos os
+     mercados normalmente, como sempre foi feito.
 
 1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min = {delta_min}% para {persona_curto}):
    - A assimetria (Δ) é: Δ = Prob_Modelo - Prob_Odd.
    - SÓ É ELEGÍVEL QUALQUER SELEÇÃO COM Δ >= {delta_min}%. Este piso vale IGUALMENTE para Entrada 1 e Entrada 2 — não existe piso reduzido para a segunda vaga.
-   - NUNCA declare um Δ acima de {DELTA_MAX_PLAUSIVEL}% a menos que a evidência nos prints seja explícita e inequívoca — deltas muito altos em mercados líquidos são raros e devem ser tratados com desconfiança, não como "grande oportunidade". Esta regra de teto NÃO se aplica ao Δ de Total de Gols quando ele vier do cálculo Poisson (item 0) — esse já é confiável por construção.
+   - NUNCA declare um Δ acima de {DELTA_MAX_PLAUSIVEL}% a menos que a evidência nos prints seja explícita e inequívoca — deltas muito altos em mercados líquidos são raros e devem ser tratados com desconfiança, não como "grande oportunidade". Esta regra de teto NÃO se aplica a mercados presentes no bloco de DADOS JÁ CALCULADOS (item 0) — esses já são confiáveis por construção.
 {tabela_stake}
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
@@ -605,7 +704,7 @@ def validar_e_sanear_entrada(entrada: Optional[dict], perfil: dict) -> Optional[
 def health_check():
     return {
         "status": "ok",
-        "engine": "MoneyballPro FastAPI v2.3 (com grounding real via Google Search)",
+        "engine": "MoneyballPro FastAPI v2.4 (calculo real: Gols, Escanteios, Cartoes, BTTS)",
         "gemini_key_set": bool(GEMINI_API_KEY),
         "groq_key_set": bool(GROQ_API_KEY),
         "perfis_analista": {
@@ -682,16 +781,58 @@ async def analyze_tickets(
     candidatos_gols_calculados = []
     contexto_mie1_texto = ""
     try:
-        dados_estruturados = extrair_time_e_mercados_gols(gemini_client, contents[:-1], sport)
-        if dados_estruturados and dados_estruturados.get("mercados_gols"):
+        cfg_esporte = CONFIG_MERCADO_PRINCIPAL.get(sport.lower())
+        dados_estruturados = extrair_mercados_estruturados(gemini_client, contents[:-1], sport)
+        if dados_estruturados and cfg_esporte:
             time_a = dados_estruturados.get("time_a")
             time_b = dados_estruturados.get("time_b")
-            if time_a and time_b:
+            tem_algum_mercado_calculavel = any([
+                dados_estruturados.get("mercados_total_principal"),
+                dados_estruturados.get("mercados_escanteios"),
+                dados_estruturados.get("mercados_cartoes"),
+                dados_estruturados.get("mercado_btts"),
+            ])
+            if time_a and time_b and tem_algum_mercado_calculavel:
                 projecao_mie1 = executar_mie1(gemini_client, time_a, time_b, sport)
                 if projecao_mie1:
-                    candidatos_gols_calculados = montar_candidatos_gols_calculados(
-                        dados_estruturados["mercados_gols"], projecao_mie1
+                    lam_principal = round(
+                        projecao_mie1["team_a_projected"] + projecao_mie1["team_b_projected"], 3
                     )
+
+                    candidatos_gols_calculados = montar_candidatos_over_under_calculados(
+                        dados_estruturados.get("mercados_total_principal") or [],
+                        lam_principal, cfg_esporte["nome_mercado"], cfg_esporte["unidade_selecao"]
+                    )
+
+                    if sport.lower() == "futebol":
+                        lam_escanteios = None
+                        if projecao_mie1.get("team_a_escanteios_projected") is not None and \
+                           projecao_mie1.get("team_b_escanteios_projected") is not None:
+                            lam_escanteios = round(
+                                projecao_mie1["team_a_escanteios_projected"] + projecao_mie1["team_b_escanteios_projected"], 3
+                            )
+                        lam_cartoes = None
+                        if projecao_mie1.get("team_a_cartoes_projected") is not None and \
+                           projecao_mie1.get("team_b_cartoes_projected") is not None:
+                            lam_cartoes = round(
+                                projecao_mie1["team_a_cartoes_projected"] + projecao_mie1["team_b_cartoes_projected"], 3
+                            )
+
+                        candidatos_gols_calculados += (
+                            montar_candidatos_over_under_calculados(
+                                dados_estruturados.get("mercados_escanteios") or [], lam_escanteios,
+                                "Total de Escanteios da Partida", "Escanteios"
+                            )
+                            + montar_candidatos_over_under_calculados(
+                                dados_estruturados.get("mercados_cartoes") or [], lam_cartoes,
+                                "Total de Cartões da Partida", "Cartões"
+                            )
+                            + montar_candidato_btts(
+                                dados_estruturados.get("mercado_btts"),
+                                projecao_mie1["team_a_projected"], projecao_mie1["team_b_projected"],
+                            )
+                        )
+
                     partes_contexto = []
                     if projecao_mie1.get("contextual_factors"):
                         partes_contexto.append(
@@ -715,9 +856,11 @@ async def analyze_tickets(
     bloco_dados_calculados = ""
     if candidatos_gols_calculados:
         bloco_dados_calculados = (
-            "\n\nCANDIDATOS DE TOTAL DE GOLS JÁ CALCULADOS (Poisson, com base em "
-            "projeção real do MIE1 via busca em fontes de autoridade — use estes "
-            "números EXATAMENTE como estão, não reestime):\n"
+            "\n\nCANDIDATOS JÁ CALCULADOS (Poisson, com base em projeção real do "
+            "MIE1 via busca em fontes de autoridade — para os mercados abaixo, "
+            "identificados pelo campo 'mercado', use estes números EXATAMENTE como "
+            "estão, não reestime. Para mercados que NÃO aparecem nesta lista, "
+            "continue estimando normalmente como antes:\n"
             + json.dumps(candidatos_gols_calculados, ensure_ascii=False, indent=2)
         )
     if contexto_mie1_texto:
