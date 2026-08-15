@@ -75,7 +75,7 @@
                     <button type="button" onclick="selecionarAnalista('carlos')" id="btn-carlos" class="p-3.5 rounded-xl border border-accent bg-accent/10 text-white transition-all flex items-center gap-3 text-left shadow-lg shadow-accent/5">
                         <span class="text-2xl drop-shadow-md">🥊</span>
                         <div>
-                            <p class="font-bold text-sm tracking-wide">Carlos Rivera</p>
+                            <p class="font-bold text-sm tracking-wide">Carlos</p>
                             <p class="text-[10px] text-accent/80 font-mono mt-0.5">Estrategista & Valor</p>
                         </div>
                     </button>
@@ -314,7 +314,7 @@ async function executarAnalise() {
             return;
         }
 
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Acordando ${analistaAtivo === 'carlos' ? 'Carlos Rivera' : 'Cris'}...`;
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Acordando ${analistaAtivo === 'carlos' ? 'Carlos' : 'Cris'}...`;
         
         // Simulação / Chamada Real da API
         const dados = await processarPrintComEngine();
