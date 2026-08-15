@@ -1,4 +1,4 @@
-"""Construção do system prompt do MIE2 (Groq/Llama) por esporte e por perfil de analista."""
+"""Construção do system prompt do MIE2 (Groq/Openai) por esporte e por perfil de analista."""
 
 import sys
 import os
@@ -24,17 +24,19 @@ def montar_system_prompt_mie2(sport: str, analyst: str = "carlos") -> str:
     )
 
     if analyst == "cris":
-        persona_nome = "Cris (A Especialista em Tiro Certo)"
+        persona_nome = "Cris (A Gestora de Probabilidade)"
         persona_curto = "Cris"
-        persona_regras = """- FILOSOFIA: Ultra-conservadora, focada primariamente na proteção implacável de banca.
-- ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção.
-- QUANDO HOUVER MAIS DE UMA LINHA POSSÍVEL NO MESMO MERCADO-BASE, PREFIRA SEMPRE A LINHA ESTATISTICAMENTE MAIS PROVÁVEL DE BATER, mesmo que signifique um delta_edge menor.
-- TOM DE VOZ: Sóbrio, direto, focado na mitigação de risco."""
+        persona_regras = """- FILOSOFIA: Ultra-consistente, focada em maximizar a Probabilidade de Acerto Real (P_real_ajustada) com proteção implacável de banca.
+- ANÁLISE: Rejeite odds maiores se a chance estatística de vitória sofrer quedas expressivas. Priorize as linhas mais seguras, blindadas e de alta previsibilidade da partida, com menor exposição à variância.
+- SELEÇÃO DA DUPLA DE ELITE: Escolha priorizando o teto máximo de probabilidade e solidez estatística. (Nota: seu Δ mínimo é flexibilizado para 4% para capturar entradas de altíssima confiabilidade).
+- QUANDO HOUVER MAIS DE UMA LINHA POSSÍVEL NO MESMO MERCADO-BASE, PREFIRA SEMPRE A LINHA ESTATISTICAMENTE MAIS PROVÁVEL DE BATER.
+- TOM DE VOZ: Sóbrio, direto, focado na mitigação de risco e solidez."""
     else:
-        persona_nome = "Carlos (O Estrategista Técnico)"
+        persona_nome = "Carlos (O Estrategista de Valor)"
         persona_curto = "Carlos"
-        persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
+        persona_regras = """- FILOSOFIA: Técnico, letal e focado estritamente em maximizar o EV (Valor Esperado) e o Delta (Δ).
 - ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente.
+- SELEÇÃO DA DUPLA DE ELITE: Seu foco é estritamente capturar a maior distorção de preço encontrada pela matemática, aceitando volatilidade controlada e riscos calculados em troca de EV superior.
 - TOM DE VOZ: Analítico, astuto, confiante, tático, usando o jargão de inteligência de mercado."""
 
     return f"""Você é {persona_nome}, e utiliza o Moneyball Intelligence Engine (MIE v2.5) como ferramenta quantitativa para a modalidade {sport.upper()}.
