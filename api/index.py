@@ -44,16 +44,12 @@ def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "c
     esporte_key = sport.lower()
     catalogo_esporte = REGRAS_ESPORTES.get(esporte_key, REGRAS_ESPORTES["futebol"])
 
-    # ---------------------------------------------------------
-    # DEFINIÇÃO DO DNA DO ANALISTA (PERSONA E TOM DE VOZ)
-    # ---------------------------------------------------------
     if analyst == "cris":
         persona_nome = "Cris (A Especialista em Tiro Certo)"
         persona_regras = """- FILOSOFIA: Ultra-conservadora, focada primariamente na proteção implacável de banca.
 - ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção. Exija margens de segurança estritas (rejeite tudo que parecer 'esticado').
 - TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
     else:
-        # Default: Carlos Rivera
         persona_nome = "Carlos (O Estrategista Técnico)"
         persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
 - ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
@@ -91,7 +87,7 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
    - Avalie TODOS os mercados extraídos de todos os prints fornecidos.
    - Entrada 1: A maior assimetria validada (Δ >= 3.0%) entre os mercados permitidos.
    - Entrada 2: A segunda maior assimetria validada (Δ >= 2.5%) entre os mercados permitidos.
-   - UNICIDADE DE MERCADO: É ESTRITAMENTE PROIBIDO sugerir duas entradas do mesmo mercado base (ex: não pode repetir "Total de Gols" para as duas entradas, mesmo que sejam linhas diferentes como 1.5 e 2.5). A Entrada 1 e a Entrada 2 devem ser de mercados DIFERENTES (ex: uma de Gols, outra de Escanteios ou Handicap).
+   - UNICIDADE DE MERCADO: É ESTRITAMENTE PROIBIDO sugerir duas entradas do mesmo mercado base. A Entrada 1 e a Entrada 2 devem ser de mercados DIFERENTES.
    - NUNCA invente seleções, linhas, atletas ou odds que não estejam explicitamente presentes nos prints.
    - Se houver apenas 1 mercado elegível com Δ >= 2.5% em todas as fotos, retorne "entrada_2" como null.
 
@@ -101,31 +97,20 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 
 4. REGRA DO NOME EXPLÍCITO E COMPLETO:
    - É ESTRITAMENTE PROIBIDO retornar termos soltos como "Sim", "Não", "Mais" ou "Menos".
-   - O campo "seleção" deve conter o nome completo e claro do mercado atrelado à escolha. 
-   - Exemplo ERRADO: "Sim" ou "Mais de 2.5".
-   - Exemplo CORRETO: "Ambas as Equipes Marcam — Sim" ou "Total de Gols — Mais de 2.5 Gols".
+   - O campo "seleção" deve conter o nome completo e claro do mercado atrelado à escolha.
 
 ------------------------------------------------
 
 [4. REGRAS DE BLOQUEIO E PROTEÇÃO - MONEYBALL 2.0]
-1. BLOQUEIO TOTAL DE MONEYLINE (ML):
-   - O mercado de Vencedor (Moneyline / 1x2 / ML) está ESTRITAMENTE PROIBIDO. Sob nenhuma circunstância o sistema deve sugerir vitória seca de equipes. Foque apenas em mercados de volume, totais, handicaps ou estatísticas.
-2. FILTRO ANTI-ESTRELA (ODDS ESMAGADAS):
-   - Proibido sugerir apostas em favoritos com cotações abaixo de @1.50, a menos que venham acompanhadas de uma linha de segurança robusta (como Handicap Asiático ou Escanteios) validada pelo Delta.
-3. PROTEÇÃO CONTRA JOGOS TRUNCADOS (GOLS E PROPS DE FUTEBOL):
-   - No Futebol, NUNCA sugira "Mais de 2.5 Gols" (Over 2.5) se houver indício de jogo travado ou média baixa; priorize linhas de segurança (ex: Mais de 1.5 ou Escanteios).
-   - No Futebol, é ESTRITAMENTE PROIBIDO sugerir props individuais de atletas (chutes, passes, desarmes), devido à alta variância. Props individuais são permitidas apenas em esportes americanos (NBA/NFL/MLB).
-4. ISOLAMENTO DE CONTEXTO E VALIDAÇÃO CRUZADA DE ESPORTE:
-   - Trate cada print de forma totalmente independente. NÃO misture dados de jogos diferentes.
-   - Valide se o esporte real identificado no print bate com o esporte selecionado na interface ({sport.upper()}). Se houver divergência (ex: usuário selecionou Futebol mas enviou Basquete), INTERROMPA o fluxo imediatamente e retorne status de erro por incompatibilidade de esporte, sem tentar adivinhar resultados.
+1. BLOQUEIO TOTAL DE MONEYLINE (ML): Proibido sugerir vitória seca de equipes. Foque em mercados de volume, totais, handicaps ou estatísticas.
+2. FILTRO ANTI-ESTRELA: Proibido sugerir apostas em favoritos abaixo de @1.50 sem linha de segurança robusta.
+3. PROTEÇÃO CONTRA JOGOS TRUNCADOS: No Futebol, nunca sugira "Mais de 2.5 Gols" se houver indício de jogo travado e proíba props individuais de atletas (chutes/passes).
+4. ISOLAMENTO DE CONTEXTO: Trate cada print de forma totalmente independente e valide a compatibilidade de esporte.
 
 ------------------------------------------------
 
 [5. REGRA DE RETORNO JSON STRICT]
-Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (sem marcações markdown antes ou depois, apenas o JSON bruto).
-Incorpore a personalidade do seu perfil (({persona_nome})) exclusivamente nos campos textuais explicativos como `perfil_geral` e `motivo`.
-
-Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` com "erro_divergencia_esporte" e detalhe no `perfil_geral`:
+Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo, sem marcações markdown antes ou depois.
 
 {{
   "perfil_geral": "Síntese quantitativa da partida e leitura tática no tom de voz do analista...",
@@ -151,7 +136,7 @@ Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` co
       "msc_score": 90,
       "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa da entrada com o tom de voz do analista escolhido..."
+      "motivo": "Justificativa da entrada..."
     }},
     "entrada_2": {{
       "categoria": "MACRO ou MICRO",
@@ -162,7 +147,7 @@ Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` co
       "msc_score": 85,
       "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa da entrada com o tom de voz do analista escolhido..."
+      "motivo": "Justificativa da entrada..."
     }}
   }},
   "key_asymmetries": [
@@ -194,7 +179,7 @@ async def analyze_tickets(
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    # 1. OCR COM GEMINI 3.5 FLASH
+    # 1. OCR COM GEMINI
     gemini_client = get_gemini_client()
     contents = []
 
@@ -209,37 +194,35 @@ async def analyze_tickets(
 
     try:
         res_ocr = gemini_client.models.generate_content(
-            model="gemini-3.5-flash-lite",
+            model="gemini-2.5-flash", # Ou o modelo flash atual que você usa no seu ambiente
             contents=contents
         )
         texto_extraido_ocr = res_ocr.text.strip()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # 2. ANÁLISE QUANTITATIVA VIA GROQ (QWEN)
+    # 2. ANÁLISE QUANTITATIVA VIA GROQ COM GPT-OSS-120B
     groq_client = get_groq_client()
     system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
 
     try:
-       completion = groq_client.chat.completions.create(
-            model="qwen-3.6-27b", # Verifique se o nome no GroqCloud é exatamente esse ou 'qwen-2.5-32b'
+        completion = groq_client.chat.completions.create(
+            model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
-                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem explicações."}
+                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
             ],
-            temperature=0, # ZERO absoluto ajuda na consistência JSON
-            max_tokens=4096 
+            temperature=0.1,
+            max_tokens=4096
         )
 
-        # ADICIONE ESTA LINHA PARA DEBUGGAR NO CONSOLE DA VERCEL
-        print("RESPOSTA BRUTA DA GROQ:", repr(completion.choices[0].message.content))
-
-        content_str = completion.choices[0].message.content.strip()
+        content_str = completion.choices[0].message.content or ""
+        content_str = content_str.strip()
 
         if not content_str:
-            raise HTTPException(status_code=500, detail="A Groq retornou uma resposta completamente vazia.")
+            raise HTTPException(status_code=500, detail="A Groq retornou uma resposta vazia com o modelo gpt-oss-120b.")
 
-        # LIMPEZA UNIVERSAL
+        # LIMPEZA UNIVERSAL (Isola perfeitamente o JSON entre chaves)
         match = re.search(r'\{.*\}', content_str, re.DOTALL)
         if match:
             content_str = match.group(0)
@@ -252,7 +235,6 @@ async def analyze_tickets(
         return json.loads(content_str)
 
     except json.JSONDecodeError as e:
-        # Mostra o pedaço exato que falhou para sabermos o que veio
-        raise HTTPException(status_code=500, detail=f"Erro JSON. Conteúdo recebido: '{content_str}' | Erro: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro de formatação JSON retornado pela IA: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no processamento (Groq): {str(e)}")
