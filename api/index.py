@@ -8,7 +8,7 @@ from google import genai
 from google.genai import types
 from groq import Groq
 
-app = FastAPI(title="MoneyballPro Engine", version="2.2.1")
+app = FastAPI(title="MoneyballPro Engine", version="2.3.0")
 
 # Habilita CORS para liberar requisições do frontend
 app.add_middleware(
@@ -205,7 +205,7 @@ PERFIS_ANALISTA = {
     },
     "cris": {
         "delta_min": 4.0,
-        "odd_min": 1.20,
+        "odd_min": 1.60,
         "odd_max": 2.80,
         "faixas_stake": [
             (4.0, 6.5, "1.0u"),
@@ -232,6 +232,183 @@ def get_groq_client():
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY não configurada na Vercel.")
     return Groq(api_key=GROQ_API_KEY)
+
+
+def _extrair_json_de_texto(texto: str) -> Optional[dict]:
+    """Isola e parseia o primeiro bloco {...} de um texto, tolerando cercas
+    de markdown (```json ... ```). Retorna None se não conseguir parsear —
+    nunca lança exceção, porque busca/extração falhando não pode derrubar
+    o resto da análise (o app cai de volta pra estimativa do Groq)."""
+    if not texto:
+        return None
+    texto = texto.strip()
+    if "```" in texto:
+        texto = re.sub(r"^```(?:json)?\s*", "", texto)
+        texto = re.sub(r"\s*```$", "", texto)
+    match = re.search(r'\{.*\}', texto, re.DOTALL)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+
+
+def extrair_time_e_mercados_gols(gemini_client, contents: list, sport: str) -> Optional[dict]:
+    """
+    Passo estruturado (separado do OCR de texto livre já existente): pede ao
+    Gemini pra devolver JSON com os nomes dos times e os mercados de TOTAL DE
+    GOLS presentes nos prints (linha, odd, lado). Isso é o que permite montar
+    o input pro cálculo Poisson determinístico — sem isso, calcular_dossie não
+    tem como ser alimentado automaticamente.
+
+    Escopo hoje: só Total de Gols (mercado mais comum e o que o cálculo do
+    Léo já cobre). Outros mercados continuam pela estimativa do Groq mais
+    abaixo no pipeline.
+    """
+    if sport.lower() != "futebol":
+        return None  # Poisson de gols só se aplica a futebol por enquanto
+
+    prompt = """Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
+{
+  "time_a": "Nome do primeiro time mencionado",
+  "time_b": "Nome do segundo time mencionado",
+  "mercados_gols": [
+    {"linha": 2.5, "odd": 1.85, "lado": "under"},
+    {"linha": 2.5, "odd": 1.95, "lado": "over"}
+  ]
+}
+Regras:
+- "mercados_gols" deve conter APENAS linhas de Total de Gols da Partida (Over/Under) que estejam explicitamente visíveis nos prints, com odd real.
+- "lado" deve ser exatamente "over" ou "under".
+- Se não houver nenhum mercado de Total de Gols visível, retorne "mercados_gols": [].
+- NUNCA invente time, linha ou odd que não esteja no print."""
+
+    try:
+        res = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=contents + [prompt],
+            config=types.GenerateContentConfig(temperature=0)
+        )
+        dados = _extrair_json_de_texto(res.text)
+        print(f"[EXTRACAO ESTRUTURADA DEBUG] {dados}")
+        return dados
+    except Exception as e:
+        print(f"[EXTRACAO ESTRUTURADA ERRO] {str(e)}")
+        return None  # falha aqui não derruba o resto — cai pro fluxo antigo
+
+
+FONTES_AUTORIZADAS_POR_ESPORTE = {
+    "futebol": "site:fbref.com OR site:sofascore.com",
+    "basquete": "site:basketball-reference.com OR site:nba.com",
+    "beisebol": "site:baseballsavant.com OR site:baseball-reference.com",
+    "nfl": "site:pro-football-reference.com",
+}
+
+
+def executar_mie1(gemini_client, time_a: str, time_b: str, sport: str) -> Optional[dict]:
+    """
+    Estágio de investigação (MIE1): busca real via Google Search grounding,
+    restrita a fontes de autoridade por esporte (mesmo princípio do MIE1
+    original, adaptado de JS pra Python). Devolve os gols esperados de cada
+    time já prontos (team_a_projected / team_b_projected) — o Poisson usa
+    esses dois números direto como λ, sem precisar decompor em "marcada" e
+    "sofrida" separadamente, porque essa parte (cruzar ataque de um time
+    com defesa do outro) já é feita aqui, com base em pesquisa real.
+
+    Se a busca falhar ou vier incompleta, retorna None — pipeline cai de
+    volta pra estimativa do Groq (fallback seguro), nunca quebra a análise.
+    """
+    esporte_key = sport.lower()
+    fontes = FONTES_AUTORIZADAS_POR_ESPORTE.get(esporte_key, FONTES_AUTORIZADAS_POR_ESPORTE["futebol"])
+
+    prompt = f"""Você é um Investigador Quantitativo Esportivo. Busque na internet, OBRIGATORIAMENTE
+usando o operador de busca {fontes}, as estatísticas mais recentes e confiáveis dos
+times "{time_a}" e "{time_b}" para {sport.upper()}.
+
+Investigue também fatores contextuais atuais: desfalques confirmados, lesões, clima
+no horário do jogo, fadiga de calendário.
+
+Retorne ESTRITAMENTE este JSON, sem markdown, sem texto fora do JSON:
+{{
+  "team_a_projected": 1.4,
+  "team_b_projected": 1.1,
+  "fonte": "nome do site usado",
+  "contextual_factors": [
+    {{"factor_type": "injury", "description": "...", "impact_level": "high|medium|low", "affected_team": "..."}}
+  ],
+  "key_asymmetries": [
+    {{"clash": "...", "statistical_evidence": "...", "betting_angle": "..."}}
+  ]
+}}
+
+Regras:
+- "team_a_projected" e "team_b_projected" são a expectativa de GOLS (ou pontos/runs,
+  conforme o esporte) de cada time NESTE confronto — já cruzando o ataque de um time
+  com a defesa do outro, baseado em dados reais e atuais encontrados na busca.
+- Se não encontrar dado recente e confiável para os dois times nas fontes indicadas,
+  retorne null no lugar do JSON inteiro (sem inventar números)."""
+
+    try:
+        res = gemini_client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                temperature=0,
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+            ),
+        )
+        dados = _extrair_json_de_texto(res.text)
+        print(f"[MIE1 DEBUG] time_a={time_a} time_b={time_b} sport={sport} resultado={dados}")
+
+        if not dados:
+            return None
+        if dados.get("team_a_projected") is None or dados.get("team_b_projected") is None:
+            return None  # busca incompleta — mais seguro descartar que usar parcial
+
+        return dados
+    except Exception as e:
+        print(f"[MIE1 ERRO] {str(e)}")
+        return None  # falha na busca não derruba o resto — cai pro fluxo antigo
+
+
+def montar_candidatos_gols_calculados(mercados_gols: list, projecao_mie1: dict) -> list:
+    """
+    Roda cada mercado de Total de Gols extraído através do cálculo Poisson
+    determinístico, usando λ = team_a_projected + team_b_projected (já
+    calculado pelo MIE1 via pesquisa real). Computa o edge real:
+    Δ = Probabilidade_Real_Calculada - Probabilidade_Implícita_da_Odd.
+    """
+    lam_total = round(projecao_mie1["team_a_projected"] + projecao_mie1["team_b_projected"], 3)
+
+    candidatos = []
+    for i, m in enumerate(mercados_gols):
+        linha = m.get("linha")
+        odd = m.get("odd")
+        lado = m.get("lado")
+        if linha is None or odd is None or lado not in ("over", "under"):
+            continue
+
+        p_over, p_under = prob_over_under(linha, lam_total)
+        prob_real = p_under if lado == "under" else p_over
+        prob_implicita_odd = round(1 / odd, 4) if odd else None
+        edge_pct = round((prob_real - prob_implicita_odd) * 100, 2) if prob_implicita_odd is not None else None
+        ev = calcular_ev(prob_real, odd)
+        kelly = kelly_fracionado(prob_real, odd) if ev is not None and ev > 0 else None
+
+        candidatos.append({
+            "mercado": "Total de Gols da Partida",
+            "selecao": f"{'Mais' if lado == 'over' else 'Menos'} de {linha} Gols",
+            "odd": odd,
+            "lambda_esperado_partida": lam_total,
+            "probabilidade_real_calculada": prob_real,
+            "probabilidade_implicita_odd": prob_implicita_odd,
+            "delta_edge_pct_calculado": edge_pct,
+            "ev": ev,
+            "kelly_unidades_sugerido": kelly,
+        })
+
+    return candidatos
 
 
 def montar_system_prompt_mie2(sport: str, analyst: str = "carlos") -> str:
@@ -289,10 +466,24 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 ------------------------------------------------
 
 [3. FILTROS DE SEGURANÇA E REGRA DOS DOIS MELHORES EDGES]
+0. DADOS JÁ CALCULADOS (se fornecidos abaixo, na mensagem do usuário, sob o
+   cabeçalho "CANDIDATOS DE TOTAL DE GOLS JÁ CALCULADOS (Poisson)"):
+   - Para o mercado de Total de Gols da Partida, o valor de Δ NÃO deve ser
+     estimado por você — ele já vem calculado deterministicamente (Poisson)
+     a partir de estatísticas reais buscadas na internet. Use EXATAMENTE
+     o "delta_edge_pct_calculado", "odd" e "selecao" fornecidos ali, sem
+     alterar nenhum número.
+   - Você pode e deve continuar estimando Δ normalmente para os DEMAIS
+     mercados (escanteios, cartões, props) — a regra acima vale só para
+     Total de Gols quando os dados calculados estiverem presentes.
+   - Se nenhum candidato de Total de Gols calculado for fornecido, estime
+     esse mercado como os demais, com a desconfiança normal já prevista
+     nas regras abaixo.
+
 1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min = {delta_min}% para {persona_curto}):
    - A assimetria (Δ) é: Δ = Prob_Modelo - Prob_Odd.
    - SÓ É ELEGÍVEL QUALQUER SELEÇÃO COM Δ >= {delta_min}%. Este piso vale IGUALMENTE para Entrada 1 e Entrada 2 — não existe piso reduzido para a segunda vaga.
-   - NUNCA declare um Δ acima de {DELTA_MAX_PLAUSIVEL}% a menos que a evidência nos prints seja explícita e inequívoca — deltas muito altos em mercados líquidos são raros e devem ser tratados com desconfiança, não como "grande oportunidade".
+   - NUNCA declare um Δ acima de {DELTA_MAX_PLAUSIVEL}% a menos que a evidência nos prints seja explícita e inequívoca — deltas muito altos em mercados líquidos são raros e devem ser tratados com desconfiança, não como "grande oportunidade". Esta regra de teto NÃO se aplica ao Δ de Total de Gols quando ele vier do cálculo Poisson (item 0) — esse já é confiável por construção.
 {tabela_stake}
 
 2. SELEÇÃO DA DUPLA DE ELITE (LIVRE DE CATEGORIA):
@@ -414,7 +605,7 @@ def validar_e_sanear_entrada(entrada: Optional[dict], perfil: dict) -> Optional[
 def health_check():
     return {
         "status": "ok",
-        "engine": "MoneyballPro FastAPI v2.1",
+        "engine": "MoneyballPro FastAPI v2.3 (com grounding real via Google Search)",
         "gemini_key_set": bool(GEMINI_API_KEY),
         "groq_key_set": bool(GROQ_API_KEY),
         "perfis_analista": {
@@ -483,6 +674,55 @@ async def analyze_tickets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
+    # 1b. GROUNDING REAL: extrai mercados de Total de Gols estruturados e busca
+    #     médias reais dos times via Google Search, para alimentar o cálculo
+    #     Poisson determinístico. Se qualquer etapa falhar ou vier incompleta,
+    #     candidatos_gols_calculados fica vazio e o pipeline cai de volta pro
+    #     Groq estimando esse mercado também — nunca quebra a análise inteira.
+    candidatos_gols_calculados = []
+    contexto_mie1_texto = ""
+    try:
+        dados_estruturados = extrair_time_e_mercados_gols(gemini_client, contents[:-1], sport)
+        if dados_estruturados and dados_estruturados.get("mercados_gols"):
+            time_a = dados_estruturados.get("time_a")
+            time_b = dados_estruturados.get("time_b")
+            if time_a and time_b:
+                projecao_mie1 = executar_mie1(gemini_client, time_a, time_b, sport)
+                if projecao_mie1:
+                    candidatos_gols_calculados = montar_candidatos_gols_calculados(
+                        dados_estruturados["mercados_gols"], projecao_mie1
+                    )
+                    partes_contexto = []
+                    if projecao_mie1.get("contextual_factors"):
+                        partes_contexto.append(
+                            "FATORES CONTEXTUAIS (lesões, clima, desfalques — via MIE1):\n"
+                            + json.dumps(projecao_mie1["contextual_factors"], ensure_ascii=False)
+                        )
+                    if projecao_mie1.get("key_asymmetries"):
+                        partes_contexto.append(
+                            "ASSIMETRIAS JÁ IDENTIFICADAS (via MIE1):\n"
+                            + json.dumps(projecao_mie1["key_asymmetries"], ensure_ascii=False)
+                        )
+                    if projecao_mie1.get("fonte"):
+                        partes_contexto.append(f"Fonte consultada: {projecao_mie1['fonte']}")
+                    contexto_mie1_texto = "\n\n".join(partes_contexto)
+    except Exception as e:
+        # Grounding é um "bônus" sobre o fluxo já existente — se falhar, loga
+        # e segue com a estimativa do Groq, não derruba a análise inteira.
+        print(f"[GROUNDING PIPELINE ERRO] {str(e)}")
+        candidatos_gols_calculados = []
+
+    bloco_dados_calculados = ""
+    if candidatos_gols_calculados:
+        bloco_dados_calculados = (
+            "\n\nCANDIDATOS DE TOTAL DE GOLS JÁ CALCULADOS (Poisson, com base em "
+            "projeção real do MIE1 via busca em fontes de autoridade — use estes "
+            "números EXATAMENTE como estão, não reestime):\n"
+            + json.dumps(candidatos_gols_calculados, ensure_ascii=False, indent=2)
+        )
+    if contexto_mie1_texto:
+        bloco_dados_calculados += f"\n\n{contexto_mie1_texto}"
+
     # 2. ANÁLISE QUANTITATIVA VIA GROQ COM GPT-OSS-120B
     groq_client = get_groq_client()
     system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, analyst=analyst)
@@ -492,7 +732,7 @@ async def analyze_tickets(
             model="openai/gpt-oss-120b",
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
-                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
+                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}{bloco_dados_calculados}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
             ],
             temperature=0.1,
             max_tokens=4096
