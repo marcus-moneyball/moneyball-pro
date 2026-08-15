@@ -1,5 +1,9 @@
 """Validação e saneamento das entradas devolvidas pelo MIE2, contra o perfil do analista."""
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from typing import Optional
 from catalogos import DELTA_MAX_PLAUSIVEL
 from utils import _parse_float_seguro
