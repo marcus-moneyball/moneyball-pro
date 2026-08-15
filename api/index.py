@@ -221,14 +221,14 @@ async def analyze_tickets(
     system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
 
     try:
-        completion = groq_client.chat.completions.create(
-            model="qwen/qwen3.6-27b",
+       completion = groq_client.chat.completions.create(
+            model="qwen-3.6-27b", # Verifique se o nome no GroqCloud é exatamente esse ou 'qwen-2.5-32b'
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
-                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
+                {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem explicações."}
             ],
-            temperature=0.1,
-            extra_body={"reasoning_format": "hidden"}
+            temperature=0, # ZERO absoluto ajuda na consistência JSON
+            max_tokens=4096 
         )
 
         # ADICIONE ESTA LINHA PARA DEBUGGAR NO CONSOLE DA VERCEL
