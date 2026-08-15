@@ -4,4 +4,3 @@ python-multipart
 google-genai
 groq
 Pillow
-flask
