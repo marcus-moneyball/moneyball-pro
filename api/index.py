@@ -40,11 +40,28 @@ def get_groq_client():
         raise HTTPException(status_code=500, detail="GROQ_API_KEY não configurada na Vercel.")
     return Groq(api_key=GROQ_API_KEY)
 
-def montar_system_prompt_mie2(sport: str, foco: str = "misto") -> str:
+def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "carlos") -> str:
     esporte_key = sport.lower()
     catalogo_esporte = REGRAS_ESPORTES.get(esporte_key, REGRAS_ESPORTES["futebol"])
 
-    return f"""Você é o Moneyball Intelligence Engine (MIE v2.5), analista quantitativo de alta precisão para a modalidade {sport.upper()}.
+    # ---------------------------------------------------------
+    # DEFINIÇÃO DO DNA DO ANALISTA (PERSONA E TOM DE VOZ)
+    # ---------------------------------------------------------
+    if analyst == "cris":
+        persona_nome = "Cris (A Especialista em Tiro Certo)"
+        persona_regras = """- FILOSOFIA: Ultra-conservadora, focada primariamente na proteção implacável de banca.
+- ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção. Exija margens de segurança estritas (rejeite tudo que parecer 'esticado').
+- TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
+    else:
+        # Default: Carlos Rivera
+        persona_nome = "Carlos Rivera (O Estrategista Técnico)"
+        persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
+- ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
+- TOM DE VOZ: Analítico, astuto, confiante, tático, usando o jargão de inteligência de mercado de forma fluida."""
+
+    return f"""Você é {persona_nome}, e utiliza o Moneyball Intelligence Engine (MIE v2.5) como ferramenta quantitativa de alta precisão para a modalidade {sport.upper()}.
+
+{persona_regras}
 
 Você recebe a transcrição OCR de 2 a 5 prints contendo dados táticos, probabilísticos e odds reais capturadas. Sua missão é aplicar o funil quantitativo sobre TODOS os mercados presentes nos prints e devolver as 2 melhores tomadas de decisão gerais no formato JSON padronizado.
 
@@ -104,17 +121,14 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 
 ------------------------------------------------
 
-[5. LINGUAGEM E TOM DE VOZ]
-- Comunique-se de forma SIMPLES, DIRETA e PRÁTICA.
-- Conecte o dado numérico à realidade tática do jogo de forma convincente.
+[5. REGRA DE RETORNO JSON STRICT]
+Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (sem marcações markdown antes ou depois, apenas o JSON bruto).
+Incorpore a personalidade do seu perfil (({persona_nome})) exclusivamente nos campos textuais explicativos como `perfil_geral` e `motivo`.
 
-------------------------------------------------
-
-[6. REGRA DE RETORNO JSON STRICT]
-Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (sem marcações markdown antes ou depois, apenas o JSON bruto). Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` com "erro_divergencia_esporte" e detalhe no `perfil_geral`:
+Se houver erro de validação de esporte (Regra 4), preencha o `status_geral` com "erro_divergencia_esporte" e detalhe no `perfil_geral`:
 
 {{
-  "perfil_geral": "Síntese quantitativa da partida e leitura tática...",
+  "perfil_geral": "Síntese quantitativa da partida e leitura tática no tom de voz do analista...",
   "status_geral": "processado_com_sucesso",
   "hipotese_partida": "TIPO A | TIPO B | TIPO C",
   "stake_medio_partida": "1.0u",
@@ -137,7 +151,7 @@ Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (se
       "msc_score": 90,
       "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa da entrada..."
+      "motivo": "Justificativa da entrada com o tom de voz do analista escolhido..."
     }},
     "entrada_2": {{
       "categoria": "MACRO ou MICRO",
@@ -148,7 +162,7 @@ Sua resposta DEVE SER ESTRITAMENTE um JSON válido na estrutura exata abaixo (se
       "msc_score": 85,
       "stake_recomendada": "1.0u",
       "confiabilidade": "ALTA",
-      "motivo": "Justificativa da entrada..."
+      "motivo": "Justificativa da entrada com o tom de voz do analista escolhido..."
     }}
   }},
   "key_asymmetries": [
@@ -174,6 +188,7 @@ def health_check():
 async def analyze_tickets(
     sport: str = Form(...),
     foco: str = Form("misto"),
+    analyst: str = Form("carlos"), # <--- RECEBENDO A PERSONA AQUI
     files: List[UploadFile] = File(...)
 ):
     if not files:
@@ -201,9 +216,9 @@ async def analyze_tickets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # 2. ANÁLISE QUANTITATIVA VIA GROQ (GPT-OSS 120B)
+    # 2. ANÁLISE QUANTITATIVA VIA GROQ (INCLUINDO A PERSONA)
     groq_client = get_groq_client()
-    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco)
+    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
 
     try:
         completion = groq_client.chat.completions.create(
