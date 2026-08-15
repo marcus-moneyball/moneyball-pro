@@ -3,3 +3,5 @@ python-multipart
 scipy
 groq
 google-genai
+pillow
+uvicorn
