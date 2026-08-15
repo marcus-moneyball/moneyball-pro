@@ -1,7 +1,5 @@
 """
 MoneyballPro Engine -- ponto de entrada FastAPI.
-Toda a lógica pesada mora nos outros módulos; este arquivo só faz roteamento
-HTTP e orquestra a chamada entre eles (OCR -> MIE1 -> cálculo Python -> MIE2).
 """
 
 import os
@@ -12,14 +10,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
 from groq import Groq
 
-from .catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-from .calc import calcular_dossie
-from .mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
-from .candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
-from .prompts_mie2 import montar_system_prompt_mie2
-from .validacao import validar_e_sanear_entrada
+# Importações absolutas robustas para o ambiente Vercel Serverless
+try:
+    from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
+    from api.calc import calcular_dossie
+    from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
+    from api.candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
+    from api.prompts_mie2 import montar_system_prompt_mie2
+    from api.validacao import validar_e_sanear_entrada
+except ImportError:
+    from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
+    from calc import calcular_dossie
+    from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
+    from candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
+    from prompts_mie2 import montar_system_prompt_mie2
+    from validacao import validar_e_sanear_entrada
 
-app = FastAPI(title="MoneyballPro Engine", version="2.5.0")
+app = FastAPI(title="MoneyballPro Engine", version="2.5.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,7 +50,7 @@ def get_groq_client():
 def health_check():
     return {
         "status": "ok",
-        "engine": "MoneyballPro FastAPI v2.5 (Cálculo Determinístico: Poisson + Normal Gaussiana)",
+        "engine": "MoneyballPro FastAPI v2.5.1",
         "gemini_key_set": bool(GEMINI_API_KEY),
         "groq_key_set": bool(GROQ_API_KEY),
         "perfis_analista": {
@@ -76,7 +83,6 @@ async def analyze_tickets(
 
     perfil = PERFIS_ANALISTA.get(analyst, PERFIS_ANALISTA["carlos"])
 
-    # 1. OCR + Leitura de Imagem via Gemini Flash Lite
     gemini_client = get_gemini_client()
     contents = []
 
@@ -89,7 +95,6 @@ async def analyze_tickets(
             )
         )
 
-    # 2. Extração Estruturada dos Prints
     dados_estruturados = extrair_mercados_estruturados(gemini_client, contents, sport)
 
     candidatos_calculados = []
@@ -99,7 +104,6 @@ async def analyze_tickets(
         time_a = dados_estruturados["time_a"]
         time_b = dados_estruturados["time_b"]
 
-        # 3. MIE1: Pesquisa Grounding na Web
         mie1_data = executar_mie1(gemini_client, time_a, time_b, sport)
 
         if mie1_data:
@@ -110,7 +114,6 @@ async def analyze_tickets(
                 lam_total = lam_a + lam_b
                 cfg = CONFIG_MERCADO_PRINCIPAL.get(sport.lower(), CONFIG_MERCADO_PRINCIPAL["futebol"])
 
-                # Cálculo da linha principal
                 candidatos_calculados.extend(
                     montar_candidatos_over_under_calculados(
                         dados_estruturados.get("mercados_total_principal", []),
@@ -121,7 +124,6 @@ async def analyze_tickets(
                     )
                 )
 
-                # Se for futebol, calcula Cantos, Cartões e BTTS
                 if sport.lower() == "futebol":
                     cantos_a = mie1_data.get("team_a_escanteios_projected")
                     cantos_b = mie1_data.get("team_b_escanteios_projected")
@@ -153,7 +155,6 @@ async def analyze_tickets(
                     montar_candidato_btts(dados_estruturados.get("mercado_btts"), lam_a, lam_b)
                 )
 
-    # 4. MIE2: Execução com Groq / Llama
     groq_client = get_groq_client()
     system_prompt = montar_system_prompt_mie2(sport, analyst)
 
@@ -170,7 +171,6 @@ async def analyze_tickets(
         if contexto_mie1["contextual_factors"] or contexto_mie1["key_asymmetries"]:
             user_prompt_content += f"\n\n[DADOS DE CONTEXTO E ASSIMETRIAS DA PESQUISA WEB (MIE1)]\n" + json.dumps(contexto_mie1, indent=2, ensure_ascii=False)
 
-    # OCR Primário pelo Gemini para entregar texto formatado ao Groq
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
@@ -190,7 +190,6 @@ async def analyze_tickets(
 
     resultado_final = json.loads(groq_response.choices[0].message.content)
 
-    # 5. Validação e Saneamento das Entradas
     if resultado_final.get("dupla_de_elite"):
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
         e2 = resultado_final["dupla_de_elite"].get("entrada_2")
