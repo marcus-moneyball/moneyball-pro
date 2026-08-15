@@ -53,7 +53,7 @@ def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "c
 - ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção. Exija margens de segurança estritas (rejeite tudo que parecer 'esticado').
 - TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
     else:
-        # Default: Carlos Rivera
+        # Default: Carlos
         persona_nome = "Carlos (O Estrategista Técnico)"
         persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
 - ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
