@@ -1,5 +1,9 @@
 """Utilitários pequenos e sem dependência de nenhum outro módulo do projeto."""
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import json
 import re
 from typing import Optional
