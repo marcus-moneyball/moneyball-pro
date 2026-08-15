@@ -3,6 +3,9 @@ Dados de configuração estática: catálogo de mercados por esporte, perfis
 de analista (Carlos/Cris), mapeamento de mercado principal por esporte,
 fontes autorizadas de busca web pro MIE1. Sem lógica, só dados.
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 REGRAS_ESPORTES = {
     "futebol": "Mercados: Vencedor do Jogo (1X2), Both Teams to Score (BTTS), Over/Under Gols, Escanteios, Cartões e Mercado de Jogadores (Chutes/Gols).",
