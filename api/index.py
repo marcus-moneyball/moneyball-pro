@@ -53,7 +53,7 @@ def montar_system_prompt_mie2(sport: str, foco: str = "misto", analyst: str = "c
 - ANÁLISE: Rejeite qualquer risco desnecessário. Priorize apostas simples seguras ou duplas apenas com altíssima convicção. Exija margens de segurança estritas (rejeite tudo que parecer 'esticado').
 - TOM DE VOZ: Sóbrio, direto, focado estritamente na mitigação de risco e proteção matemática do capital."""
     else:
-        # Default: Carlos
+        # Default: Carlos Rivera
         persona_nome = "Carlos (O Estrategista Técnico)"
         persona_regras = """- FILOSOFIA: Técnico, elegante e letal, atuando como um boxeador de elite no ringue do mercado financeiro esportivo.
 - ANÁLISE: Varre os mercados em busca de valor oculto e assimetria que as casas de apostas não precificaram corretamente. Focado em montar a Dupla de Elite perfeita com volume e leitura fina de handicaps.
@@ -188,7 +188,7 @@ def health_check():
 async def analyze_tickets(
     sport: str = Form(...),
     foco: str = Form("misto"),
-    analyst: str = Form("carlos"), # <--- RECEBENDO A PERSONA AQUI
+    analyst: str = Form("carlos"),
     files: List[UploadFile] = File(...)
 ):
     if not files:
@@ -216,30 +216,29 @@ async def analyze_tickets(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no OCR (Gemini): {str(e)}")
 
-    # Chamada GROQ QWEN
+    # 2. ANÁLISE QUANTITATIVA VIA GROQ (QWEN)
+    groq_client = get_groq_client()
+    system_instruction_mie2 = montar_system_prompt_mie2(sport=sport, foco=foco, analyst=analyst)
+
+    try:
         completion = groq_client.chat.completions.create(
-            model="qwen/qwen3.6-27b", # Verifique se o nome está exato na Groq
+            model="qwen/qwen3.6-27b",
             messages=[
                 {"role": "system", "content": system_instruction_mie2},
                 {"role": "user", "content": f"OCR DOS PRINTS:\n{texto_extraido_ocr}\n\nResponda APENAS com o JSON bruto, sem nenhuma explicação ou saudação."}
             ],
-            temperature=0.1
-            # REMOVIDO: response_format={"type": "json_object"}
+            temperature=0.1,
+            extra_body={"reasoning_format": "hidden"}
         )
 
         content_str = completion.choices[0].message.content.strip()
 
-        # LIMPEZA UNIVERSAL (Isso aqui ignora qualquer saudação ou Markdown que ele invente)
+        # LIMPEZA UNIVERSAL (Isola perfeitamente o JSON entre chaves)
         match = re.search(r'\{.*\}', content_str, re.DOTALL)
         if match:
             content_str = match.group(0)
         
-        # Agora sim, faz o load
-        return json.loads(content_str)
-
-        content_str = completion.choices[0].message.content.strip()
-
-        # Limpeza defensiva de blocos Markdown (evita crash no json.loads)
+        # Remove eventuais marcações markdown remanescentes
         if "```" in content_str:
             content_str = re.sub(r"^```(?:json)?\s*", "", content_str)
             content_str = re.sub(r"\s*```$", "", content_str)
