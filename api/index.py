@@ -231,14 +231,19 @@ async def analyze_tickets(
             extra_body={"reasoning_format": "hidden"}
         )
 
+        # ADICIONE ESTA LINHA PARA DEBUGGAR NO CONSOLE DA VERCEL
+        print("RESPOSTA BRUTA DA GROQ:", repr(completion.choices[0].message.content))
+
         content_str = completion.choices[0].message.content.strip()
 
-        # LIMPEZA UNIVERSAL (Isola perfeitamente o JSON entre chaves)
+        if not content_str:
+            raise HTTPException(status_code=500, detail="A Groq retornou uma resposta completamente vazia.")
+
+        # LIMPEZA UNIVERSAL
         match = re.search(r'\{.*\}', content_str, re.DOTALL)
         if match:
             content_str = match.group(0)
         
-        # Remove eventuais marcações markdown remanescentes
         if "```" in content_str:
             content_str = re.sub(r"^```(?:json)?\s*", "", content_str)
             content_str = re.sub(r"\s*```$", "", content_str)
@@ -247,6 +252,7 @@ async def analyze_tickets(
         return json.loads(content_str)
 
     except json.JSONDecodeError as e:
-        raise HTTPException(status_code=500, detail=f"Erro de formatação JSON retornado pela IA: {str(e)}")
+        # Mostra o pedaço exato que falhou para sabermos o que veio
+        raise HTTPException(status_code=500, detail=f"Erro JSON. Conteúdo recebido: '{content_str}' | Erro: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro no processamento (Groq): {str(e)}")
