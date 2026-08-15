@@ -180,14 +180,14 @@ const LIMITE_DIARIO = 5;
 
 // ============================================================
 // MODO DESENVOLVEDOR
-// Acesse a URL uma vez com ?dev=SUACHAVESECRETA (troque DEV_KEY
+// Acesse a URL uma vez com ?dev=marcus-mb-2026-brasilia (troque DEV_KEY
 // abaixo por algo só seu, não óbvio). Fica salvo no navegador
 // até você limpar o localStorage ou usar outro navegador/aba anônima.
 // IMPORTANTE: isso só remove o limite na INTERFACE. O endpoint
 // /api/v1/analyze continua aberto no backend sem controle de uso —
 // isso não é proteção de custo de API, é só conveniência de UI.
 // ============================================================
-const DEV_KEY = "troque-por-uma-chave-so-sua";
+const DEV_KEY = "marcus-mb-2026-brasilia";
 const urlParams = new URLSearchParams(window.location.search);
 
 if (urlParams.get("dev") === DEV_KEY) {
