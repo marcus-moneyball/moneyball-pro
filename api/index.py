@@ -26,8 +26,6 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # ============================================================
 # CAMADA DE CÁLCULO DETERMINÍSTICO MULTI-ESPORTE
-# (Poisson para Futebol/Gols/Escanteios/Cartões/TDs/Strikeouts)
-# (Distribuição Normal para Basquete/Pontos/NFL Jardas)
 # ============================================================
 
 def poisson_pmf(k: int, lam: float) -> float:
@@ -43,7 +41,6 @@ def poisson_cdf(k: int, lam: float) -> float:
 
 
 def prob_over_under_poisson(linha: float, lam: float):
-    """Para contagens discretas (futebol, cartões, escanteios, strikeouts, TDs)."""
     piso = math.floor(linha)
     p_under = poisson_cdf(piso, lam)
     p_over = 1.0 - p_under
@@ -51,10 +48,6 @@ def prob_over_under_poisson(linha: float, lam: float):
 
 
 def prob_over_under_normal(linha: float, media: float, desvio_padrao: float = 11.5):
-    """
-    Para pontuações altas/variáveis contínuas (Basquete Pontos, NFL Jardas).
-    Usa Distribuição Normal Acumulada (CDF).
-    """
     if desvio_padrao <= 0:
         desvio_padrao = 10.0
     p_under = stats.norm.cdf(linha, loc=media, scale=desvio_padrao)
@@ -114,9 +107,7 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
 
     esporte_key = esporte.lower()
 
-    # Seleção de Modelo Matemático por Esporte/Mercado
     if esporte_key in ("basquete", "nfl") and mercado.get("modelo") != "poisson":
-        # Usamos Normal para Pontos/Jardas
         media_esperada = mercado.get("media_esperada") or estimar_lambda(mercado)
         if media_esperada is None:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
@@ -125,7 +116,6 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
         p_over, p_under = prob_over_under_normal(linha, media_esperada, std_dev)
         lam_ref = media_esperada
     else:
-        # Usamos Poisson para Futebol, Beisebol e Props discretos (Cartões, Cantos, Strikeouts, TDs)
         lam_ref = estimar_lambda(mercado) if mercado.get("media_esperada") is None else mercado.get("media_esperada")
         if lam_ref is None:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
@@ -375,7 +365,6 @@ def montar_candidatos_over_under_calculados(
         if linha is None or odd is None or lado not in ("over", "under"):
             continue
 
-        # Cálculo conforme o esporte
         if esporte_key in ("basquete", "nfl") and "escanteios" not in nome_mercado.lower() and "cartoes" not in nome_mercado.lower():
             std_dev = 12.0 if esporte_key == "basquete" else 18.5
             p_over, p_under = prob_over_under_normal(linha, lam_total, std_dev)
@@ -562,8 +551,15 @@ Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora d
     }},
     "entrada_2": null
   }},
-  "key_asymmetries": []
+  "key_asymmetries": [
+    {{
+      "clash": "Descrição do confronto tático ou desfalque",
+      "statistical_evidence": "A evidência numérica real",
+      "betting_angle": "Como isso justifica a entrada"
+    }}
+  ]
 }}
+- REGRA EXTRA: Preencha o array "key_asymmetries" utilizando obrigatoriamente os [DADOS DE CONTEXTO E ASSIMETRIAS] que serão fornecidos no prompt do usuário.
 """
 
 
@@ -653,6 +649,7 @@ async def analyze_tickets(
     dados_estruturados = extrair_mercados_estruturados(gemini_client, contents, sport)
     
     candidatos_calculados = []
+    mie1_data = None
     
     if dados_estruturados and dados_estruturados.get("time_a") and dados_estruturados.get("time_b"):
         time_a = dados_estruturados["time_a"]
@@ -708,9 +705,9 @@ async def analyze_tickets(
                             )
                         )
 
-                    candidatos_calculados.extend(
-                        montar_candidato_btts(dados_estruturados.get("mercado_btts"), lam_a, lam_b)
-                    )
+                candidatos_calculados.extend(
+                    montar_candidato_btts(dados_estruturados.get("mercado_btts"), lam_a, lam_b)
+                )
 
     # 4. MIE2: Execução com Groq / Llama
     groq_client = get_groq_client()
@@ -720,6 +717,16 @@ async def analyze_tickets(
     
     if candidatos_calculados:
         user_prompt_content += f"\n\n[CANDIDATOS JÁ CALCULADOS PELO PYTHON]\n" + json.dumps(candidatos_calculados, indent=2, ensure_ascii=False)
+
+    # === CÓDIGO NOVO: INJETANDO AS ASSIMETRIAS DA WEB NO GROQ ===
+    if mie1_data:
+        contexto_mie1 = {
+            "contextual_factors": mie1_data.get("contextual_factors", []),
+            "key_asymmetries": mie1_data.get("key_asymmetries", [])
+        }
+        if contexto_mie1["contextual_factors"] or contexto_mie1["key_asymmetries"]:
+            user_prompt_content += f"\n\n[DADOS DE CONTEXTO E ASSIMETRIAS DA PESQUISA WEB (MIE1)]\n" + json.dumps(contexto_mie1, indent=2, ensure_ascii=False)
+    # =============================================================
 
     # OCR Primário pelo Gemini para entregar texto formatado ao Groq
     ocr_res = gemini_client.models.generate_content(
