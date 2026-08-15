@@ -3,6 +3,9 @@ Camada de cálculo determinístico multi-esporte (Delta + Poisson + Normal + Kel
 Sem chamadas de rede -- só matemática. Deve permanecer assim: nunca importar
 clientes de API aqui, pra continuar 100% testável isoladamente.
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import math
 from typing import Optional
