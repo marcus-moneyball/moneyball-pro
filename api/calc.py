@@ -45,13 +45,33 @@ def calcular_delta_mercado(lam: float, linha: float):
     return delta_abs, delta_pct
 
 
+def calcular_fator_robustez(confianca_dados: float = 1.0) -> float:
+    """
+    Calcula o Fator de Robustez baseado na consistência dos dados de entrada.
+    Fórmula: min(1.0, 0.85 + 0.15 * (confianca_dados))
+    """
+    confianca_dados = max(0.0, min(1.0, confianca_dados))
+    return min(1.0, 0.85 + 0.15 * confianca_dados)
+
+
+def calcular_probabilidade_real_ajustada(p_modelo: float, confianca_dados: float = 1.0) -> float:
+    """
+    Calcula a Probabilidade Real Ajustada aplicando o fator de robustez.
+    """
+    robustez = calcular_fator_robustez(confianca_dados)
+    return round(max(0.01, min(0.99, p_modelo * robustez)), 4)
+
+
 def calcular_ev(prob_real: float, odd_decimal: float):
     if prob_real is None or odd_decimal is None:
         return None
     return round((prob_real * odd_decimal) - 1, 4)
 
 
-def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5):
+def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[str]:
+    """
+    Calcula o Critério de Kelly Fracionado e traduz o resultado em unidades reais (ex: '1.5u').
+    """
     if prob_real is None or odd_decimal is None or odd_decimal <= 1:
         return None
     b = odd_decimal - 1
@@ -60,8 +80,18 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
     f_star = (b * p - q) / b
     if f_star <= 0:
         return None
-    unidades = round(f_star * fracao * 10, 2)
-    return min(unidades, teto_unidades)
+    
+    kelly_frac = f_star * fracao
+    # Traduzindo para unidades base (escala proporcional padrão)
+    unidades_calculadas = kelly_frac * 20.0 
+    
+    # Aplicar o teto de segurança
+    stake_final = min(teto_unidades, max(0.5, unidades_calculadas))
+    
+    # Arredondar para múltiplos de 0.25u
+    stake_arredondada = round(stake_final * 4) / 4
+    
+    return f"{stake_arredondada:.1f}u"
 
 
 def estimar_lambda(mercado: dict) -> Optional[float]:
@@ -97,13 +127,18 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
 
         std_dev = mercado.get("desvio_padrao", 12.0 if esporte_key == "basquete" else 18.5)
-        p_over, p_under = prob_over_under_normal(linha, media_esperada, std_dev)
+        p_over_bruto, p_under_bruto = prob_over_under_normal(linha, media_esperada, std_dev)
         lam_ref = media_esperada
     else:
         lam_ref = estimar_lambda(mercado) if mercado.get("media_esperada") is None else mercado.get("media_esperada")
         if lam_ref is None:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
-        p_over, p_under = prob_over_under_poisson(linha, lam_ref)
+        p_over_bruto, p_under_bruto = prob_over_under_poisson(linha, lam_ref)
+
+    # Aplicação do Fator de Robustez e Probabilidade Real Ajustada
+    confianca = mercado.get("confianca_dados", 1.0)
+    p_over = calcular_probabilidade_real_ajustada(p_over_bruto, confianca)
+    p_under = calcular_probabilidade_real_ajustada(p_under_bruto, confianca)
 
     odd = mercado.get("odd_real_decimal")
     delta_abs, delta_pct = calcular_delta_mercado(lam_ref, linha)
