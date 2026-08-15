@@ -50,7 +50,7 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.5 • Matrix & Safety Locks
             </div>
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Varredura quantitativa com Edge Mínimo (&Delta; &ge; 5%) e Janela de Odds (1.60 a 2.80).</p>
+            <p class="text-xs text-slate-500">Varredura quantitativa com Edge Mínimo (&Delta; &ge; 2.5%) e Janela de Odds (1.60 a 2.80).</p>
             
             <div class="pt-2">
                 <div class="inline-flex items-center justify-center gap-2 bg-base-panel border border-base-border rounded-lg px-4 py-1.5 shadow-sm">
@@ -173,7 +173,6 @@ let imagensArquivosSelecionados = [];
 let ultimoResultadoGlobal = null;
 const focoAtivo = "misto";
 
-// Controle de Estado do App
 let sportAtivo = "futebol";
 let analistaAtivo = "carlos";
 let usosHoje = 0; 
@@ -207,7 +206,6 @@ function selecionarSport(key) {
     buildSportTabs();
 }
 
-// LOGICA DE SELEÇÃO DE PERSONA
 function selecionarAnalista(tipo) {
     analistaAtivo = tipo;
     const btnCarlos = document.getElementById('btn-carlos');
@@ -216,13 +214,11 @@ function selecionarAnalista(tipo) {
     const subCris = document.getElementById('sub-cris');
 
     if (tipo === 'carlos') {
-        // Ativa Carlos
         btnCarlos.className = "p-3.5 rounded-xl border border-accent bg-accent/10 text-white transition-all flex items-center gap-3 text-left shadow-lg shadow-accent/5";
         btnCris.className = "p-3.5 rounded-xl border border-base-border bg-base-card text-slate-400 transition-all flex items-center gap-3 text-left hover:border-slate-600";
         iconCris.classList.add('opacity-60');
         subCris.classList.replace('text-value/80', 'text-slate-500');
     } else {
-        // Ativa Cris
         btnCris.className = "p-3.5 rounded-xl border border-value bg-value/10 text-white transition-all flex items-center gap-3 text-left shadow-lg shadow-value/5";
         btnCarlos.className = "p-3.5 rounded-xl border border-base-border bg-base-card text-slate-400 transition-all flex items-center gap-3 text-left hover:border-slate-600";
         iconCris.classList.remove('opacity-60');
@@ -270,7 +266,7 @@ async function processarPrintComEngine() {
     const formData = new FormData();
     formData.append("sport", sportAtivo);
     formData.append("foco", focoAtivo);
-    formData.append("analyst", analistaAtivo); // Enviando o DNA do modelo escolhido
+    formData.append("analyst", analistaAtivo);
 
     for (const file of imagensArquivosSelecionados) {
         formData.append("files", file);
@@ -296,7 +292,6 @@ async function processarPrintComEngine() {
 }
 
 async function executarAnalise() {
-    // 1. VERIFICAÇÃO DE LIMITE DIÁRIO
     if (usosHoje >= LIMITE_DIARIO) {
         abrirModal();
         return;
@@ -316,11 +311,9 @@ async function executarAnalise() {
 
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Acordando ${analistaAtivo === 'carlos' ? 'Carlos' : 'Cris'}...`;
         
-        // Simulação / Chamada Real da API
         const dados = await processarPrintComEngine();
         ultimoResultadoGlobal = dados;
 
-        // 2. INCREMENTA O USO
         usosHoje++;
         atualizarContadorUso();
 
@@ -336,7 +329,6 @@ async function executarAnalise() {
     }
 }
 
-// FUNÇÕES DO MODAL (WAITLIST)
 function abrirModal() {
     document.getElementById('waitlist-modal').classList.remove('hidden');
 }
@@ -351,14 +343,10 @@ function entrarWaitlist() {
         alert("Por favor, insira um e-mail válido.");
         return;
     }
-    // Lógica para salvar no banco iria aqui
     alert("Inscrição confirmada! Avisaremos assim que novas vagas forem liberadas.");
     fecharModal();
     document.getElementById('waitlist-email').value = '';
 }
-
-// (As funções renderizarBilhetesFormatados, recolherEntrada e formatarTituloEntrada seguem a mesma lógica anterior)
-// ... [MANTIDAS EXATAMENTE IGUAIS AO SEU CÓDIGO ORIGINAL PARA NÃO QUEBRAR O LAYOUT]
 
 function recolherEntrada() {
     document.getElementById("input-box")?.classList.add("hidden");
@@ -386,10 +374,141 @@ function alertaErro(msg) {
     return `<div class="bg-risk/10 border border-risk/30 text-risk text-sm p-4 rounded-xl mb-5 shadow-sm">⚠️ ${msg}</div>`;
 }
 
-// Mock da função de renderização (substitua pelo bloco completo da sua versão anterior caso tenha truncado algo)
+function compartilharResultado() {
+    if (!ultimoResultadoGlobal) return;
+    const texto = `🔥 Dossie MoneyballPro (${ultimoResultadoGlobal.match_info?.teams || 'Análise'}) via ${analistaAtivo.toUpperCase()}`;
+    if (navigator.share) {
+        navigator.share({ title: 'MoneyballPro', text: texto, url: window.location.href }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(texto);
+        alert("Resumo copiado para a área de transferência!");
+    }
+}
+
+// RENDERIZAÇÃO COMPLETA DOS BILHETES E DOSSIÊ
 function renderizarBilhetesFormatados(dados) {
     const display = document.getElementById("display-area");
-    display.innerHTML = `<div class="bg-base-panel p-5 rounded-xl border border-value/30 text-value text-center fade-up"><i class="fa-solid fa-check-circle text-2xl mb-2"></i><br>Análise processada com sucesso pelo analista <b>${analistaAtivo.toUpperCase()}</b>.</div>`;
+    if (!dados) return;
+
+    const e1 = dados.dupla_de_elite?.entrada_1 || {};
+    const e2 = dados.dupla_de_elite?.entrada_2 || {};
+    const match = dados.match_info || {};
+    const proj = dados.expected_projections || {};
+    const asymmetries = dados.key_asymmetries || [];
+
+    let htmlEntrada2 = '';
+    if (e2 && e2.mercado) {
+        htmlEntrada2 = `
+            <div class="bg-base-card border border-base-border rounded-xl p-4 space-y-3 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-accent"></div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded bg-accent-soft text-accent border border-accent/20">Entrada 2 • ${e2.categoria || 'MICRO'}</span>
+                    <span class="text-xs font-mono font-bold text-value">Odd @${e2.odd}</span>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400 font-medium">${e2.mercado}</p>
+                    <p class="text-sm font-bold text-white mt-0.5">${e2.selecao}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-base-border/50 text-[11px] font-mono">
+                    <div><span class="text-slate-500">Delta Edge:</span> <span class="text-accent font-bold">${e2.delta_edge}</span></div>
+                    <div><span class="text-slate-500">Stake:</span> <span class="text-white font-bold">${e2.stake_recomendada}</span></div>
+                </div>
+                <p class="text-[11px] text-slate-400 italic bg-base-bg/50 p-2 rounded border border-base-border/30">"${e2.motivo}"</p>
+            </div>
+        `;
+    } else {
+        htmlEntrada2 = `
+            <div class="bg-base-card/40 border border-dashed border-base-border rounded-xl p-4 flex items-center justify-center text-center text-xs text-slate-500">
+                <span>Filtro de Segurança ativado: Apenas 1 seleção elegível com Edge ideal.</span>
+            </div>
+        `;
+    }
+
+    let htmlAsymmetries = asymmetries.map(a => `
+        <div class="bg-base-card border border-base-border rounded-xl p-3 text-xs space-y-1">
+            <p class="font-bold text-accent">${a.clash}</p>
+            <p class="text-slate-300"><b>Evidência:</b> ${a.statistical_evidence}</p>
+            <p class="text-slate-400 text-[11px]"><b>Direcionamento:</b> ${a.betting_angle}</p>
+        </div>
+    `).join('');
+
+    display.innerHTML = `
+        <div class="space-y-4 fade-up">
+            <!-- CABEÇALHO DO DOSSIÊ -->
+            <div class="bg-base-panel border border-accent/30 rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-value to-accent"></div>
+                
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-accent bg-accent-soft px-2.5 py-1 rounded-full border border-accent/20">${match.sport || sportAtivo.toUpperCase()}</span>
+                        <h2 class="text-xl md:text-2xl font-display text-white mt-1.5">${match.teams || 'Análise de Partida'}</h2>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] font-mono text-slate-400 block">Hipótese Tática</span>
+                        <span class="text-xs font-bold text-value font-mono bg-value/10 border border-value/20 px-2 py-0.5 rounded">${dados.hipotese_partida || 'TIPO A'}</span>
+                    </div>
+                </div>
+
+                <p class="text-xs text-slate-300 leading-relaxed bg-base-card/60 p-3.5 rounded-xl border border-base-border">
+                    <b class="text-accent">Análise de ${analistaAtivo.toUpperCase()}:</b> ${dados.perfil_geral}
+                </p>
+
+                <div class="grid grid-cols-2 gap-2 text-xs font-mono pt-1">
+                    <div class="bg-base-card p-2.5 rounded-xl border border-base-border">
+                        <span class="text-slate-500 block text-[10px]">PROJEÇÃO MACRO</span>
+                        <span class="text-slate-200 font-semibold">${proj.macro_projected || 'N/A'}</span>
+                    </div>
+                    <div class="bg-base-card p-2.5 rounded-xl border border-base-border">
+                        <span class="text-slate-500 block text-[10px]">PROJEÇÃO MICRO</span>
+                        <span class="text-slate-200 font-semibold">${proj.micro_projected || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUPLA DE ELITE -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between px-1">
+                    <h3 class="font-display text-lg text-white tracking-wide flex items-center gap-2">
+                        <i class="fa-solid fa-crosshairs text-accent text-sm"></i> DUPLA DE ELITE RECOMENDADA
+                    </h3>
+                    <span class="text-[11px] font-mono text-slate-400">Stake Média: <b class="text-white">${dados.stake_medio_partida || '1.0u'}</b></span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- ENTRADA 1 -->
+                    <div class="bg-base-card border border-base-border rounded-xl p-4 space-y-3 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-value"></div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded bg-value/10 text-value border border-value/20">Entrada 1 • ${e1.categoria || 'MACRO'}</span>
+                            <span class="text-xs font-mono font-bold text-value">Odd @${e1.odd}</span>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium">${e1.mercado || 'Mercado Principal'}</p>
+                            <p class="text-sm font-bold text-white mt-0.5">${e1.selecao || 'Seleção'}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-base-border/50 text-[11px] font-mono">
+                            <div><span class="text-slate-500">Delta Edge:</span> <span class="text-accent font-bold">${e1.delta_edge}</span></div>
+                            <div><span class="text-slate-500">Stake:</span> <span class="text-white font-bold">${e1.stake_recomendada}</span></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 italic bg-base-bg/50 p-2 rounded border border-base-border/30">"${e1.motivo}"</p>
+                    </div>
+
+                    <!-- ENTRADA 2 -->
+                    ${htmlEntrada2}
+                </div>
+            </div>
+
+            <!-- ASSIMETRIAS CHAVE -->
+            ${asymmetries.length > 0 ? `
+                <div class="space-y-2 pt-2">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Assimetrias Estatísticas Detalhadas</h4>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${htmlAsymmetries}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
 }
 </script>
 </body>
