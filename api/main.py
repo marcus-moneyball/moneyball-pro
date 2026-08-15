@@ -12,12 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
 from groq import Groq
 
-from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-from calc import calcular_dossie
-from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
-from candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
-from prompts_mie2 import montar_system_prompt_mie2
-from validacao import validar_e_sanear_entrada
+from .catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
+from .calc import calcular_dossie
+from .mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
+from .candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
+from .prompts_mie2 import montar_system_prompt_mie2
+from .validacao import validar_e_sanear_entrada
 
 app = FastAPI(title="MoneyballPro Engine", version="2.5.0")
 
