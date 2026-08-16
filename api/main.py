@@ -77,13 +77,15 @@ async def calcular_mercados(payload: dict):
 @app.post("/api/v1/analyze")
 async def analyze_tickets(
     sport: str = Form(...),
-    analyst: str = Form("carlos"),
+    analyst: str = Form("cris"),
     files: List[UploadFile] = File(...)
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    perfil = PERFIS_ANALISTA.get(analyst, PERFIS_ANALISTA["carlos"])
+    # Garante que o analista padrão seja a Cris caso venha vazio ou inválido
+    analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "cris"
+    perfil = PERFIS_ANALISTA.get(analista_key, PERFIS_ANALISTA["cris"])
 
     gemini_client = get_gemini_client()
     contents = []
@@ -158,7 +160,7 @@ async def analyze_tickets(
                 )
 
     groq_client = get_groq_client()
-    system_prompt = montar_system_prompt_mie2(sport, analyst)
+    system_prompt = montar_system_prompt_mie2(sport, analista_key)
 
     user_prompt_content = "Analise os seguintes dados visuais dos tickets de apostas fornecidos e extraia o valor."
 
