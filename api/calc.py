@@ -167,7 +167,7 @@ def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", anal
     """
     Função principal unificada:
     - Carlos: Foco em Matriz de Correlação, EV+ e Alinhamento Tático (Edge mínimo 3.5%).
-    - Cris: Foco em Assimetrias Estatísticas, Desvios de Linha e Proteção (Edge mínimo 5.0%).
+    - Cris: Foco em Assimetrias Estatísticas, Desvios de Linha e Proteção (Edge mínimo 4.0%).
     """
     resultados_calculados = []
     for m in mercados:
@@ -178,8 +178,8 @@ def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", anal
 
     validos = [r for r in resultados_calculados if r.get("status") == "calculado"]
     
-    # Filtro de Edge mínimo por Analista
-    edge_minimo = 5.0 if analista.lower() == "cris" else 3.5
+    # Filtro de Edge mínimo ajustado para a Cris (4.0% em vez de 5.0% para aceitar mercados coletivos)
+    edge_minimo = 4.0 if analista.lower() == "cris" else 3.5
     
     com_edge = sorted(
         [r for r in validos if r.get("delta_pct") is not None and abs(r.get("delta_pct")) >= edge_minimo and r.get("ev") is not None and r.get("ev") > 0],
@@ -191,12 +191,13 @@ def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", anal
     asymmetries = []
     for r in validos:
         delta_pct = r.get("delta_pct", 0) or 0
-        if abs(delta_pct) >= 6.0:
+        # Gatilho abaixado para 4.5% para gerar assimetrias em mercados coletivos
+        if abs(delta_pct) >= 4.5:
             direcao = "OVER" if delta_pct > 0 else "UNDER"
             asymmetries.append({
                 "clash": f"Assimetria em {r.get('mercado_nome', 'Linha Principal')}",
                 "statistical_evidence": f"Desvio estatístico de {delta_pct}% detectado entre o modelo e a linha oficial.",
-                "betting_angle": f"Cris aponta forte assimetria para o lado do {direcao}. O mercado está desajustado em relação à média esperada."
+                "betting_angle": f"Cris aponta forte assimetria para o lado do {direcao}. O mercado coletivo está desajustado em relação à média esperada."
             })
 
     # 2. MÓDULO DO CARLOS: Matriz de Correlação e Seleção da Dupla de Elite
