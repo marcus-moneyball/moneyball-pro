@@ -12,7 +12,9 @@ def montar_system_prompt_mie2(sport: str, analyst: str = "cris") -> str:
     catalogo_esporte = REGRAS_ESPORTES.get(esporte_key, REGRAS_ESPORTES["futebol"])
 
     perfil = PERFIS_ANALISTA.get(analyst, PERFIS_ANALISTA["cris"])
-    delta_min = perfil["delta_min"]
+    
+    # Força o delta mínimo da Cris para 4.0% para alinhar com o calc.py e liberar coletivos
+    delta_min = 4.0 if analyst.lower() == "cris" else perfil["delta_min"]
     odd_min = perfil["odd_min"]
     odd_max = perfil["odd_max"]
 
@@ -29,7 +31,7 @@ def montar_system_prompt_mie2(sport: str, analyst: str = "cris") -> str:
         persona_regras = """- FILOSOFIA: Focada no comportamento macro e em encontrar assimetrias estatísticas globais entre a realidade das equipes e as linhas das casas de apostas.
 - ESCOPO ESTRITO: Analisa EXCLUSIVAMENTE mercados coletivos da partida (ex: Vencedor/1X2, Totais de Gols/Pontos, Handicaps, Escanteios e Cartões). Proibido focar em atletas individuais.
 - ANÁLISE: Rejeite odds maiores se a chance estatística coletiva sofrer quedas. Priorize a solidez e previsibilidade macro da partida.
-- SELEÇÃO DA DUPLA DE ELITE: Escolha priorizando o teto máximo de probabilidade e solidez coletiva. (Seu Δ mínimo é 4%).
+- SELEÇÃO DA DUPLA DE ELITE: Escolha priorizando o teto máximo de probabilidade e solidez coletiva. (Seu Δ mínimo é flexibilizado para 4.0% para aproveitar mercados coletivos viáveis).
 - QUANDO HOUVER MAIS DE UMA LINHA POSSÍVEL NO MESMO MERCADO-BASE, PREFIRA SEMPRE A LINHA ESTATISTICAMENTE MAIS PROVÁVEL DE BATER.
 - TOM DE VOZ: Sóbrio, direto, focado na mitigação de risco coletivo e solidez."""
         categoria_json = "COLETIVO"
@@ -99,7 +101,7 @@ Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
 ------------------------------------------------
 
 [5. REGRA DE RETORNO JSON STRICT]
-Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora da estrutura.
+Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora da estrutura. NÃO inclua campos de análise macro ou micro.
 
 {{
   "perfil_geral": "Síntese quantitativa...",
@@ -111,14 +113,10 @@ Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora d
     "teams": "Time A vs Time B",
     "date": "Hoje"
   }},
-  "expected_projections": {{
-    "macro_projected": "Projeção macro",
-    "micro_projected": "Projeção micro"
-  }},
   "dupla_de_elite": {{
     "entrada_1": {{
       "categoria": "{categoria_json}",
-      "dependencia_hipotese": "DEPENDENTE ou INDEPENDENTE",
+      "dependencia_hipoteste": "DEPENDENTE ou INDEPENDENTE",
       "mercado": "Nome do Mercado",
       "selecao": "Seleção Explícita",
       "odd": "1.85",
@@ -138,5 +136,5 @@ Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora d
     }}
   ]
 }}
-- REGRA EXTRA: Preencha o array "key_asymmetries" utilizando obrigatoriamente os [DADOS DE CONTEXTO E ASSIMETRIAS] fornecidos.
+- REGRA EXTRA: Preencha o array "key_asymmetries" utilizando obrigatoriamente os [DADOS DE ASSIMETRIAS] fornecidos.
 """
