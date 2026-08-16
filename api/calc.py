@@ -1,14 +1,14 @@
 """
 Camada de cálculo determinístico multi-esporte (Delta + Poisson + Normal + Kelly).
-Sem chamadas de rede -- só matemática. Deve permanecer assim: nunca importar
-clientes de API aqui, pra continuar 100% testável isoladamente.
+Integrado com Análise de Assimetrias (Cris) e Matriz de Correlações (Carlos).
+Sem chamadas de rede — 100% testável isoladamente.
 """
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import math
-from typing import Optional
+from typing import Optional, List, Dict, Any
 import scipy.stats as stats
 
 
@@ -48,7 +48,6 @@ def calcular_delta_mercado(lam: float, linha: float):
 def calcular_fator_robustez(confianca_dados: float = 1.0) -> float:
     """
     Calcula o Fator de Robustez baseado na consistência dos dados de entrada.
-    Fórmula: min(1.0, 0.85 + 0.15 * (confianca_dados))
     """
     confianca_dados = max(0.0, min(1.0, confianca_dados))
     return min(1.0, 0.85 + 0.15 * confianca_dados)
@@ -70,7 +69,7 @@ def calcular_ev(prob_real: float, odd_decimal: float):
 
 def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[float]:
     """
-    Calcula o Critério de Kelly Fracionado e retorna o resultado em número decimal limpo (ex: 1.5).
+    Calcula o Critério de Kelly Fracionado em unidades (ex: 1.5).
     """
     if prob_real is None or odd_decimal is None or odd_decimal <= 1:
         return None
@@ -82,13 +81,9 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
         return None
     
     kelly_frac = f_star * fracao
-    # Traduzindo para unidades base (escala proporcional padrão)
     unidades_calculadas = kelly_frac * 20.0 
     
-    # Aplicar o teto de segurança
     stake_final = min(teto_unidades, max(0.5, unidades_calculadas))
-    
-    # Arredondar para múltiplos de 0.25 e retornar float
     stake_arredondada = round(round(stake_final * 4) / 4, 2)
     
     return float(stake_arredondada)
@@ -135,7 +130,6 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
         p_over_bruto, p_under_bruto = prob_over_under_poisson(linha, lam_ref)
 
-    # Aplicação do Fator de Robustez e Probabilidade Real Ajustada
     confianca = mercado.get("confianca_dados", 1.0)
     p_over = calcular_probabilidade_real_ajustada(p_over_bruto, confianca)
     p_under = calcular_probabilidade_real_ajustada(p_under_bruto, confianca)
@@ -146,6 +140,7 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
     resultado = {
         "id": mercado.get("id"),
         "status": "calculado",
+        "mercado_nome": mercado.get("nome", "Linha Geral"),
         "esperado_estimado": lam_ref,
         "probabilidade_over": p_over,
         "probabilidade_under": p_under,
@@ -153,6 +148,8 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
         "delta_pct": delta_pct,
         "ev": None,
         "kelly_unidades": None,
+        "odd_real_decimal": odd,
+        "lado_odd": mercado.get("lado_odd", "over")
     }
 
     if odd is not None:
@@ -166,11 +163,79 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
     return resultado
 
 
-def calcular_dossie(mercados: list, esporte: str = "futebol") -> list:
-    resultados = []
+def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", analista: str = "carlos") -> dict:
+    """
+    Função principal unificada:
+    - Carlos: Foco em Matriz de Correlação, EV+ e Alinhamento Tático (Edge mínimo 3.5%).
+    - Cris: Foco em Assimetrias Estatísticas, Desvios de Linha e Proteção (Edge mínimo 5.0%).
+    """
+    resultados_calculados = []
     for m in mercados:
         try:
-            resultados.append(calcular_mercado(m, esporte=esporte))
+            resultados_calculados.append(calcular_mercado(m, esporte=esporte))
         except Exception as e:
-            resultados.append({"id": m.get("id"), "status": "erro_calculo", "detalhe": str(e)})
-    return resultados
+            resultados_calculados.append({"id": m.get("id"), "status": "erro_calculo", "detalhe": str(e)})
+
+    validos = [r for r in resultados_calculados if r.get("status") == "calculado"]
+    
+    # Filtro de Edge mínimo por Analista
+    edge_minimo = 5.0 if analista.lower() == "cris" else 3.5
+    
+    com_edge = sorted(
+        [r for r in validos if r.get("delta_pct") is not None and abs(r.get("delta_pct")) >= edge_minimo and r.get("ev") is not None and r.get("ev") > 0],
+        key=lambda x: x["ev"],
+        reverse=True
+    )
+
+    # 1. MÓDULO DA CRIS: Assimetrias Estatísticas
+    asymmetries = []
+    for r in validos:
+        delta_pct = r.get("delta_pct", 0) or 0
+        if abs(delta_pct) >= 6.0:
+            direcao = "OVER" if delta_pct > 0 else "UNDER"
+            asymmetries.append({
+                "clash": f"Assimetria em {r.get('mercado_nome', 'Linha Principal')}",
+                "statistical_evidence": f"Desvio estatístico de {delta_pct}% detectado entre o modelo e a linha oficial.",
+                "betting_angle": f"Cris aponta forte assimetria para o lado do {direcao}. O mercado está desajustado em relação à média esperada."
+            })
+
+    # 2. MÓDULO DO CARLOS: Matriz de Correlação e Seleção da Dupla de Elite
+    entrada_1 = com_edge[0] if len(com_edge) > 0 else None
+    entrada_2 = None
+    
+    if len(com_edge) > 1:
+        for cand in com_edge[1:]:
+            # Carlos valida correlação cruzada para evitar sobreposição de risco no mesmo sentido
+            if entrada_1 and cand.get("id") != entrada_1.get("id"):
+                if cand.get("lado_odd") != entrada_1.get("lado_odd") or abs(cand.get("delta_pct", 0) - entrada_1.get("delta_pct", 0)) > 2.0:
+                    entrada_2 = cand
+                    break
+        if not entrada_2:
+            entrada_2 = com_edge[1]
+
+    return {
+        "analista_responsavel": analista.lower(),
+        "key_asymmetries": asymmetries[:3],
+        "dupla_de_elite": {
+            "entrada_1": formatar_para_dupla(entrada_1),
+            "entrada_2": formatar_para_dupla(entrada_2)
+        }
+    }
+
+
+def formatar_para_dupla(mercado_calculado: Optional[dict]) -> Optional[dict]:
+    if not mercado_calculado:
+        return None
+    
+    lado = "Over" if mercado_calculado.get("lado_odd") == "over" else "Under"
+    prob = mercado_calculado.get("probabilidade_over") if lado == "Over" else mercado_calculado.get("probabilidade_under")
+    
+    return {
+        "categoria": "VALOR ENCONTRADO",
+        "mercado": mercado_calculado.get("mercado_nome", "Linha do Jogo"),
+        "selecao": f"{lado} (Lambda Ref: {mercado_calculado.get('esperado_estimado')})",
+        "odd": mercado_calculado.get("odd_real_decimal", 1.90),
+        "delta_edge": f"{mercado_calculado.get('delta_pct', 0)}%",
+        "stake_recomendada": f"{mercado_calculado.get('kelly_unidades', 1.0)}u",
+        "motivo": f"EV de {mercado_calculado.get('ev', 0)*100:.1f}% com probabilidade real ajustada de {prob*100:.1f}%."
+    }
