@@ -165,9 +165,7 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
 
 def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", analista: str = "carlos") -> dict:
     """
-    Função principal unificada:
-    - Carlos: Foco em Matriz de Correlação, EV+ e Alinhamento Tático (Edge mínimo 3.5%).
-    - Cris: Foco em Assimetrias Estatísticas, Desvios de Linha e Proteção (Edge mínimo 4.0%).
+    Função principal unificada com Fallback de Elite para evitar retornos vazios.
     """
     resultados_calculados = []
     for m in mercados:
@@ -176,16 +174,54 @@ def calcular_dossie_com_analistas(mercados: list, esporte: str = "futebol", anal
         except Exception as e:
             resultados_calculados.append({"id": m.get("id"), "status": "erro_calculo", "detalhe": str(e)})
 
-    validos = [r for r in resultados_calculados if r.get("status") == "calculado"]
+    validos = [r for r in resultados_calculados if r.get("status") == "calculado" and r.get("ev") is not None and r.get("ev") > 0]
     
-    # Filtro de Edge mínimo ajustado para a Cris (4.0% em vez de 5.0% para aceitar mercados coletivos)
+    # 1. Filtro de Edge padrão
     edge_minimo = 4.0 if analista.lower() == "cris" else 3.5
-    
     com_edge = sorted(
-        [r for r in validos if r.get("delta_pct") is not None and abs(r.get("delta_pct")) >= edge_minimo and r.get("ev") is not None and r.get("ev") > 0],
+        [r for r in validos if r.get("delta_pct") is not None and abs(r.get("delta_pct")) >= edge_minimo],
         key=lambda x: x["ev"],
         reverse=True
     )
+
+    # --- FALLBACK DE ELITE ---
+    # Se a lista estiver vazia, pegamos o melhor mercado disponível entre todos os válidos (maior EV)
+    if not com_edge and validos:
+        com_edge = sorted(validos, key=lambda x: x["ev"], reverse=True)
+
+    # 2. MÓDULO DA CRIS: Assimetrias Estatísticas
+    asymmetries = []
+    # Usamos os válidos para gerar assimetrias, mesmo se não atingirem o edge mínimo de aposta
+    for r in sorted(validos, key=lambda x: abs(x.get("delta_pct", 0)), reverse=True)[:3]:
+        delta_pct = r.get("delta_pct", 0) or 0
+        direcao = "OVER" if delta_pct > 0 else "UNDER"
+        asymmetries.append({
+            "clash": f"Assimetria em {r.get('mercado_nome', 'Linha Principal')}",
+            "statistical_evidence": f"Desvio estatístico de {delta_pct}% detectado.",
+            "betting_angle": f"Cris aponta {direcao}. Ajuste tático sugerido com base na média esperada."
+        })
+
+    # 3. MÓDULO DO CARLOS: Matriz de Correlação e Seleção da Dupla de Elite
+    entrada_1 = com_edge[0] if len(com_edge) > 0 else None
+    entrada_2 = None
+    
+    if len(com_edge) > 1:
+        for cand in com_edge[1:]:
+            if entrada_1 and cand.get("id") != entrada_1.get("id"):
+                if cand.get("lado_odd") != entrada_1.get("lado_odd") or abs(cand.get("delta_pct", 0) - entrada_1.get("delta_pct", 0)) > 2.0:
+                    entrada_2 = cand
+                    break
+        if not entrada_2:
+            entrada_2 = com_edge[1]
+
+    return {
+        "analista_responsavel": analista.lower(),
+        "key_asymmetries": asymmetries,
+        "dupla_de_elite": {
+            "entrada_1": formatar_para_dupla(entrada_1),
+            "entrada_2": formatar_para_dupla(entrada_2)
+        }
+    }
 
     # 1. MÓDULO DA CRIS: Assimetrias Estatísticas
     asymmetries = []
