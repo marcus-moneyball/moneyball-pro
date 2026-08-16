@@ -28,7 +28,7 @@ except ImportError:
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
 
-app = FastAPI(title="MoneyballPro Engine", version="2.5.1")
+app = FastAPI(title="MoneyballPro Engine", version="2.5.2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,7 +52,7 @@ def get_groq_client():
 def health_check():
     return {
         "status": "ok",
-        "engine": "MoneyballPro FastAPI v2.5.1",
+        "engine": "MoneyballPro FastAPI v2.5.2",
         "gemini_key_set": bool(GEMINI_API_KEY),
         "groq_key_set": bool(GROQ_API_KEY),
         "perfis_analista": {
@@ -83,7 +83,6 @@ async def analyze_tickets(
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    # Garante que o analista padrão seja a Cris caso venha vazio ou inválido
     analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "cris"
     perfil = PERFIS_ANALISTA.get(analista_key, PERFIS_ANALISTA["cris"])
 
@@ -162,18 +161,17 @@ async def analyze_tickets(
     groq_client = get_groq_client()
     system_prompt = montar_system_prompt_mie2(sport, analista_key)
 
-    user_prompt_content = "Analise os seguintes dados visuais dos tickets de apostas fornecidos e extraia o valor."
+    user_prompt_content = "Analise os seguintes dados visuais dos tickets de apostas fornecidos e extraia o valor. Retorne APENAS o JSON limpo sem blocos de análise macro ou micro."
 
     if candidatos_calculados:
         user_prompt_content += f"\n\n[CANDIDATOS JÁ CALCULADOS PELO PYTHON]\n" + json.dumps(candidatos_calculados, indent=2, ensure_ascii=False)
 
     if mie1_data:
         contexto_mie1 = {
-            "contextual_factors": mie1_data.get("contextual_factors", []),
             "key_asymmetries": mie1_data.get("key_asymmetries", [])
         }
-        if contexto_mie1["contextual_factors"] or contexto_mie1["key_asymmetries"]:
-            user_prompt_content += f"\n\n[DADOS DE CONTEXTO E ASSIMETRIAS DA PESQUISA WEB (MIE1)]\n" + json.dumps(contexto_mie1, indent=2, ensure_ascii=False)
+        if contexto_mie1["key_asymmetries"]:
+            user_prompt_content += f"\n\n[DADOS DE ASSIMETRIAS DA PESQUISA WEB (MIE1)]\n" + json.dumps(contexto_mie1, indent=2, ensure_ascii=False)
 
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
@@ -183,7 +181,7 @@ async def analyze_tickets(
     texto_ocr = ocr_res.text or ""
 
     groq_response = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
@@ -193,6 +191,10 @@ async def analyze_tickets(
     )
 
     resultado_final = json.loads(groq_response.choices[0].message.content)
+
+    # Remove qualquer vestígio de macro/micro análise caso o modelo tente injetar
+    for chave_lixeira in ["analise_macro", "analise_micro", "macro", "micro", "analise"]:
+        resultado_final.pop(chave_lixeira, None)
 
     if resultado_final.get("dupla_de_elite"):
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
