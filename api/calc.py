@@ -239,3 +239,6 @@ def formatar_para_dupla(mercado_calculado: Optional[dict]) -> Optional[dict]:
         "stake_recomendada": f"{mercado_calculado.get('kelly_unidades', 1.0)}u",
         "motivo": f"EV de {mercado_calculado.get('ev', 0)*100:.1f}% com probabilidade real ajustada de {prob*100:.1f}%."
     }
+
+# ALIAS DE COMPATIBILIDADE PARA EVITAR O ERRO 500 DE IMPORTAÇÃO NO MAIN.PY
+calcular_dossie = calcular_dossie_com_analistas
