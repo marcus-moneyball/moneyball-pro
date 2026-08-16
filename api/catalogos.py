@@ -27,7 +27,7 @@ PERFIS_ANALISTA = {
     },
     "cris": {
         "delta_min": 4.0,
-        "odd_min": 1.60,
+        "odd_min": 1.40,
         "odd_max": 2.80,
         "faixas_stake": [
             (4.0, 6.5, "1.0u"),
