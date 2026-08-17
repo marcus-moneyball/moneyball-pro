@@ -221,10 +221,10 @@ def estimar_lambda(mercado: dict) -> Optional[float]:
 # ser validados contra dados históricos antes de pesar decisões de stake.
 
 CONFIANCA_ROTEIRO_GROUNDED = {
-    "futebol": 0.75,
-    "basquete": 0.70,
-    "beisebol": 0.65,
-    "nfl": 0.30,  # status experimental -- sem validação prática ainda
+    "futebol": 0.85,
+    "basquete": 0.80,
+    "beisebol": 0.80,
+    "nfl": 0.40,  # experimental
 }
 
 
