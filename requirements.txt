@@ -5,3 +5,4 @@ groq
 google-genai
 pillow
 uvicorn
+psycopg2-binary
