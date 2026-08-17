@@ -7,14 +7,6 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-
-"""
-Monta os candidatos de aposta a partir do lambda calculado pelo Python e das
-linhas/odds reais extraídas dos prints. Ponte entre calc.py e o texto que vai
-pro MIE2 (Groq) -- agora com Robustez, Probabilidade Real Ajustada e MSC reais,
-ponderados pela persona (Carlos ou Cris), em vez de deixar o Groq inventar.
-"""
-
 from typing import Optional
 from calc import (
     prob_over_under_normal,
