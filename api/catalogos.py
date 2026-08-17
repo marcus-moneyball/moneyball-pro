@@ -22,7 +22,7 @@ PERFIS_ANALISTA = {
     "cris": {
         "delta_min": 4.0,
         "odd_min": 1.60,
-        "odd_max": 2.80,
+        "odd_max": 3.00,
     },
 }
 
