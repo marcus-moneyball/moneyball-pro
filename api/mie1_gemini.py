@@ -7,6 +7,7 @@ dos times). Tudo que fala com a API do Gemini mora aqui.
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from typing import Optional
 from fastapi import HTTPException
 from google import genai
