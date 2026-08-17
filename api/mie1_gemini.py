@@ -3,10 +3,17 @@ MoneyballPro Engine -- ponto de entrada FastAPI.
 """
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
 import json
 from typing import List
+
+# Configuração de caminhos do sys.path para garantir importações corretas no ambiente Serverless (Vercel)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+if CURRENT_DIR not in sys.path:
+    sys.path.append(CURRENT_DIR)
+if PARENT_DIR not in sys.path:
+    sys.path.append(PARENT_DIR)
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
@@ -30,8 +37,6 @@ except ImportError:
     from validacao import validar_e_sanear_entrada
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
-
-import os
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
 
@@ -114,8 +119,6 @@ async def analyze_tickets(
         time_a = dados_estruturados["time_a"]
         time_b = dados_estruturados["time_b"]
 
-        # Cascata: banco local (só se os DOIS times estiverem lá) -> Gemini pros dois.
-        # Nunca mistura banco com Gemini no mesmo confronto (ver projecao.py).
         db_conn = get_connection()
         try:
             projecoes = obter_projecoes_partida(
@@ -127,15 +130,12 @@ async def analyze_tickets(
             fechar_conexao(db_conn)
 
         if projecoes:
-            mie1_data = projecoes.get("mie1_data")  # só existe se veio do Gemini
+            mie1_data = projecoes.get("mie1_data")
             fonte_projecao = projecoes["fonte"]
             lam_a = projecoes["lam_a"]
             lam_b = projecoes["lam_b"]
             fatores_incerteza = mie1_data.get("contextual_factors", []) if mie1_data else []
 
-            # Metodologia Nexus Cap. V -- roteiro de jogo só é classificável de forma
-            # determinística quando os dados vieram do MIE1 (Gemini com grounding);
-            # o banco local ainda não tem xG/pace/ortg/etc., só média marcada/sofrida.
             if mie1_data:
                 roteiro_classificado = classificar_roteiro_jogo(
                     sport,
@@ -235,10 +235,7 @@ async def analyze_tickets(
     for chave_lixeira in ["analise_macro", "analise_micro", "macro", "micro", "analise"]:
         resultado_final.pop(chave_lixeira, None)
 
-    # Auditoria: de onde veio a projeção de expectativa (banco local ou busca do Gemini)
     resultado_final["fonte_projecao"] = fonte_projecao
-    # Auditoria: roteiro determinístico calculado pelo Python (None se não houve
-    # dado de grounding suficiente pro esporte -- ver Metodologia Nexus Cap. V)
     resultado_final["roteiro_classificado_python"] = roteiro_classificado
 
     if resultado_final.get("dupla_de_elite"):
