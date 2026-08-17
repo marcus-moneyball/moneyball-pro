@@ -47,9 +47,27 @@ FONTES_AUTORIZADAS_POR_ESPORTE = {
 # Cada esporte usa o vocabulário de dado que realmente existe e é confiável via
 # grounding -- não existe um framework universal de roteiro (ver documentação).
 # Campos não encontrados voltam null; nunca bloqueiam o restante do JSON do MIE1.
+# catalogos.py
+
 CAMPOS_ROTEIRO_POR_ESPORTE = {
-    "futebol": ["xg_medio", "xg_sofrido_medio", "posse_media"],
-    "basquete": ["pace", "ortg", "drtg"],
-    "nfl": ["success_rate_of", "success_rate_def"],  # status experimental
-    "beisebol": ["pitcher_era", "lineup_ops", "bullpen_era"],
+    "futebol": [
+        "team_a_xg_medio", "team_b_xg_medio", 
+        "team_a_xg_sofrido_medio", "team_b_xg_sofrido_medio", 
+        "team_a_posse_media", "team_b_posse_media"
+    ],
+    "basquete": [
+        "team_a_pace", "team_b_pace", 
+        "team_a_ortg", "team_a_drtg", 
+        "team_b_ortg", "team_b_drtg"
+    ],
+    "nfl": [
+        "team_a_success_rate_of", "team_a_epa_play_of", 
+        "team_b_success_rate_def", "team_b_epa_play_def"
+    ],  # experimental / séries discretas
+    "beisebol": [
+        "pitcher_titular_stats", 
+        "lineup_adversario_stats", 
+        "bullpen_qualidade_a", 
+        "bullpen_qualidade_b"
+    ],  # foco em props e duelos individuais
 }
