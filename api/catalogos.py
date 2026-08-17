@@ -41,3 +41,15 @@ FONTES_AUTORIZADAS_POR_ESPORTE = {
     "beisebol": "site:baseballsavant.com OR site:baseball-reference.com",
     "nfl": "site:pro-football-reference.com",
 }
+
+# Metodologia Nexus Cap. V -- campos extras de roteiro de jogo que o MIE1 tenta
+# buscar por esporte, além do team_a_projected/team_b_projected já existente.
+# Cada esporte usa o vocabulário de dado que realmente existe e é confiável via
+# grounding -- não existe um framework universal de roteiro (ver documentação).
+# Campos não encontrados voltam null; nunca bloqueiam o restante do JSON do MIE1.
+CAMPOS_ROTEIRO_POR_ESPORTE = {
+    "futebol": ["xg_medio", "xg_sofrido_medio", "posse_media"],
+    "basquete": ["pace", "ortg", "drtg"],
+    "nfl": ["success_rate_of", "success_rate_def"],  # status experimental
+    "beisebol": ["pitcher_era", "lineup_ops", "bullpen_era"],
+}
