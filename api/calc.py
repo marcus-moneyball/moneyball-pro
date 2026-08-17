@@ -59,7 +59,7 @@ PENALIDADE_FATOR_MEDIO = 0.10
 
 
 def calcular_nivel_confianca_dados(tamanho_amostra: Optional[int] = None,
-                                    fatores_incerteza: Optional[list] = None) -> float:
+                                   fatores_incerteza: Optional[list] = None) -> float:
     """
     Nível de confiança (0 a 1) nos dados que sustentam a projeção:
     - confiança pela amostra: quanto mais jogos usados pra tirar a média, mais confiança.
@@ -156,8 +156,8 @@ DELTA_TETO_NORMALIZACAO = 15.0  # delta_pct de 15%+ já conta como "delta máxim
 
 
 def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
-                  prob_real_ajustada: Optional[float], robustez: float,
-                  persona: str = "carlos") -> Optional[int]:
+                 prob_real_ajustada: Optional[float], robustez: float,
+                 persona: str = "carlos") -> Optional[int]:
     """
     MSC (Moneyball Score), 0-100, ponderado pela personalidade do analista.
     Nunca inventado pela LLM -- sempre calculado aqui a partir de números reais.
