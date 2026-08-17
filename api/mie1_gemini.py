@@ -3,8 +3,24 @@ MoneyballPro Engine -- ponto de entrada FastAPI.
 """
 import sys
 import os
-import json
-from typing import List
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from google import genai
+from google.genai import types
+
+# Defina as funções diretamente aqui! NÃO coloque 'from api.mie1_gemini import ...'
+def get_gemini_client():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY não encontrada.")
+    return genai.Client(api_key=api_key)
+
+def extrair_mercados_estruturados(client, contents, sport):
+    # ... código da função ...
+    pass
+
+def executar_mie1(client, team_a, team_b, sport):
+    # ... código da função ...
+    pass
 
 # Configuração de caminhos do sys.path para garantir importações corretas no ambiente Serverless (Vercel)
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
