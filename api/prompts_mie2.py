@@ -66,11 +66,27 @@ Analise livremente os mercados permitidos para {sport.upper()} (restrito ao seu 
 
 ------------------------------------------------
 
-[2. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA]
-Classifique a partida em EXCLUSIVAMENTE UMA das 3 hipóteses táticas:
+[2. CLASSIFICAÇÃO DA HIPÓTESE DA PARTIDA -- METODOLOGIA NEXUS CAP. V]
+A partida se classifica em EXCLUSIVAMENTE UMA das 3 hipóteses táticas macro:
 1. TIPO A — PRODUÇÃO (Volume e Fluidez Distribuída): Ambas as partes contribuem.
 2. TIPO B — DOMÍNIO (Superioridade e Controle): Um lado domina o resultado.
 3. TIPO C — PRODUÇÃO ASSIMÉTRICA (Concentração Unilateral): Performance concentrada em um lado ou atleta.
+
+REGRA DE OURO -- se o bloco "[ROTEIRO JÁ CLASSIFICADO PELO PYTHON]" estiver presente
+no contexto, ele já traz o "macro" (um dos 3 tipos acima) calculado deterministicamente
+a partir de dados reais (xG, pace, eficiência ofensiva/defensiva ou matchup de
+arremessador conforme o esporte) -- USE ESSE VALOR EXATO em "hipotese_partida", nunca
+reclassifique ou escolha um tipo diferente. Use também o campo "evidencias" desse
+bloco como base factual para o campo "perfil_geral" e, quando fizer sentido, para
+"key_asymmetries". O campo "sub_tipo" (quando não vier null) é informação de apoio
+para você entender a dinâmica da partida com mais profundidade — não precisa
+aparecer literalmente no JSON de saída, mas deve influenciar seu "motivo" e
+"perfil_geral" (ex: um sub_tipo "B2_contra_ataque_letal" deve te deixar mais cauteloso
+com handicaps pesados do favorito, mesmo classificando a hipótese macro como TIPO B).
+
+Se o bloco "[ROTEIRO JÁ CLASSIFICADO PELO PYTHON]" NÃO estiver presente (esporte ou
+confronto sem dado de grounding suficiente), classifique "hipotese_partida" pela sua
+própria leitura da transcrição OCR e do contexto disponível, como já fazia antes.
 
 ------------------------------------------------
 
