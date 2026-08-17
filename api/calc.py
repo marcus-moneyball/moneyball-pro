@@ -208,6 +208,261 @@ def estimar_lambda(mercado: dict) -> Optional[float]:
 
 
 # ============================================================
+# ROTEIRO DE JOGO (Metodologia Nexus Cap. V) -- classificação determinística
+# ============================================================
+# Mesma regra de ouro do resto deste arquivo: calculado aqui a partir de dados
+# reais sempre que possível, nunca inventado pela LLM. Quando o esporte não tem
+# dado de grounding suficiente (ver campos exigidos por função abaixo), a função
+# retorna None -- nesse caso o MIE2 volta a classificar a hipótese de forma
+# narrativa, sem sub-tipo, com confiança baixa (ver prompts_mie2.py).
+#
+# Os thresholds numéricos abaixo (ex: delta_xg >= 0.6, xg_combinado >= 2.6) são
+# um ponto de partida razoável, NÃO calibrado empiricamente ainda -- precisam
+# ser validados contra dados históricos antes de pesar decisões de stake.
+
+CONFIANCA_ROTEIRO_GROUNDED = {
+    "futebol": 0.75,
+    "basquete": 0.70,
+    "beisebol": 0.65,
+    "nfl": 0.30,  # status experimental -- sem validação prática ainda
+}
+
+
+def classificar_roteiro_futebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Modelo territorial completo (5 arquétipos -- B1/B2/A1/A2/C1).
+    Campos exigidos em cada dict: xg_medio, xg_sofrido_medio (posse_media é opcional,
+    só refina B1 vs B2 quando presente)."""
+    xg_a = dados_time_a.get("xg_medio")
+    xg_b = dados_time_b.get("xg_medio")
+    xg_sofrido_a = dados_time_a.get("xg_sofrido_medio")
+    xg_sofrido_b = dados_time_b.get("xg_sofrido_medio")
+    posse_a = dados_time_a.get("posse_media")
+    posse_b = dados_time_b.get("posse_media")
+
+    if None in (xg_a, xg_b, xg_sofrido_a, xg_sofrido_b):
+        return None
+
+    delta_xg = xg_a - xg_b
+    xg_combinado = xg_a + xg_b
+    evidencias = []
+    dominante = None  # quem acaba classificado como lado forte, se houver (p/ instabilidade)
+
+    # Passo 1: quem domina TERRITORIALMENTE (posse), quando esse dado existe --
+    # é o sinal que decide entre B1 (domínio real) e B2 (domínio de posse vazio).
+    dominante_posse = None
+    if posse_a is not None and posse_b is not None:
+        if posse_a >= 55:
+            dominante_posse = "A"
+        elif posse_b >= 55:
+            dominante_posse = "B"
+
+    if dominante_posse:
+        dominante = dominante_posse
+        xg_dom = xg_a if dominante_posse == "A" else xg_b
+        xg_advers = xg_b if dominante_posse == "A" else xg_a
+        posse_dom = posse_a if dominante_posse == "A" else posse_b
+
+        if xg_dom - xg_advers >= 0.5:
+            macro, sub = "TIPO B", "B1_dominio_total"
+            evidencias.append(
+                f"Time {dominante_posse} com posse média de {posse_dom}% e xG de {xg_dom}, "
+                f"contra {xg_advers} do adversário -- posse e qualidade ofensiva convergem."
+            )
+        else:
+            macro, sub = "TIPO B", "B2_contra_ataque_letal"
+            evidencias.append(
+                f"Time {dominante_posse} com posse média de {posse_dom}%, mas xG de {xg_dom} "
+                f"próximo ou inferior ao xG do adversário ({xg_advers}) -- domínio territorial "
+                f"sem tradução proporcional em qualidade ofensiva; risco de contra-ataque."
+            )
+    elif abs(delta_xg) >= 0.6:
+        # Sem posse disponível pra confirmar/refutar, mas diferença de xG é grande --
+        # assume domínio real (B1) por padrão, já que não há sinal de "posse vazia" pra checar.
+        dominante = "A" if delta_xg > 0 else "B"
+        macro, sub = "TIPO B", "B1_dominio_total"
+        evidencias.append(f"Diferença de xG de {round(abs(delta_xg), 2)} a favor do time {dominante} (sem dado de posse disponível para refinar).")
+    else:
+        if xg_combinado >= 2.6:
+            macro, sub = "TIPO A", "A1_jogo_aberto"
+            evidencias.append(f"xG combinado de {round(xg_combinado, 2)} entre as duas equipes -- jogo com espaço para os dois lados.")
+        else:
+            macro, sub = "TIPO A", "A2_gato_e_rato"
+            evidencias.append(f"xG combinado baixo ({round(xg_combinado, 2)}) -- jogo tende a ficar truncado, disputado no meio-campo.")
+
+    instabilidade = None
+    if xg_sofrido_a is not None and xg_sofrido_b is not None:
+        # Proxy simples: quanto maior o xG sofrido do lado favorito, maior o risco
+        # de o roteiro colapsar via transição/gol adversário.
+        xg_sofrido_favorito = xg_sofrido_a if dominante == "A" else (xg_sofrido_b if dominante == "B" else max(xg_sofrido_a, xg_sofrido_b))
+        instabilidade = round(min(1.0, max(0.0, xg_sofrido_favorito / 2.0)), 3)
+
+    return {
+        "macro": macro,
+        "sub_tipo": sub,
+        "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["futebol"],
+        "evidencias": evidencias,
+        "probabilidade_instabilidade_roteiro": instabilidade,
+    }
+
+
+def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Modelo de pace + eficiência líquida (ORTG do ataque vs DRTG da defesa
+    adversária). Sem B2/A2 -- não fazem sentido com posse constante em basquete.
+    Campos exigidos: ortg, drtg (pace é opcional, só refina o sub-tipo A1)."""
+    ortg_a, drtg_a = dados_time_a.get("ortg"), dados_time_a.get("drtg")
+    ortg_b, drtg_b = dados_time_b.get("ortg"), dados_time_b.get("drtg")
+    pace_a, pace_b = dados_time_a.get("pace"), dados_time_b.get("pace")
+
+    if None in (ortg_a, drtg_a, ortg_b, drtg_b):
+        return None
+
+    # Eficiência líquida deste confronto específico: ataque de um lado contra a
+    # defesa real do adversário (não a média geral da liga).
+    net_a = ortg_a - drtg_b
+    net_b = ortg_b - drtg_a
+    delta_net = net_a - net_b
+
+    evidencias = []
+    pace_medio = round((pace_a + pace_b) / 2, 1) if pace_a is not None and pace_b is not None else None
+
+    if abs(delta_net) >= 6.0:
+        dominante = "A" if delta_net > 0 else "B"
+        macro, sub = "TIPO B", "B1_dominio_por_eficiencia"
+        evidencias.append(
+            f"Diferencial de eficiência líquida de {round(abs(delta_net), 1)} pontos a favor "
+            f"do time {dominante} neste confronto (ataque próprio vs. defesa real do adversário)."
+        )
+    else:
+        macro = "TIPO A"
+        if pace_medio is not None and pace_medio >= 100:
+            sub = "A1_jogo_aberto_pace_alto"
+            evidencias.append(f"Pace médio combinado de {pace_medio} posses, com eficiências equilibradas entre as equipes.")
+        else:
+            sub = None
+            evidencias.append("Eficiências ofensiva/defensiva equilibradas entre as equipes, sem domínio líquido claro.")
+
+    return {
+        "macro": macro,
+        "sub_tipo": sub,
+        "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["basquete"],
+        "evidencias": evidencias,
+        # Sinal de banco curto / fadiga em back-to-back ainda não é buscado pelo
+        # MIE1 -- fica null até esse campo existir.
+        "probabilidade_instabilidade_roteiro": None,
+    }
+
+
+def classificar_roteiro_nfl(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Ataque vs. defesa via success rate. STATUS EXPERIMENTAL -- sem validação
+    prática ainda, por isso não classifica sub_tipo e trava confiança no piso.
+    Campos exigidos: success_rate_of, success_rate_def."""
+    sr_a_of = dados_time_a.get("success_rate_of")
+    sr_a_def = dados_time_a.get("success_rate_def")
+    sr_b_of = dados_time_b.get("success_rate_of")
+    sr_b_def = dados_time_b.get("success_rate_def")
+
+    if None in (sr_a_of, sr_a_def, sr_b_of, sr_b_def):
+        return None
+
+    vantagem_a = sr_a_of - sr_b_def
+    vantagem_b = sr_b_of - sr_a_def
+    delta = vantagem_a - vantagem_b
+
+    if abs(delta) >= 0.08:
+        dominante = "A" if delta > 0 else "B"
+        macro = "TIPO B"
+        evidencia = f"Vantagem de success rate ofensivo do time {dominante} sobre a defesa adversária neste confronto específico."
+    else:
+        macro = "TIPO A"
+        evidencia = "Matchups de ataque vs. defesa equilibrados entre as duas equipes."
+
+    return {
+        "macro": macro,
+        "sub_tipo": None,  # experimental -- sem sub-tipo até validação empírica
+        "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["nfl"],
+        "evidencias": [evidencia],
+        "probabilidade_instabilidade_roteiro": None,
+    }
+
+
+def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Beisebol não é territorial -- é uma sequência de duelos individuais.
+    Por isso o macro default é TIPO C (arremessador titular vs. lineup adversário),
+    exceto quando os dois duelos do jogo favorecem claramente o MESMO lado (aí vira
+    TIPO B -- domínio geral, não só individual). Bullpen vira o sinal de instabilidade
+    (relevante para props de innings finais).
+    Campos exigidos: pitcher_era, lineup_ops (bullpen_era é opcional)."""
+    era_a = dados_time_a.get("pitcher_era")
+    era_b = dados_time_b.get("pitcher_era")
+    ops_a = dados_time_a.get("lineup_ops")
+    ops_b = dados_time_b.get("lineup_ops")
+    bullpen_a = dados_time_a.get("bullpen_era")
+    bullpen_b = dados_time_b.get("bullpen_era")
+
+    if None in (era_a, era_b, ops_a, ops_b):
+        return None
+
+    evidencias = [
+        f"Arremessador titular do time A (ERA {era_a}) contra lineup adversário (OPS {ops_b}).",
+        f"Arremessador titular do time B (ERA {era_b}) contra lineup adversário (OPS {ops_a}).",
+    ]
+
+    # Thresholds de referência (aprox. média de liga MLB) -- calibrar depois com histórico.
+    duelo_a_favoravel = era_a <= 3.80 and ops_b <= 0.720
+    duelo_b_favoravel = era_b <= 3.80 and ops_a <= 0.720
+
+    if duelo_a_favoravel and not duelo_b_favoravel:
+        macro, sub = "TIPO B", None
+        evidencias.append("Duelo pitcher x lineup favorece claramente o time A dos dois lados do jogo -- sinal de domínio geral, não só individual.")
+    elif duelo_b_favoravel and not duelo_a_favoravel:
+        macro, sub = "TIPO B", None
+        evidencias.append("Duelo pitcher x lineup favorece claramente o time B dos dois lados do jogo -- sinal de domínio geral, não só individual.")
+    else:
+        macro, sub = "TIPO C", "C1_duelo_pitcher_lineup"
+
+    instabilidade = None
+    if bullpen_a is not None and bullpen_b is not None:
+        pior_bullpen = max(bullpen_a, bullpen_b)
+        instabilidade = round(min(1.0, max(0.0, (pior_bullpen - 3.50) / 3.0)), 3)
+
+    return {
+        "macro": macro,
+        "sub_tipo": sub,
+        "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["beisebol"],
+        "evidencias": evidencias,
+        "probabilidade_instabilidade_roteiro": instabilidade,
+    }
+
+
+_CLASSIFICADORES_ROTEIRO = {
+    "futebol": classificar_roteiro_futebol,
+    "basquete": classificar_roteiro_basquete,
+    "nfl": classificar_roteiro_nfl,
+    "beisebol": classificar_roteiro_beisebol,
+}
+
+
+def classificar_roteiro_jogo(esporte: str, dados_time_a: Optional[dict], dados_time_b: Optional[dict]) -> Optional[dict]:
+    """
+    Classificador determinístico de roteiro de jogo (Metodologia Nexus, Cap. V).
+    Retorna None se faltar dado de grounding suficiente pro esporte -- nesse caso
+    o MIE2 classifica hipotese_partida de forma narrativa, como já fazia antes,
+    sem sub_tipo e com confiança baixa.
+    """
+    if not dados_time_a or not dados_time_b:
+        return None
+
+    fn = _CLASSIFICADORES_ROTEIRO.get(esporte.lower())
+    if not fn:
+        return None
+
+    try:
+        return fn(dados_time_a, dados_time_b)
+    except Exception:
+        return None
+
+
+# ============================================================
 # CÁLCULO POR MERCADO ISOLADO (usado pelo endpoint utilitário /api/v1/calc)
 # ============================================================
 
