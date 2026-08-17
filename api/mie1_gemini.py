@@ -20,7 +20,7 @@ from fastapi import HTTPException
 from google import genai
 from google.genai import types
 
-from catalogos import CONFIG_MERCADO_PRINCIPAL, FONTES_AUTORIZADAS_POR_ESPORTE
+from catalogos import CONFIG_MERCADO_PRINCIPAL, FONTES_AUTORIZADAS_POR_ESPORTE, CAMPOS_ROTEIRO_POR_ESPORTE
 from utils import _extrair_json_de_texto
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -96,6 +96,32 @@ def executar_mie1(gemini_client, time_a: str, time_b: str, sport: str) -> Option
   "team_b_cartoes_projected": 1.9"""
         bloco_futebol_regra = "\n- Inclua também os campos adicionais para escanteios e cartões se disponíveis."
 
+    # Metodologia Nexus Cap. V -- campos de roteiro de jogo, por esporte. São
+    # "melhor esforço": se não achar, o campo específico vira null, mas NUNCA
+    # derruba o restante do JSON (diferente de team_a/b_projected, que são
+    # obrigatórios -- ver regra no final do prompt).
+    exemplos_roteiro_por_esporte = {
+        "futebol": '{"xg_medio": 1.8, "xg_sofrido_medio": 0.9, "posse_media": 58.2}',
+        "basquete": '{"pace": 101.4, "ortg": 116.2, "drtg": 108.5}',
+        "nfl": '{"success_rate_of": 0.46, "success_rate_def": 0.41}',
+        "beisebol": '{"pitcher_era": 3.45, "lineup_ops": 0.735, "bullpen_era": 3.90}',
+    }
+    bloco_roteiro_campos = ""
+    bloco_roteiro_regra = ""
+    if esporte_key in exemplos_roteiro_por_esporte:
+        exemplo = exemplos_roteiro_por_esporte[esporte_key]
+        campos_lista = ", ".join(CAMPOS_ROTEIRO_POR_ESPORTE[esporte_key])
+        bloco_roteiro_campos = f""",
+  "team_a_roteiro": {exemplo},
+  "team_b_roteiro": {exemplo}"""
+        bloco_roteiro_regra = (
+            f"\n- \"team_a_roteiro\"/\"team_b_roteiro\" trazem os campos de roteiro de jogo "
+            f"para {sport.upper()} ({campos_lista}), buscados nas mesmas fontes. Preencha "
+            f"CADA campo individualmente com o valor real encontrado, ou null se não achar "
+            f"dado confiável para aquele campo específico -- NÃO deixe de retornar o restante "
+            f"do JSON por causa de um campo de roteiro faltando."
+        )
+
     prompt = f"""Você é um Investigador Quantitativo Esportivo. Busque na internet, OBRIGATORIAMENTE
 usando o operador de busca {fontes}, as estatísticas mais recentes e confiáveis dos
 times "{time_a}" e "{time_b}" para {sport.upper()}.
@@ -106,7 +132,7 @@ no horário do jogo, fadiga de calendário.
 Retorne ESTRITAMENTE este JSON, sem markdown, sem texto fora do JSON:
 {{
   "team_a_projected": 112.4,
-  "team_b_projected": 108.1{bloco_futebol_campos},
+  "team_b_projected": 108.1{bloco_futebol_campos}{bloco_roteiro_campos},
   "fonte": "nome do site usado",
   "contextual_factors": [
     {{"factor_type": "injury", "description": "...", "impact_level": "high|medium|low", "affected_team": "..."}}
@@ -119,7 +145,7 @@ Retorne ESTRITAMENTE este JSON, sem markdown, sem texto fora do JSON:
 Regras:
 - "team_a_projected"/"team_b_projected" são a expectativa de {nome_stat.upper()} de cada
   time NESTE confronto — já cruzando o ataque/ofensiva de um time com a defesa do
-  outro, baseado em dados reais e atuais encontrados na busca.{bloco_futebol_regra}
+  outro, baseado em dados reais e atuais encontrados na busca.{bloco_futebol_regra}{bloco_roteiro_regra}
 - Se não encontrar dado confiável para {nome_stat.upper()} de ambos os times, retorne
   null no lugar do JSON inteiro — sem inventar números."""
 
