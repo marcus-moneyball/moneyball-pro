@@ -82,13 +82,13 @@ async def calcular_mercados(payload: dict):
 @app.post("/api/v1/analyze")
 async def analyze_tickets(
     sport: str = Form(...),
-    analyst: str = Form("cris"),
+    analyst: str = Form("carlos"),  # Carlos é o único analista do sistema (generalista)
     files: List[UploadFile] = File(...)
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "cris"
+    analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "carlos"
     perfil = PERFIS_ANALISTA[analista_key]
 
     gemini_client = get_gemini_client()
