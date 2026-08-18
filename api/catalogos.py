@@ -7,9 +7,9 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 REGRAS_ESPORTES = {
-    "futebol": "Mercados: Vencedor do Jogo (1X2), Both Teams to Score (BTTS), Over/Under Gols, Escanteios, Cartões e Mercado de Jogadores (Chutes/Gols).",
+    "futebol": "Mercados: Vencedor do Jogo (1X2), Both Teams to Score (BTTS), Over/Under Gols, Escanteios, Cartões, Chutes a gol e Mercado de Jogadores (Chutes/Gols).",
     "basquete": "Mercados: Vencedor (Moneyline), Handicap (Spread), Total de Pontos (Over/Under), Player Props (Pontos, Rebotes, Assistências, Bolas de 3).",
-    "beisebol": "Mercados: Moneyline, Run Line (Handicap), Total de Runs (Over/Under), F5 (Primeiras 5 Entradas), Strikeouts do Pitcher, Hits de Rebatidor."
+    "beisebol": "Mercados: Moneyline, Run Line (Handicap), Total de Runs (Over/Under), F5 (Primeiras 5 Entradas), Strikeouts do Pitcher,Eliminações do pitcher, Hits permitidos do pitcher, Hits de Rebatedor."
 }
 
 # Carlos agora é o único analista do sistema -- generalista, cobre mercados
@@ -18,7 +18,7 @@ PERFIS_ANALISTA = {
     "carlos": {
         "delta_min": 3.0,
         "odd_min": 1.50,
-        "odd_max": 3.50,
+        "odd_max": 4.50,
     },
 }
 
