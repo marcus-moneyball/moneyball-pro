@@ -117,16 +117,23 @@ def executar_mie1(
             "\n- Inclua também os campos adicionais para escanteios e cartões se disponíveis."
         )
 
-    exemplos_roteiro_por_esporte = {
-        "futebol": '{"xg_medio": 1.8, "xg_sofrido_medio": 0.9, "posse_media": 58.2}',
-        "basquete": '{"pace": 101.4, "ortg": 116.2, "drtg": 108.5}',
-        "beisebol": '{"pitcher_era": 3.45, "lineup_ops": 0.735, "bullpen_era": 3.90}',
-    }
+    # Antes isso era um dict fixo com só 3 campos por esporte -- desalinhado com o
+    # catálogo real (CAMPOS_ROTEIRO_POR_ESPORTE), que já declarava campos como PPDA,
+    # EFG%, WHIP, wRC+ etc. sem que o MIE1 nunca os pedisse de fato. Agora o exemplo
+    # é gerado a partir do catálogo inteiro -- toda vez que alguém adicionar um campo
+    # em catalogos.py, o MIE1 passa a pedir esse campo automaticamente, sem precisar
+    # editar este arquivo de novo.
+    def _gerar_exemplo_roteiro(esporte_key: str) -> str:
+        campos = CAMPOS_ROTEIRO_POR_ESPORTE.get(esporte_key, [])
+        if not campos:
+            return ""
+        linhas = ", ".join(f'"{campo}": null' for campo in campos)
+        return "{" + linhas + "}"
 
     bloco_roteiro_campos = ""
     bloco_roteiro_regra = ""
-    if esporte_key in exemplos_roteiro_por_esporte:
-        exemplo = exemplos_roteiro_por_esporte[esporte_key]
+    if esporte_key in CAMPOS_ROTEIRO_POR_ESPORTE:
+        exemplo = _gerar_exemplo_roteiro(esporte_key)
         campos_lista = ", ".join(CAMPOS_ROTEIRO_POR_ESPORTE[esporte_key])
         bloco_roteiro_campos = f""",
   "team_a_roteiro": {exemplo},
@@ -136,8 +143,20 @@ def executar_mie1(
             f"para {sport.upper()} ({campos_lista}), buscados nas mesmas fontes. Preencha "
             f"CADA campo individualmente com o valor real encontrado, ou null se não achar "
             f"dado confiável para aquele campo específico -- NÃO deixe de retornar o restante "
-            f"do JSON por causa de um campo de roteiro faltando."
+            f"do JSON por causa de um campo de roteiro faltando. O exemplo acima mostra null "
+            f"em todos os campos só pra ilustrar o formato -- substitua por números reais "
+            f"sempre que encontrar."
         )
+        if esporte_key == "beisebol":
+            bloco_roteiro_regra += (
+                '\n- "pitcher_mao" (dentro de team_a_roteiro/team_b_roteiro) deve ser '
+                'exatamente "R" ou "L" (destro ou canhoto) -- nunca outro formato.'
+                '\n- "lineup_ops_vs_mao_adversaria" deve refletir o OPS do lineup DAQUELE '
+                'time especificamente contra a MÃO do arremessador ADVERSÁRIO (ex: se o '
+                'arremessador do time B é destro, o "lineup_ops_vs_mao_adversaria" dentro de '
+                '"team_a_roteiro" é o OPS do time A contra arremessadores destros -- não a '
+                'média geral do lineup contra qualquer arremessador).'
+            )
 
     prompt = f"""Você é um Investigador Quantitativo Esportivo. Busque na internet, OBRIGATORIAMENTE
 usando o operador de busca {fontes}, as estatísticas mais recentes e confiáveis dos
