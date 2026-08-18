@@ -14,7 +14,7 @@ from groq import Groq
 
 try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from api.calc import calcular_dossie
+    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from api.candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
     from api.prompts_mie2 import montar_system_prompt_mie2
@@ -23,7 +23,7 @@ try:
     from api.projecao import obter_projecoes_partida
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from calc import calcular_dossie
+    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup
     from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
     from prompts_mie2 import montar_system_prompt_mie2
@@ -108,6 +108,8 @@ async def analyze_tickets(
     candidatos_calculados = []
     mie1_data = None
     fonte_projecao = None
+    roteiro_classificado = None
+    matchup_calculado = None
 
     if dados_estruturados and dados_estruturados.get("time_a") and dados_estruturados.get("time_b"):
         time_a = dados_estruturados["time_a"]
@@ -131,6 +133,22 @@ async def analyze_tickets(
             lam_a = projecoes["lam_a"]
             lam_b = projecoes["lam_b"]
             fatores_incerteza = mie1_data.get("contextual_factors", []) if mie1_data else []
+
+            # Metodologia Nexus Cap. V (roteiro) + Framework Mestre Pilar 1 (matchup) --
+            # ambos só são classificáveis de forma determinística quando os dados vieram
+            # do MIE1 (Gemini com grounding); o banco local ainda não tem xG/pace/PPDA/
+            # platoon splits/etc., só média marcada/sofrida.
+            if mie1_data:
+                roteiro_classificado = classificar_roteiro_jogo(
+                    sport,
+                    mie1_data.get("team_a_roteiro"),
+                    mie1_data.get("team_b_roteiro"),
+                )
+                matchup_calculado = calcular_matchup(
+                    sport,
+                    mie1_data.get("team_a_roteiro"),
+                    mie1_data.get("team_b_roteiro"),
+                )
 
             if lam_a is not None and lam_b is not None:
                 lam_total = lam_a + lam_b
@@ -199,6 +217,12 @@ async def analyze_tickets(
         if contexto_mie1["key_asymmetries"]:
             user_prompt_content += f"\n\n[DADOS DE ASSIMETRIAS DA PESQUISA WEB (MIE1)]\n" + json.dumps(contexto_mie1, indent=2, ensure_ascii=False)
 
+    if roteiro_classificado:
+        user_prompt_content += f"\n\n[ROTEIRO JÁ CLASSIFICADO PELO PYTHON]\n" + json.dumps(roteiro_classificado, indent=2, ensure_ascii=False)
+
+    if matchup_calculado and matchup_calculado.get("matchup_detectado"):
+        user_prompt_content += f"\n\n[MATCHUP JÁ CALCULADO PELO PYTHON]\n" + json.dumps(matchup_calculado, indent=2, ensure_ascii=False)
+
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
@@ -223,6 +247,13 @@ async def analyze_tickets(
 
     # Auditoria: de onde veio a projeção de expectativa (banco local ou busca do Gemini)
     resultado_final["fonte_projecao"] = fonte_projecao
+    # Auditoria: roteiro determinístico calculado pelo Python (None se não houve
+    # dado de grounding suficiente pro esporte -- ver Metodologia Nexus Cap. V)
+    resultado_final["roteiro_classificado_python"] = roteiro_classificado
+    # Auditoria: matchup determinístico calculado pelo Python (None se não houve
+    # dado suficiente; matchup_detectado=False se houve dado mas nenhum sinal --
+    # ver Framework Mestre da Análise Esportiva, Pilar 1)
+    resultado_final["matchup_calculado_python"] = matchup_calculado
 
     if resultado_final.get("dupla_de_elite"):
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
