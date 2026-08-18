@@ -1,6 +1,6 @@
 """
 Camada de cálculo determinístico multi-esporte (Delta + Poisson + Normal + Kelly).
-Integrado com Análise de Assimetrias (Cris) e Matriz de Correlações (Carlos).
+Integrado com o motor de decisão de Carlos, analista único e generalista do sistema.
 Sem chamadas de rede — 100% testável isoladamente.
 """
 import sys
@@ -141,14 +141,12 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
 # MSC (Moneyball Score) -- ponderado por persona
 # ============================================================
 
-# Pesos por persona, sobre 3 componentes normalizados 0-1: EV, Delta, Robustez/Prob.
-# Carlos (individual/correlações): prioriza EV e Delta -- aceita volatilidade
-#   em troca da maior distorção de preço.
-# Cris (coletivo/assimetrias): prioriza Probabilidade Real Ajustada e Robustez --
-#   rejeita odd maior se a chance estatística cair.
+# Pesos do único analista do sistema (Carlos, generalista), sobre 3 componentes
+# normalizados 0-1: EV, Delta, Robustez/Prob. Prioriza EV e Delta -- aceita
+# volatilidade controlada em troca da maior distorção de preço encontrada,
+# tanto em mercados coletivos quanto individuais.
 PESOS_MSC = {
     "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
-    "cris":   {"ev": 0.15, "delta": 0.25, "robustez_ou_prob": 0.60},
 }
 
 EV_TETO_NORMALIZACAO = 0.30   # EV de 30%+ já conta como "EV máximo" pra normalização
@@ -169,11 +167,7 @@ def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
 
     ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
     delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
-
-    if persona.lower() == "cris":
-        componente_terciario = (prob_real_ajustada + robustez) / 2  # solidez: prob + robustez
-    else:
-        componente_terciario = robustez
+    componente_terciario = robustez
 
     score = (
         pesos["ev"] * ev_norm +
@@ -224,7 +218,6 @@ CONFIANCA_ROTEIRO_GROUNDED = {
     "futebol": 0.85,
     "basquete": 0.80,
     "beisebol": 0.80,
-    "nfl": 0.40,  # experimental
 }
 
 
@@ -352,37 +345,6 @@ def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Opti
     }
 
 
-def classificar_roteiro_nfl(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Ataque vs. defesa via success rate. STATUS EXPERIMENTAL -- sem validação
-    prática ainda, por isso não classifica sub_tipo e trava confiança no piso.
-    Campos exigidos: success_rate_of, success_rate_def."""
-    sr_a_of = dados_time_a.get("success_rate_of")
-    sr_a_def = dados_time_a.get("success_rate_def")
-    sr_b_of = dados_time_b.get("success_rate_of")
-    sr_b_def = dados_time_b.get("success_rate_def")
-
-    if None in (sr_a_of, sr_a_def, sr_b_of, sr_b_def):
-        return None
-
-    vantagem_a = sr_a_of - sr_b_def
-    vantagem_b = sr_b_of - sr_a_def
-    delta = vantagem_a - vantagem_b
-
-    if abs(delta) >= 0.08:
-        dominante = "A" if delta > 0 else "B"
-        macro = "TIPO B"
-        evidencia = f"Vantagem de success rate ofensivo do time {dominante} sobre a defesa adversária neste confronto específico."
-    else:
-        macro = "TIPO A"
-        evidencia = "Matchups de ataque vs. defesa equilibrados entre as duas equipes."
-
-    return {
-        "macro": macro,
-        "sub_tipo": None,  # experimental -- sem sub-tipo até validação empírica
-        "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["nfl"],
-        "evidencias": [evidencia],
-        "probabilidade_instabilidade_roteiro": None,
-    }
 
 
 def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
@@ -437,7 +399,6 @@ def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Opti
 _CLASSIFICADORES_ROTEIRO = {
     "futebol": classificar_roteiro_futebol,
     "basquete": classificar_roteiro_basquete,
-    "nfl": classificar_roteiro_nfl,
     "beisebol": classificar_roteiro_beisebol,
 }
 
@@ -473,11 +434,11 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
 
     esporte_key = esporte.lower()
 
-    if esporte_key in ("basquete", "nfl") and mercado.get("modelo") != "poisson":
+    if esporte_key == "basquete" and mercado.get("modelo") != "poisson":
         media_esperada = mercado.get("media_esperada") or estimar_lambda(mercado)
         if media_esperada is None:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
-        std_dev = mercado.get("desvio_padrao", 12.0 if esporte_key == "basquete" else 18.5)
+        std_dev = mercado.get("desvio_padrao", 12.0)
         p_over, p_under = prob_over_under_normal(linha, media_esperada, std_dev)
         lam_ref = media_esperada
     else:
