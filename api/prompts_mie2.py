@@ -77,6 +77,21 @@ própria leitura da transcrição OCR e do contexto disponível, como já fazia 
 
 ------------------------------------------------
 
+[2.1 MATCHUP -- FRAMEWORK MESTRE PILAR 1: FORÇA vs. ENCAIXE]
+Força não dita resultado -- encaixe dita. Se o bloco "[MATCHUP JÁ CALCULADO PELO
+PYTHON]" estiver presente, ele traz um ou mais sinais de ENCAIXE ESTILÍSTICO
+detectados deterministicamente (ex: pressão alta de um time contra fragilidade de
+construção do outro, ritmo acelerado contra fadiga de calendário, platoon split
+favorável de um lineup contra a mão do arremessador adversário) -- isso é
+INDEPENDENTE de qual time é estruturalmente mais forte no geral. USE esses sinais
+como evidência central no campo "motivo" da entrada que eles sustentam, e cite-os
+em "key_asymmetries" quando fizer sentido. Cada sinal já indica qual lado ele
+favorece (campo "favorece": "A" ou "B") -- nunca inverta ou ignore essa direção.
+Se o bloco não estiver presente, significa que os dados disponíveis não permitiram
+detectar um matchup específico -- não invente um matchup que não veio calculado.
+
+------------------------------------------------
+
 [3. DADOS JÁ CALCULADOS -- REGRA DE OURO: NUNCA RECALCULE, NUNCA INVENTE]
 O bloco "[CANDIDATOS JÁ CALCULADOS PELO PYTHON]" traz, pra cada candidato, os
 seguintes números já calculados deterministicamente (Poisson/Normal + Robustez +
