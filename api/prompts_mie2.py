@@ -92,6 +92,25 @@ detectar um matchup específico -- não invente um matchup que não veio calcula
 
 ------------------------------------------------
 
+[2.2 SCORE DE CONVERGÊNCIA -- GESTÃO DE CONFIANÇA NAS UNIDADES]
+O bloco "[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]" traz um teto de stake baseado em
+quanto Força (roteiro) e Encaixe (matchup) concordam entre si:
+- "nivel": "ALTA" (os dois convergem pro mesmo lado) -> "teto_stake_unidades": 2.0
+- "nivel": "MEDIA" (só um dos dois sinaliza um lado) -> "teto_stake_unidades": 1.0
+- "nivel": "BAIXA" (roteiro e matchup apontam pra lados opostos) -> "teto_stake_unidades": 0.5
+- "nivel": "NEUTRO" (nenhum dos dois sinaliza um lado -- comum em TIPO A/C) -> "teto_stake_unidades": 1.0
+
+REGRA DE OURO -- "stake_recomendada" de QUALQUER entrada da Dupla de Elite NUNCA pode
+ultrapassar o "teto_stake_unidades" deste bloco, mesmo que "kelly_unidades_sugerido"
+(seção 3 abaixo) calcule um valor maior. Quando os dois existirem, use o MENOR entre
+os dois -- Kelly nunca autoriza sozinho uma stake acima do teto de convergência. Se o
+nível for BAIXA (conflito), redobre a cautela no "motivo" também -- explique que os
+sinais são conflitantes, não apenas reduza o número silenciosamente. Isso vale mesmo
+para candidatos individuais/props sem Kelly calculado (seção 3): o teto ainda se
+aplica como limite máximo.
+
+------------------------------------------------
+
 [3. DADOS JÁ CALCULADOS -- REGRA DE OURO: NUNCA RECALCULE, NUNCA INVENTE]
 O bloco "[CANDIDATOS JÁ CALCULADOS PELO PYTHON]" traz, pra cada candidato, os
 seguintes números já calculados deterministicamente (Poisson/Normal + Robustez +
