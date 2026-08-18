@@ -46,44 +46,32 @@ FONTES_AUTORIZADAS_POR_ESPORTE = {
 CAMPOS_ROTEIRO_POR_ESPORTE = {
     "futebol": [
         # Produção e Volume Ofensivo
-        "team_a_xg_medio", "team_b_xg_medio",
-        "team_a_xg_sofrido_medio", "team_b_xg_sofrido_medio",
-        "team_a_shots_on_target_medio", "team_b_shots_on_target_medio",
+        "xg_medio", "xg_sofrido_medio", "shots_on_target_medio",
         # Controle Territorial e Ritmo
-        "team_a_posse_media", "team_b_posse_media",
-        "team_a_ppda_medio", "team_b_ppda_medio", # Intensidade de pressão (Passes Per Defensive Action)
+        "posse_media", "ppda_medio",  # PPDA = intensidade de pressão (Passes Per Defensive Action)
         # Eficiência e Momento Recente
-        "team_a_conversion_rate", "team_b_conversion_rate",
-        "team_a_forma_recente_xg", "team_b_forma_recente_xg"
+        "conversion_rate", "forma_recente_xg",
     ],
-    
+
     "basquete": [
         # Ritmo e Eficiências Macro
-        "team_a_pace", "team_b_pace",
-        "team_a_ortg", "team_b_ortg",
-        "team_a_drtg", "team_b_drtg",
+        "pace", "ortg", "drtg",
         # Eficiência de Arremesso (Shooting Splits)
-        "team_a_efg_pct", "team_b_efg_pct", # Effective Field Goal %
-        "team_a_ts_pct", "team_b_ts_pct",   # True Shooting %
+        "efg_pct", "ts_pct",   # Effective Field Goal % / True Shooting %
         # Controle de Posse e Rebotes
-        "team_a_tov_pct", "team_b_tov_pct", # Turnover Rate
-        "team_a_reb_pct", "team_b_reb_pct", # Rebound Rate
+        "tov_pct", "reb_pct",  # Turnover Rate / Rebound Rate
         # Contexto de Elenco
-        "fatigue_index_a", "fatigue_index_b" # Back-to-back / Desfalques críticos
+        "fatigue_index",       # Back-to-back / Desfalques críticos
     ],
-    
-    
+
     "beisebol": [
         # Duelo do Titular (Pitcher)
-        "pitcher_a_era", "pitcher_b_era",
-        "pitcher_a_whip", "pitcher_b_whip",
-        "pitcher_a_k_per_9", "pitcher_b_k_per_9",
-        "pitcher_a_xfip", "pitcher_b_xfip", # Expected FIP (filtra defesa)
-        # Produção do Lineup Contra o Estilo do Pitcher
-        "lineup_a_vs_rhp_lhs_ops", "lineup_b_vs_rhp_lhs_ops",
-        "lineup_a_wrc_plus", "lineup_b_wrc_plus", # Weighted Runs Created Plus
+        "pitcher_era", "pitcher_whip", "pitcher_k_per_9", "pitcher_xfip",
+        "pitcher_mao",  # "R" ou "L" -- necessário pro matchup de platoon split
+        # Produção do Lineup Contra a Mão do Arremessador Adversário
+        "lineup_ops_vs_mao_adversaria",  # OPS deste lineup especificamente contra a mão do pitcher rival
+        "lineup_wrc_plus",  # Weighted Runs Created Plus
         # Fatores de Bullpen (O calcanhar de Aquiles para Props finais)
-        "bullpen_a_era_last_30", "bullpen_b_era_last_30",
-        "bullpen_a_workload_fatigue", "bullpen_b_workload_fatigue"
+        "bullpen_era_last_30", "bullpen_workload_fatigue",
     ],
 }
