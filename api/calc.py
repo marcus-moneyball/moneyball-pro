@@ -250,23 +250,28 @@ def classificar_roteiro_futebol(dados_time_a: dict, dados_time_b: dict) -> Optio
             dominante_posse = "B"
 
     if dominante_posse:
-        dominante = dominante_posse
         xg_dom = xg_a if dominante_posse == "A" else xg_b
         xg_advers = xg_b if dominante_posse == "A" else xg_a
         posse_dom = posse_a if dominante_posse == "A" else posse_b
+        lado_contra_ataque = "B" if dominante_posse == "A" else "A"
 
         if xg_dom - xg_advers >= 0.5:
+            dominante = dominante_posse  # domínio real -- quem domina posse também domina a qualidade
             macro, sub = "TIPO B", "B1_dominio_total"
             evidencias.append(
                 f"Time {dominante_posse} com posse média de {posse_dom}% e xG de {xg_dom}, "
                 f"contra {xg_advers} do adversário -- posse e qualidade ofensiva convergem."
             )
         else:
+            # Contra-ataque letal: quem domina a POSSE não é necessariamente quem está
+            # taticamente favorecido -- o time que contra-ataca (posse minoritária) é
+            # o lado que o roteiro está sinalizando como perigoso/valorizado.
+            dominante = lado_contra_ataque
             macro, sub = "TIPO B", "B2_contra_ataque_letal"
             evidencias.append(
                 f"Time {dominante_posse} com posse média de {posse_dom}%, mas xG de {xg_dom} "
                 f"próximo ou inferior ao xG do adversário ({xg_advers}) -- domínio territorial "
-                f"sem tradução proporcional em qualidade ofensiva; risco de contra-ataque."
+                f"sem tradução proporcional em qualidade ofensiva; risco de contra-ataque do time {lado_contra_ataque}."
             )
     elif abs(delta_xg) >= 0.6:
         # Sem posse disponível pra confirmar/refutar, mas diferença de xG é grande --
@@ -295,6 +300,7 @@ def classificar_roteiro_futebol(dados_time_a: dict, dados_time_b: dict) -> Optio
         "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["futebol"],
         "evidencias": evidencias,
         "probabilidade_instabilidade_roteiro": instabilidade,
+        "lado_favorecido": dominante,  # "A" | "B" | None (None em TIPO A -- sem lado estrutural único)
     }
 
 
@@ -326,6 +332,7 @@ def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Opti
             f"do time {dominante} neste confronto (ataque próprio vs. defesa real do adversário)."
         )
     else:
+        dominante = None
         macro = "TIPO A"
         if pace_medio is not None and pace_medio >= 100:
             sub = "A1_jogo_aberto_pace_alto"
@@ -339,9 +346,14 @@ def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Opti
         "sub_tipo": sub,
         "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["basquete"],
         "evidencias": evidencias,
-        # Sinal de banco curto / fadiga em back-to-back ainda não é buscado pelo
-        # MIE1 -- fica null até esse campo existir.
-        "probabilidade_instabilidade_roteiro": None,
+        # fatigue_index já existe no catálogo desde o Matchup Engine -- usa o maior
+        # dos dois times como proxy de risco de colapso do roteiro.
+        "probabilidade_instabilidade_roteiro": (
+            round(max(dados_time_a.get("fatigue_index", 0) or 0, dados_time_b.get("fatigue_index", 0) or 0), 3)
+            if dados_time_a.get("fatigue_index") is not None or dados_time_b.get("fatigue_index") is not None
+            else None
+        ),
+        "lado_favorecido": dominante,  # "A" | "B" | None (None em TIPO A -- sem lado estrutural único)
     }
 
 
@@ -374,13 +386,13 @@ def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Opti
     duelo_b_favoravel = era_b <= 3.80 and ops_a <= 0.720
 
     if duelo_a_favoravel and not duelo_b_favoravel:
-        macro, sub = "TIPO B", None
+        macro, sub, dominante = "TIPO B", None, "A"
         evidencias.append("Duelo pitcher x lineup favorece claramente o time A dos dois lados do jogo -- sinal de domínio geral, não só individual.")
     elif duelo_b_favoravel and not duelo_a_favoravel:
-        macro, sub = "TIPO B", None
+        macro, sub, dominante = "TIPO B", None, "B"
         evidencias.append("Duelo pitcher x lineup favorece claramente o time B dos dois lados do jogo -- sinal de domínio geral, não só individual.")
     else:
-        macro, sub = "TIPO C", "C1_duelo_pitcher_lineup"
+        macro, sub, dominante = "TIPO C", "C1_duelo_pitcher_lineup", None
 
     instabilidade = None
     if bullpen_a is not None and bullpen_b is not None:
@@ -393,6 +405,7 @@ def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Opti
         "confianca_classificacao": CONFIANCA_ROTEIRO_GROUNDED["beisebol"],
         "evidencias": evidencias,
         "probabilidade_instabilidade_roteiro": instabilidade,
+        "lado_favorecido": dominante,  # "A" | "B" | None (None em TIPO C -- duelo individual, não estrutural)
     }
 
 
@@ -615,6 +628,81 @@ def calcular_matchup(esporte: str, dados_time_a: Optional[dict], dados_time_b: O
         return fn(dados_time_a, dados_time_b)
     except Exception:
         return None
+
+
+# ============================================================
+# SCORE DE CONVERGÊNCIA (Framework Mestre -- Parte 3: Gestão de Confiança)
+# ============================================================
+# A Matriz de Decisão do documento tem 5 pilares (Força 30% / Matchup 25% /
+# Forma 20% / Contexto 15% / Ruído 10%). Hoje só 2 desses 5 têm dado real no
+# pipeline: Força (via roteiro, Cap. V) e Matchup (acima). Forma (janelas
+# temporais), Contexto (multiplicador) e Ruído (regressão à média) ainda não
+# existem -- por isso esta função NÃO tenta replicar os pesos exatos do
+# documento (seria fingir uma precisão que não temos). Em vez disso, mede a
+# convergência entre os dois sinais que já existem: roteiro e matchup apontam
+# pro MESMO lado, ou entram em conflito? Quando Forma/Contexto/Ruído forem
+# implementados, viram só mais componentes desta mesma função -- a estrutura
+# de saída (nivel + teto_stake_unidades) não muda.
+
+def _lado_favorecido_pelo_roteiro(roteiro: Optional[dict]) -> Optional[str]:
+    """Lê o lado (A/B) que o roteiro favorece, quando aplicável. Os três
+    classificadores de roteiro (futebol/basquete/beisebol) já expõem isso
+    diretamente no campo "lado_favorecido" -- None em TIPO A/C, onde não há
+    um lado estrutural único (produção distribuída ou concentrada em atleta)."""
+    if not roteiro:
+        return None
+    return roteiro.get("lado_favorecido")
+
+
+def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> dict:
+    """
+    Mede se roteiro (Força) e matchup (Encaixe) apontam pro mesmo lado.
+    Sempre retorna um dict (nunca None) -- na ausência total de sinal, o nível
+    é NEUTRO e o teto de stake é o padrão do sistema (1.0u), sem penalizar nem
+    bonificar. Isso é diferente de roteiro/matchup, que podem retornar None
+    quando falta dado -- aqui a ausência de dado já É a informação (não dá
+    pra confirmar convergência, então fica neutro).
+    """
+    lado_roteiro = _lado_favorecido_pelo_roteiro(roteiro)
+    sinais_matchup = (matchup or {}).get("sinais", []) if matchup and matchup.get("matchup_detectado") else []
+    lados_matchup = {s["favorece"] for s in sinais_matchup}
+
+    # Nenhum dos dois sinaliza um lado -- neutro, sem penalizar.
+    if lado_roteiro is None and not lados_matchup:
+        return {
+            "nivel": "NEUTRO",
+            "direcao_favorecida": None,
+            "teto_stake_unidades": 1.0,
+            "motivo": "Nem roteiro nem matchup indicam um lado estrutural favorecido -- convergência não avaliável com os dados disponíveis.",
+        }
+
+    # Só um dos dois sinaliza -- médio, sem bônus (falta o segundo pilar de confirmação).
+    if lado_roteiro is None or not lados_matchup:
+        lado_unico = lado_roteiro or next(iter(lados_matchup))
+        origem = "roteiro" if lado_roteiro else "matchup"
+        return {
+            "nivel": "MEDIA",
+            "direcao_favorecida": lado_unico,
+            "teto_stake_unidades": 1.0,
+            "motivo": f"Apenas o {origem} indica o time {lado_unico} favorecido -- sem segundo pilar pra confirmar convergência, stake permanece no padrão.",
+        }
+
+    # Os dois sinalizam o MESMO lado -- convergência alta, teto sobe.
+    if lado_roteiro in lados_matchup:
+        return {
+            "nivel": "ALTA",
+            "direcao_favorecida": lado_roteiro,
+            "teto_stake_unidades": 2.0,
+            "motivo": f"Roteiro (Força) e Matchup (Encaixe) convergem no time {lado_roteiro} -- convergência absoluta entre os dois pilares disponíveis.",
+        }
+
+    # Os dois sinalizam lados OPOSTOS -- conflito, cautela redobrada.
+    return {
+        "nivel": "BAIXA",
+        "direcao_favorecida": None,
+        "teto_stake_unidades": 0.5,
+        "motivo": f"Roteiro aponta para o time {lado_roteiro}, mas o Matchup aponta para {sorted(lados_matchup)} -- sinais conflitantes, reduzir exposição.",
+    }
 
 
 # ============================================================
