@@ -14,7 +14,7 @@ from groq import Groq
 
 try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup
+    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from api.candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
     from api.prompts_mie2 import montar_system_prompt_mie2
@@ -23,7 +23,7 @@ try:
     from api.projecao import obter_projecoes_partida
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup
+    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
     from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
     from prompts_mie2 import montar_system_prompt_mie2
@@ -110,6 +110,7 @@ async def analyze_tickets(
     fonte_projecao = None
     roteiro_classificado = None
     matchup_calculado = None
+    convergencia_calculada = None
 
     if dados_estruturados and dados_estruturados.get("time_a") and dados_estruturados.get("time_b"):
         time_a = dados_estruturados["time_a"]
@@ -149,6 +150,10 @@ async def analyze_tickets(
                     mie1_data.get("team_a_roteiro"),
                     mie1_data.get("team_b_roteiro"),
                 )
+                # Score de Convergência (Framework Mestre Parte 3) -- sempre calculável
+                # (nunca None), mesmo que roteiro/matchup individualmente sejam None,
+                # porque a própria ausência de sinal já é informação (fica NEUTRO).
+                convergencia_calculada = calcular_convergencia(roteiro_classificado, matchup_calculado)
 
             if lam_a is not None and lam_b is not None:
                 lam_total = lam_a + lam_b
@@ -223,6 +228,9 @@ async def analyze_tickets(
     if matchup_calculado and matchup_calculado.get("matchup_detectado"):
         user_prompt_content += f"\n\n[MATCHUP JÁ CALCULADO PELO PYTHON]\n" + json.dumps(matchup_calculado, indent=2, ensure_ascii=False)
 
+    if convergencia_calculada:
+        user_prompt_content += f"\n\n[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]\n" + json.dumps(convergencia_calculada, indent=2, ensure_ascii=False)
+
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
@@ -254,6 +262,9 @@ async def analyze_tickets(
     # dado suficiente; matchup_detectado=False se houve dado mas nenhum sinal --
     # ver Framework Mestre da Análise Esportiva, Pilar 1)
     resultado_final["matchup_calculado_python"] = matchup_calculado
+    # Auditoria: Score de Convergência (Framework Mestre Parte 3) -- teto de
+    # unidades sugerido a partir da convergência entre roteiro e matchup
+    resultado_final["convergencia_calculada_python"] = convergencia_calculada
 
     if resultado_final.get("dupla_de_elite"):
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
