@@ -353,13 +353,13 @@ def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Opti
     exceto quando os dois duelos do jogo favorecem claramente o MESMO lado (aí vira
     TIPO B -- domínio geral, não só individual). Bullpen vira o sinal de instabilidade
     (relevante para props de innings finais).
-    Campos exigidos: pitcher_era, lineup_ops (bullpen_era é opcional)."""
+    Campos exigidos: pitcher_era, lineup_ops_vs_mao_adversaria (bullpen_era_last_30 é opcional)."""
     era_a = dados_time_a.get("pitcher_era")
     era_b = dados_time_b.get("pitcher_era")
-    ops_a = dados_time_a.get("lineup_ops")
-    ops_b = dados_time_b.get("lineup_ops")
-    bullpen_a = dados_time_a.get("bullpen_era")
-    bullpen_b = dados_time_b.get("bullpen_era")
+    ops_a = dados_time_a.get("lineup_ops_vs_mao_adversaria")
+    ops_b = dados_time_b.get("lineup_ops_vs_mao_adversaria")
+    bullpen_a = dados_time_a.get("bullpen_era_last_30")
+    bullpen_b = dados_time_b.get("bullpen_era_last_30")
 
     if None in (era_a, era_b, ops_a, ops_b):
         return None
@@ -414,6 +414,200 @@ def classificar_roteiro_jogo(esporte: str, dados_time_a: Optional[dict], dados_t
         return None
 
     fn = _CLASSIFICADORES_ROTEIRO.get(esporte.lower())
+    if not fn:
+        return None
+
+    try:
+        return fn(dados_time_a, dados_time_b)
+    except Exception:
+        return None
+
+
+# ============================================================
+# MATCHUP ENGINE (Framework Mestre da Análise Esportiva -- Pilar 1)
+# ============================================================
+# Diferença fundamental em relação ao roteiro (acima): o roteiro mede FORÇA
+# relativa (quem é melhor, no agregado). O matchup mede ENCAIXE -- o estilo
+# específico de um time quebra o sistema do outro, independente de "quem é
+# melhor" no geral. Um time forte pode ter um matchup ruim contra um estilo
+# específico, e um time mediano pode ter um matchup ótimo contra ele.
+#
+# Mesma regra de ouro do resto do arquivo: calculado aqui a partir de dado
+# real, nunca inventado pela LLM. Retorna None quando falta o par mínimo de
+# campos necessário -- nesse caso não existe bloco de matchup pro Carlos usar,
+# e ele segue análise só com força/roteiro, como já fazia antes desta camada.
+#
+# Cada função retorna o mesmo formato:
+# {
+#   "matchup_detectado": bool,
+#   "sinais": [{"favorece": "A"|"B", "tipo": str, "descricao": str}, ...],
+#   "evidencias": [str, ...],  # lista plana, pronta pra injetar no prompt
+# }
+
+def calcular_matchup_futebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Pulo do gato do futebol: Pressão (PPDA) x Fragilidade na Construção.
+    Um time que pressiona muito (PPDA baixo) contra um adversário que sofre xG
+    alto mesmo com posse (sinal de que não sabe sair jogando sob pressão) tende
+    a forçar erros e transições -- Game Script de Caos/Transição, não Domínio.
+    Campos exigidos: ppda_medio de pelo menos um lado (posse_media e
+    xg_sofrido_medio do lado avaliado, pra confirmar fragilidade)."""
+    ppda_a = dados_time_a.get("ppda_medio")
+    ppda_b = dados_time_b.get("ppda_medio")
+
+    if ppda_a is None and ppda_b is None:
+        return None
+
+    def _fragil_sob_pressao(dados_alvo: dict) -> bool:
+        posse = dados_alvo.get("posse_media")
+        xg_sofrido = dados_alvo.get("xg_sofrido_medio")
+        # Tem posse (não está simplesmente sendo dominado no volume), mas mesmo
+        # assim sofre xG relevante -- indício de que a saída de bola quebra sob
+        # pressão, não que o time é simplesmente inferior.
+        return posse is not None and xg_sofrido is not None and posse >= 50 and xg_sofrido >= 1.3
+
+    PPDA_PRESSAO_ALTA = 8.0  # abaixo disso = pressão sufocante (referência de mercado, calibrar depois)
+    sinais = []
+
+    if ppda_b is not None and ppda_b <= PPDA_PRESSAO_ALTA and _fragil_sob_pressao(dados_time_a):
+        sinais.append({
+            "favorece": "B",
+            "tipo": "pressao_quebra_construcao",
+            "descricao": (
+                f"PPDA do time B em {ppda_b} (pressão sufocante) contra o time A, que "
+                f"sofre xG elevado mesmo com posse alta -- indício de fragilidade na "
+                f"saída de bola sob pressão, risco de erros forçados e transições."
+            ),
+        })
+    if ppda_a is not None and ppda_a <= PPDA_PRESSAO_ALTA and _fragil_sob_pressao(dados_time_b):
+        sinais.append({
+            "favorece": "A",
+            "tipo": "pressao_quebra_construcao",
+            "descricao": (
+                f"PPDA do time A em {ppda_a} (pressão sufocante) contra o time B, que "
+                f"sofre xG elevado mesmo com posse alta -- indício de fragilidade na "
+                f"saída de bola sob pressão, risco de erros forçados e transições."
+            ),
+        })
+
+    if not sinais:
+        return {"matchup_detectado": False, "sinais": [], "evidencias": []}
+
+    return {"matchup_detectado": True, "sinais": sinais, "evidencias": [s["descricao"] for s in sinais]}
+
+
+def calcular_matchup_basquete(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Pulo do gato do basquete: Ritmo (Pace) x Fadiga (fatigue_index -- back-to-back
+    ou desfalques). Um time rápido contra um adversário cansado tende a expor a
+    defesa no meio-campo (transição), inflando o total de pontos e favorecendo
+    o handicap do time descansado.
+    Campos exigidos: pace de ambos e fatigue_index de pelo menos um lado."""
+    pace_a = dados_time_a.get("pace")
+    pace_b = dados_time_b.get("pace")
+    fadiga_a = dados_time_a.get("fatigue_index")
+    fadiga_b = dados_time_b.get("fatigue_index")
+
+    if pace_a is None or pace_b is None:
+        return None
+    if fadiga_a is None and fadiga_b is None:
+        return None
+
+    FADIGA_ALTA = 0.6  # fatigue_index normalizado 0-1 -- calibrar depois com histórico
+    PACE_RAPIDO = 100.0
+    sinais = []
+
+    if fadiga_b is not None and fadiga_b >= FADIGA_ALTA and pace_a >= PACE_RAPIDO:
+        sinais.append({
+            "favorece": "A",
+            "tipo": "ritmo_explora_fadiga",
+            "descricao": (
+                f"Time A joga em ritmo acelerado (pace {pace_a}) contra Time B com "
+                f"índice de fadiga elevado ({fadiga_b}) -- pernas cansadas tendem a "
+                f"ceder espaço no half-court, favorecendo Over de pontos e handicap do Time A."
+            ),
+        })
+    if fadiga_a is not None and fadiga_a >= FADIGA_ALTA and pace_b >= PACE_RAPIDO:
+        sinais.append({
+            "favorece": "B",
+            "tipo": "ritmo_explora_fadiga",
+            "descricao": (
+                f"Time B joga em ritmo acelerado (pace {pace_b}) contra Time A com "
+                f"índice de fadiga elevado ({fadiga_a}) -- pernas cansadas tendem a "
+                f"ceder espaço no half-court, favorecendo Over de pontos e handicap do Time B."
+            ),
+        })
+
+    if not sinais:
+        return {"matchup_detectado": False, "sinais": [], "evidencias": []}
+
+    return {"matchup_detectado": True, "sinais": sinais, "evidencias": [s["descricao"] for s in sinais]}
+
+
+def calcular_matchup_beisebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
+    """Pulo do gato do beisebol: Platoon Split -- a mão do arremessador titular
+    contra o desempenho do lineup adversário especificamente contra essa mão.
+    Um lineup com OPS muito melhor contra a mão do arremessador que vai enfrentar
+    tem uma vantagem que a média geral de OPS do time esconde.
+    Campos exigidos: pitcher_mao do adversário + lineup_ops_vs_mao_adversaria do
+    lado que bate (esse campo já deve vir calculado especificamente contra a mão
+    certa -- ver regra no MIE1)."""
+    mao_pitcher_a = dados_time_a.get("pitcher_mao")
+    mao_pitcher_b = dados_time_b.get("pitcher_mao")
+    ops_a_vs_b = dados_time_a.get("lineup_ops_vs_mao_adversaria")
+    ops_b_vs_a = dados_time_b.get("lineup_ops_vs_mao_adversaria")
+
+    if mao_pitcher_a is None and mao_pitcher_b is None:
+        return None
+
+    OPS_FORTE_CONTRA_MAO = 0.780  # referência de mercado (liga MLB gira ~.720-.740) -- calibrar depois
+    sinais = []
+
+    if mao_pitcher_b is not None and ops_a_vs_b is not None and ops_a_vs_b >= OPS_FORTE_CONTRA_MAO:
+        sinais.append({
+            "favorece": "A",
+            "tipo": "platoon_split_favoravel",
+            "descricao": (
+                f"Lineup do time A tem OPS de {ops_a_vs_b} especificamente contra "
+                f"arremessadores {'destros' if mao_pitcher_b == 'R' else 'canhotos'} -- "
+                f"exatamente o perfil do arremessador titular do time B -- vantagem "
+                f"que a média geral de OPS do time não capturaria."
+            ),
+        })
+    if mao_pitcher_a is not None and ops_b_vs_a is not None and ops_b_vs_a >= OPS_FORTE_CONTRA_MAO:
+        sinais.append({
+            "favorece": "B",
+            "tipo": "platoon_split_favoravel",
+            "descricao": (
+                f"Lineup do time B tem OPS de {ops_b_vs_a} especificamente contra "
+                f"arremessadores {'destros' if mao_pitcher_a == 'R' else 'canhotos'} -- "
+                f"exatamente o perfil do arremessador titular do time A -- vantagem "
+                f"que a média geral de OPS do time não capturaria."
+            ),
+        })
+
+    if not sinais:
+        return {"matchup_detectado": False, "sinais": [], "evidencias": []}
+
+    return {"matchup_detectado": True, "sinais": sinais, "evidencias": [s["descricao"] for s in sinais]}
+
+
+_CALCULADORES_MATCHUP = {
+    "futebol": calcular_matchup_futebol,
+    "basquete": calcular_matchup_basquete,
+    "beisebol": calcular_matchup_beisebol,
+}
+
+
+def calcular_matchup(esporte: str, dados_time_a: Optional[dict], dados_time_b: Optional[dict]) -> Optional[dict]:
+    """
+    Matchup Engine determinístico (Framework Mestre, Pilar 1: Força vs. Encaixe).
+    Retorna None se faltar o par mínimo de campos, ou se nenhum sinal de matchup
+    foi detectado retorna {"matchup_detectado": False, ...} -- ausência de sinal
+    também é informação válida (não força o Carlos a inventar um matchup que não existe).
+    """
+    if not dados_time_a or not dados_time_b:
+        return None
+
+    fn = _CALCULADORES_MATCHUP.get(esporte.lower())
     if not fn:
         return None
 
