@@ -57,7 +57,7 @@ def extrair_mercados_estruturados(
     {"linha": 3.5, "odd": 1.80, "lado": "over"}
   ],
   "mercado_btts": {"odd_sim": 1.75, "odd_nao": 2.00}"""
-    elif sport.lower() in ("basquete", "nfl"):
+    elif sport.lower() == "basquete":
         bloco_futebol_extra = """,
   "mercados_player_props": [
     {"jogador": "Nome do Atleta", "prop": "Pontos/Jardas/Rebotes", "linha": 24.5, "odd": 1.85, "lado": "over"}
@@ -120,7 +120,6 @@ def executar_mie1(
     exemplos_roteiro_por_esporte = {
         "futebol": '{"xg_medio": 1.8, "xg_sofrido_medio": 0.9, "posse_media": 58.2}',
         "basquete": '{"pace": 101.4, "ortg": 116.2, "drtg": 108.5}',
-        "nfl": '{"success_rate_of": 0.46, "success_rate_def": 0.41}',
         "beisebol": '{"pitcher_era": 3.45, "lineup_ops": 0.735, "bullpen_era": 3.90}',
     }
 
