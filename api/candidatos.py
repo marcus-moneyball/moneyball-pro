@@ -66,8 +66,8 @@ def montar_candidatos_over_under_calculados(
         if linha is None or odd is None or lado not in ("over", "under"):
             continue
 
-        if esporte_key in ("basquete", "nfl") and "escanteios" not in nome_mercado.lower() and "cartoes" not in nome_mercado.lower():
-            std_dev = 12.0 if esporte_key == "basquete" else 18.5
+        if esporte_key == "basquete" and "escanteios" not in nome_mercado.lower() and "cartoes" not in nome_mercado.lower():
+            std_dev = 12.0
             p_over, p_under = prob_over_under_normal(linha, lam_total, std_dev)
         else:
             p_over, p_under = prob_over_under_poisson(linha, lam_total)
