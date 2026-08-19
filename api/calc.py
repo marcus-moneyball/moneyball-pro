@@ -50,6 +50,98 @@ def calcular_delta_mercado(lam: float, linha: float):
 
 
 # ============================================================
+# RESULTADO DA PARTIDA -- Moneyline (2 vias), 1X2/Chance Dupla, Handicap Asiático
+# ============================================================
+# Diferente do Over/Under (que compara UM lambda contra UMA linha), esses
+# mercados precisam da DIFERENÇA entre os dois times -- usa Skellam (diferença
+# de duas distribuições de Poisson independentes) pra esportes de placar baixo
+# e discreto (futebol, beisebol), e Normal pra esportes de placar alto
+# (basquete), consistente com o modelo já usado no Over/Under de cada esporte.
+
+def calcular_probabilidades_1x2_skellam(lam_a: float, lam_b: float):
+    """P(vitória A), P(empate), P(vitória B) via Skellam. Empate só é um
+    resultado real em esportes que o admitem (futebol) -- em esportes sem
+    empate, o chamador deve redistribuir p_empate (ver
+    calcular_probabilidade_vitoria_2vias)."""
+    p_empate = float(stats.skellam.pmf(0, lam_a, lam_b))
+    p_vitoria_a = float(1 - stats.skellam.cdf(0, lam_a, lam_b))
+    p_vitoria_b = float(stats.skellam.cdf(-1, lam_a, lam_b))
+    return round(p_vitoria_a, 4), round(p_empate, 4), round(p_vitoria_b, 4)
+
+
+def calcular_probabilidade_vitoria_2vias(lam_a: float, lam_b: float, modelo: str = "skellam",
+                                          desvio_padrao: Optional[float] = None):
+    """
+    Moneyline (2 vias, sem empate possível) -- beisebol e basquete.
+    - modelo="skellam" (beisebol -- placar baixo, discreto): a massa de "empate"
+      matemático (jogo zerado na diferença) é redistribuída 50/50 entre os dois
+      lados, já que o esporte sempre resolve o empate (extra innings) e o
+      mercado nunca oferece odd de empate.
+    - modelo="normal" (basquete -- placar alto, quase contínuo): P(diff > 0)
+      direto -- a massa de empate exato é desprezível numa Normal contínua.
+    """
+    if modelo == "normal":
+        if desvio_padrao is None or desvio_padrao <= 0:
+            desvio_padrao = 12.0  # mesmo default já usado no Over/Under de basquete
+        media_diff = lam_a - lam_b
+        desvio_diff = desvio_padrao * math.sqrt(2)  # combina os desvios dos dois times (independência)
+        p_a = float(1 - stats.norm.cdf(0, loc=media_diff, scale=desvio_diff))
+        p_b = 1 - p_a
+        return round(p_a, 4), round(p_b, 4)
+
+    p_a, p_empate, p_b = calcular_probabilidades_1x2_skellam(lam_a, lam_b)
+    p_a_final = round(p_a + p_empate / 2, 4)
+    p_b_final = round(p_b + p_empate / 2, 4)
+    return p_a_final, p_b_final
+
+
+def _cobre_handicap_linha_simples(lam_a: float, lam_b: float, linha: float):
+    """Probabilidade de cobertura (e de push) pra UMA linha inteira ou de meio
+    gol -- nunca chamada direto de fora, só pelo split de quarto de gol abaixo.
+    `linha` é o handicap aplicado ao time A (negativo = A favorito). Push (a
+    aposta "empata" e o dinheiro volta) só é matematicamente possível quando a
+    linha é inteira."""
+    limite = -linha
+    if float(limite).is_integer():
+        p_push = float(stats.skellam.pmf(int(limite), lam_a, lam_b))
+        p_cobre = float(1 - stats.skellam.cdf(int(limite), lam_a, lam_b))
+    else:
+        p_push = 0.0
+        p_cobre = float(1 - stats.skellam.cdf(math.floor(limite), lam_a, lam_b))
+    return p_cobre, p_push
+
+
+def calcular_probabilidade_handicap_asiatico(lam_a: float, lam_b: float, linha: float):
+    """
+    Handicap Asiático aplicado ao time A (pra calcular do lado do time B, chame
+    invertendo lam_a/lam_b e o sinal da linha). Suporta linhas inteiras
+    (ex: -1.0), de meio gol (ex: -0.5 -- nunca dá push) e de quarto de gol
+    (ex: -0.25, -0.75 -- via split entre as duas linhas de meio ponto
+    adjacentes, exatamente como o mercado asiático precifica na prática).
+
+    Retorna (probabilidade_cobertura_liquida, probabilidade_push):
+    a probabilidade de cobertura já vem NORMALIZADA excluindo a fração que
+    seria push (devolução de aposta) -- é essa que deve ser comparada contra
+    a odd real pra cálculo de edge, já que o push não gera lucro nem prejuízo.
+    """
+    linha_x4 = round(linha * 4)
+    eh_quarto = linha_x4 % 4 not in (0, 2)  # nem múltiplo de 4 (inteira) nem resto 2 (meio gol)
+
+    if not eh_quarto:
+        p_cobre, p_push = _cobre_handicap_linha_simples(lam_a, lam_b, linha)
+    else:
+        linha_baixa = (linha_x4 - 1) / 4
+        linha_alta = (linha_x4 + 1) / 4
+        p_cobre_1, p_push_1 = _cobre_handicap_linha_simples(lam_a, lam_b, linha_baixa)
+        p_cobre_2, p_push_2 = _cobre_handicap_linha_simples(lam_a, lam_b, linha_alta)
+        p_cobre = (p_cobre_1 + p_cobre_2) / 2
+        p_push = (p_push_1 + p_push_2) / 2
+
+    p_cobre_liquida = p_cobre / (1 - p_push) if p_push < 1 else p_cobre
+    return round(p_cobre_liquida, 4), round(p_push, 4)
+
+
+# ============================================================
 # ROBUSTEZ (confiança nos dados de entrada)
 # ============================================================
 
