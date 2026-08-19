@@ -30,57 +30,79 @@ def buscar_estatisticas_no_banco(conn, time_nome: str, esporte: str,
     `conn` é uma conexão DB-API 2.0 (psycopg2, ou sqlite3 nos testes -- a query usa
     apenas SQL padrão, compatível com os dois, pra facilitar o teste sem Postgres real).
     Retorna None se não achar -- nunca inventa, nunca aproxima de outro time.
+
+    A tabela team_season_stats é escrita por outro app (não este) -- se o schema
+    divergir do esperado (coluna renomeada, tabela ainda não criada, etc.), essa
+    função NUNCA deve derrubar o pipeline. Qualquer erro aqui cai silenciosamente
+    pro próximo nível da cascata (Gemini), com log pra debug.
     """
-    cursor = conn.cursor()
-    if competicao:
-        cursor.execute(
-            """
-            SELECT media_marcada, media_sofrida, amostra_n, janela
-            FROM team_season_stats
-            WHERE time_nome = ? AND esporte = ? AND competicao = ?
-            ORDER BY atualizado_em DESC
-            LIMIT 1
-            """.replace("?", "%s") if _is_postgres(conn) else
-            """
-            SELECT media_marcada, media_sofrida, amostra_n, janela
-            FROM team_season_stats
-            WHERE time_nome = ? AND esporte = ? AND competicao = ?
-            ORDER BY atualizado_em DESC
-            LIMIT 1
-            """,
-            (time_nome, esporte, competicao),
-        )
-    else:
-        cursor.execute(
-            """
-            SELECT media_marcada, media_sofrida, amostra_n, janela
-            FROM team_season_stats
-            WHERE time_nome = ? AND esporte = ?
-            ORDER BY atualizado_em DESC
-            LIMIT 1
-            """.replace("?", "%s") if _is_postgres(conn) else
-            """
-            SELECT media_marcada, media_sofrida, amostra_n, janela
-            FROM team_season_stats
-            WHERE time_nome = ? AND esporte = ?
-            ORDER BY atualizado_em DESC
-            LIMIT 1
-            """,
-            (time_nome, esporte),
-        )
+    try:
+        cursor = conn.cursor()
+        if competicao:
+            cursor.execute(
+                (
+                    """
+                    SELECT media_marcada, media_sofrida, amostra_n, janela
+                    FROM team_season_stats
+                    WHERE time_nome = %s AND esporte = %s AND competicao = %s
+                    ORDER BY atualizado_em DESC
+                    LIMIT 1
+                    """ if _is_postgres(conn) else
+                    """
+                    SELECT media_marcada, media_sofrida, amostra_n, janela
+                    FROM team_season_stats
+                    WHERE time_nome = ? AND esporte = ? AND competicao = ?
+                    ORDER BY atualizado_em DESC
+                    LIMIT 1
+                    """
+                ),
+                (time_nome, esporte, competicao),
+            )
+        else:
+            cursor.execute(
+                (
+                    """
+                    SELECT media_marcada, media_sofrida, amostra_n, janela
+                    FROM team_season_stats
+                    WHERE time_nome = %s AND esporte = %s
+                    ORDER BY atualizado_em DESC
+                    LIMIT 1
+                    """ if _is_postgres(conn) else
+                    """
+                    SELECT media_marcada, media_sofrida, amostra_n, janela
+                    FROM team_season_stats
+                    WHERE time_nome = ? AND esporte = ?
+                    ORDER BY atualizado_em DESC
+                    LIMIT 1
+                    """
+                ),
+                (time_nome, esporte),
+            )
 
-    row = cursor.fetchone()
-    if not row:
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        media_marcada, media_sofrida, amostra_n, janela = row
+        return {
+            "media_marcada": float(media_marcada),
+            "media_sofrida": float(media_sofrida),
+            "amostra_n": int(amostra_n),
+            "fonte": "banco_local",
+            "janela": janela,
+        }
+    except Exception as e:
+        # Schema divergente, tabela não existe ainda, coluna renomeada pelo app
+        # do Léo, timeout de conexão, etc. -- qualquer coisa aqui é "não achei
+        # no banco", nunca uma falha que trava a requisição. A conexão pode ter
+        # ficado em estado de erro (transação abortada) -- um rollback defensivo
+        # evita que isso vaze pra outras queries na mesma conexão.
+        print(f"[BANCO LOCAL] Falha ao ler team_season_stats para '{time_nome}' ({esporte}): {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         return None
-
-    media_marcada, media_sofrida, amostra_n, janela = row
-    return {
-        "media_marcada": float(media_marcada),
-        "media_sofrida": float(media_sofrida),
-        "amostra_n": int(amostra_n),
-        "fonte": "banco_local",
-        "janela": janela,
-    }
 
 
 def _is_postgres(conn) -> bool:
