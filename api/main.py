@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
 from typing import List, Optional
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
 from groq import Groq
@@ -62,24 +62,50 @@ def get_groq_client():
 
 
 @app.post("/api/webhooks/ghost")
-async def webhook_ghost(payload: dict):
+async def webhook_ghost(payload: dict, request: Request):
     """
     Recebe eventos de member/subscription do Ghost e sincroniza com app_users.
+
+    SEGURANÇA: o Ghost não permite adicionar headers customizados nas
+    integrações custom, então a verificação de origem é feita via um token
+    secreto embutido na PRÓPRIA URL de destino configurada no painel do Ghost
+    -- não pela assinatura X-Ghost-Signature (o formato dela mudou algumas
+    vezes ao longo do tempo e tem relatos frequentes de mismatch no fórum
+    oficial do Ghost -- confiar nisso arriscaria rejeitar webhooks legítimos
+    silenciosamente). A URL configurada no Ghost deve ser:
+        https://SEU-DOMINIO/api/webhooks/ghost?token=SEU_GHOST_WEBHOOK_SECRET
+    E a variável de ambiente GHOST_WEBHOOK_SECRET precisa estar configurada
+    na Vercel com o mesmo valor.
 
     IMPORTANTE PRA CONFIGURAÇÃO NO PAINEL DO GHOST (Passo 3): o formato exato
     do payload pode variar um pouco entre eventos (`member.added` vs
     `member.updated`/`subscription`) e entre versões do Ghost. Este endpoint
     tenta extrair email/status de alguns formatos comuns, mas o ideal é:
-    1. Configurar o webhook apontando pra cá.
+    1. Configurar o webhook apontando pra cá (com o token na URL).
     2. Disparar um evento de teste real (o Ghost tem essa opção no painel da
        integração).
     3. Olhar os logs da Vercel (`[WEBHOOK GHOST] Payload recebido: ...`) pra
        confirmar que o formato bateu -- se não bateu, ajuste o parsing abaixo.
 
-    Este endpoint SEMPRE responde 200, mesmo em erro interno -- o Ghost
-    desativa webhooks automaticamente depois de falhas consecutivas, então
-    nunca queremos que um payload inesperado derrube a integração inteira.
+    Este endpoint SEMPRE responde 200 pra requisições com token válido, mesmo
+    em erro interno de parsing -- o Ghost desativa webhooks automaticamente
+    depois de falhas consecutivas, então nunca queremos que um payload
+    inesperado derrube a integração inteira. Só requisições SEM o token
+    correto são rejeitadas (401), o que é o comportamento esperado pra
+    tentativas de forjar o webhook vindas de fora do Ghost.
     """
+    token_esperado = os.getenv("GHOST_WEBHOOK_SECRET")
+    if token_esperado:
+        token_recebido = request.query_params.get("token")
+        if token_recebido != token_esperado:
+            print("[WEBHOOK GHOST] Token ausente ou inválido -- requisição rejeitada.")
+            raise HTTPException(status_code=401, detail="Token inválido.")
+    else:
+        # GHOST_WEBHOOK_SECRET ainda não configurado na Vercel -- aceita mesmo
+        # assim (pra não travar o Passo 3 antes de você configurar a variável),
+        # mas avisa alto no log que está rodando sem proteção.
+        print("[WEBHOOK GHOST] ATENÇÃO: GHOST_WEBHOOK_SECRET não configurado -- endpoint SEM proteção de token.")
+
     print(f"[WEBHOOK GHOST] Payload recebido: {json.dumps(payload, ensure_ascii=False)[:2000]}")
 
     try:
