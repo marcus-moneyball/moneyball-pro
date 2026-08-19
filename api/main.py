@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
-from typing import List
+from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
@@ -24,6 +24,7 @@ try:
     from api.validacao import validar_e_sanear_entrada
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
+    from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
@@ -36,6 +37,7 @@ except ImportError:
     from validacao import validar_e_sanear_entrada
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
+    from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
 
 import os
 
@@ -57,6 +59,52 @@ def get_groq_client():
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY não configurada na Vercel.")
     return Groq(api_key=GROQ_API_KEY)
+
+
+@app.post("/api/webhooks/ghost")
+async def webhook_ghost(payload: dict):
+    """
+    Recebe eventos de member/subscription do Ghost e sincroniza com app_users.
+
+    IMPORTANTE PRA CONFIGURAÇÃO NO PAINEL DO GHOST (Passo 3): o formato exato
+    do payload pode variar um pouco entre eventos (`member.added` vs
+    `member.updated`/`subscription`) e entre versões do Ghost. Este endpoint
+    tenta extrair email/status de alguns formatos comuns, mas o ideal é:
+    1. Configurar o webhook apontando pra cá.
+    2. Disparar um evento de teste real (o Ghost tem essa opção no painel da
+       integração).
+    3. Olhar os logs da Vercel (`[WEBHOOK GHOST] Payload recebido: ...`) pra
+       confirmar que o formato bateu -- se não bateu, ajuste o parsing abaixo.
+
+    Este endpoint SEMPRE responde 200, mesmo em erro interno -- o Ghost
+    desativa webhooks automaticamente depois de falhas consecutivas, então
+    nunca queremos que um payload inesperado derrube a integração inteira.
+    """
+    print(f"[WEBHOOK GHOST] Payload recebido: {json.dumps(payload, ensure_ascii=False)[:2000]}")
+
+    try:
+        member = (payload.get("member") or {}).get("current") or payload.get("member") or {}
+        email = member.get("email")
+        status = member.get("status")  # Ghost: 'free' | 'paid' | 'comped'
+        ghost_member_id = member.get("id")
+
+        if not email_valido(email):
+            print(f"[WEBHOOK GHOST] E-mail ausente ou inválido no payload -- ignorando. member={member}")
+            return {"ok": True, "processado": False, "motivo": "email ausente ou inválido"}
+
+        plano = "pro" if status in ("paid", "comped") else "free"
+
+        conn = get_connection()
+        try:
+            sucesso = sync_ghost_member(conn, email, ghost_member_id, plano)
+        finally:
+            fechar_conexao(conn)
+
+        return {"ok": True, "processado": sucesso, "email": email, "plano": plano}
+
+    except Exception as e:
+        print(f"[WEBHOOK GHOST] Erro inesperado processando payload: {e}")
+        return {"ok": True, "processado": False, "motivo": "erro interno -- ver logs"}
 
 
 @app.get("/api/health")
@@ -89,10 +137,39 @@ async def calcular_mercados(payload: dict):
 async def analyze_tickets(
     sport: str = Form(...),
     analyst: str = Form("carlos"),  # Carlos é o único analista do sistema (generalista)
+    email: Optional[str] = Form(None),  # opcional por enquanto -- ver nota abaixo
     files: List[UploadFile] = File(...)
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+
+    # Freemium: checagem de cota ANTES de qualquer chamada cara ao Gemini/Groq,
+    # senão gastamos orçamento de API em requisições que vão ser bloqueadas de
+    # qualquer jeito. `email` é opcional por enquanto pra não quebrar o
+    # frontend atual (que ainda não envia esse campo -- isso muda no Passo 4,
+    # quando o app passa a pedir e-mail antes de analisar). Sem e-mail, o
+    # comportamento antigo é preservado (sem checagem de cota nenhuma).
+    cota_info = None
+    if email:
+        if not email_valido(email):
+            raise HTTPException(status_code=400, detail="E-mail inválido.")
+        db_conn_cota = get_connection()
+        try:
+            cota_info = checar_e_consumir_cota(db_conn_cota, email)
+        finally:
+            fechar_conexao(db_conn_cota)
+
+        if not cota_info["permitido"]:
+            raise HTTPException(
+                status_code=402,
+                detail={
+                    "cota_excedida": True,
+                    "mensagem": "Limite diário de análises gratuitas atingido.",
+                    "plano": cota_info["plano"],
+                    "consultas_hoje": cota_info["consultas_hoje"],
+                    "limite": cota_info["limite"],
+                },
+            )
 
     analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "carlos"
     perfil = PERFIS_ANALISTA[analista_key]
@@ -295,6 +372,9 @@ async def analyze_tickets(
     # Auditoria: Score de Convergência (Framework Mestre Parte 3) -- teto de
     # unidades sugerido a partir da convergência entre roteiro e matchup
     resultado_final["convergencia_calculada_python"] = convergencia_calculada
+    # Freemium: info de cota consumida nesta chamada (None se email não foi
+    # enviado -- ver nota no início do endpoint)
+    resultado_final["cota_info"] = cota_info
 
     if resultado_final.get("dupla_de_elite"):
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
