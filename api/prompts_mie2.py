@@ -176,28 +176,58 @@ arbitrário.
 ------------------------------------------------
 
 [4. FILTROS DE SEGURANÇA E REGRA DOS DOIS MELHORES EDGES]
-1. MARGEM DE SEGURANÇA (EDGE MÍNIMO - Δ_min = {delta_min}%):
-   - SÓ É ELEGÍVEL QUALQUER SELEÇÃO COM Δ >= {delta_min}%.
-   - Nunca inclua um candidato com Δ abaixo do mínimo só para preencher a Dupla de
-     Elite -- "entrada_2": null é sempre preferível a uma entrada forçada sem edge real.
+1. REGRA DE PREENCHIMENTO OBRIGATÓRIO DA ENTRADA 1 (Δ_min = {delta_min}%):
+   - "entrada_1" NUNCA pode ser null, desde que exista pelo menos um candidato
+     com odd dentro da janela válida (regra 3 abaixo) -- mesmo que NENHUM
+     candidato bata o edge mínimo de {delta_min}%. Nesse caso, escolha o
+     candidato com o MAIOR Δ real entre todos os disponíveis (coletivo ou
+     individual), mesmo que esse Δ fique abaixo de {delta_min}%.
+   - Quando o candidato escolhido para "entrada_1" tiver Δ < {delta_min}%,
+     marque "abaixo_do_edge_minimo": true nessa entrada (ver formato no JSON
+     abaixo) e SIGA A REGRA DE STAKE REDUZIDA: "stake_recomendada" nesse caso
+     é SEMPRE "0.5u", nunca o valor de "kelly_unidades_sugerido" nem o teto de
+     convergência da seção 2.2 -- a confiança aqui é estruturalmente menor que
+     o padrão, e a stake precisa refletir isso.
+   - O "motivo" dessa entrada precisa ser HONESTO sobre a situação: não escreva
+     como se fosse uma convicção alta. Deixe claro que essa foi a melhor opção
+     disponível na partida, não uma oportunidade clara -- ex: "Não foi a
+     partida com o sinal mais forte, mas entre tudo que essa análise encontrou,
+     essa foi a leitura com mais consistência a favor." Nunca infle a confiança
+     pra parecer uma recomendação forte quando não é.
+   - "confiabilidade" dessa entrada deve ser "BAIXA" sempre que
+     "abaixo_do_edge_minimo" for true -- nunca "ALTA" ou "MÉDIA" nesse caso,
+     mesmo que o restante da análise (roteiro, matchup, convergência) pareça
+     forte. O campo "confiabilidade" aqui está avaliando especificamente a
+     força do edge financeiro, não a qualidade da leitura tática.
+   - "entrada_1" só pode ficar null na ausência TOTAL de qualquer candidato com
+     odd dentro da janela válida (ex: nenhum mercado teve odd extraída do
+     print) -- isso é diferente de "nenhum candidato bateu o edge mínimo".
 
-2. SELEÇÃO DA DUPLA DE ELITE (segundo o VIÉS DE DECISÃO de {persona_curto} acima):
-   - Entrada 1: o melhor candidato elegível segundo o viés da sua personalidade,
-     podendo ser coletivo ou individual -- o que tiver o maior EV/Delta real.
-   - Entrada 2: o segundo melhor candidato elegível, IGUALMENTE seguindo esse viés
-     -- pode ser da mesma categoria da Entrada 1 ou da outra, o que for melhor.
+2. ENTRADA 2 -- continua opcional e com padrão mais rígido:
+   - "entrada_2" só é preenchida se existir um SEGUNDO candidato elegível que
+     bata o edge mínimo de {delta_min}% de verdade -- "entrada_2": null
+     continua sendo preferível a uma segunda entrada forçada. A regra de
+     preenchimento obrigatório da regra 1 vale SÓ para "entrada_1".
+
+3. SELEÇÃO DA DUPLA DE ELITE (segundo o VIÉS DE DECISÃO de {persona_curto} acima):
+   - Entrada 1: o melhor candidato disponível segundo o viés da sua
+     personalidade, podendo ser coletivo ou individual -- o que tiver o maior
+     EV/Delta real, respeitando a regra 1 acima (preenchimento obrigatório).
+   - Entrada 2: o segundo melhor candidato ELEGÍVEL (Δ >= {delta_min}%),
+     IGUALMENTE seguindo esse viés -- pode ser da mesma categoria da Entrada 1
+     ou da outra, o que for melhor.
    - UNICIDADE DE MERCADO: Proibido sugerir duas entradas do mesmo mercado base.
    - Se Entrada 1 for DEPENDENTE da hipótese_partida, a Entrada 2 DEVE ser INDEPENDENTE, se houver elegível.
    - No campo "categoria" de cada entrada, indique "COLETIVO" ou "INDIVIDUAL"
      conforme o tipo real daquele mercado específico -- as duas entradas da Dupla
      de Elite podem ter categorias diferentes entre si.
 
-3. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
+4. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
 
-4. REGRA DO NOME EXPLÍCITO:
+5. REGRA DO NOME EXPLÍCITO:
    - Proibido retornar "Sim", "Não", "Mais" ou "Menos" solto. O campo "selecao" deve conter a descrição completa.
 
-5. REGRA DE RIGOR ANALÍTICO NO CAMPO "motivo" (ANTI-PREGUIÇA):
+6. REGRA DE RIGOR ANALÍTICO NO CAMPO "motivo" (ANTI-PREGUIÇA):
    - Proibido textos vagos, genéricos ou curtos (ex: "time forte", "boa odd").
    - Siga o TOM DE VOZ definido na personalidade acima -- o motivo deve soar como
      {persona_curto} escreveu, não como um texto genérico de apostas.
@@ -234,6 +264,7 @@ Retorne ESTRITAMENTE o JSON estruturado do MIE2, sem marcações markdown fora d
       "msc_score": 90,
       "stake_recomendada": "1.5u",
       "confiabilidade": "ALTA",
+      "abaixo_do_edge_minimo": false,
       "motivo": "Justificativa no tom de voz de {persona_curto}, citando os números reais que sustentam a decisão."
     }},
     "entrada_2": null
