@@ -56,12 +56,20 @@ def extrair_mercados_estruturados(
   "mercados_cartoes": [
     {"linha": 3.5, "odd": 1.80, "lado": "over"}
   ],
-  "mercado_btts": {"odd_sim": 1.75, "odd_nao": 2.00}"""
+  "mercado_btts": {"odd_sim": 1.75, "odd_nao": 2.00},
+  "mercado_chance_dupla": {"odd_1x": 1.30, "odd_x2": 1.40, "odd_12": 1.20},
+  "mercados_handicap_asiatico": [
+    {"linha": -1.0, "time_referencia": "A", "odd_real_decimal": 1.90, "selecao_texto": "Time A (-1.0)"}
+  ]"""
     elif sport.lower() == "basquete":
         bloco_futebol_extra = """,
   "mercados_player_props": [
     {"jogador": "Nome do Atleta", "prop": "Pontos/Jardas/Rebotes", "linha": 24.5, "odd": 1.85, "lado": "over"}
-  ]"""
+  ],
+  "mercado_moneyline": {"odd_time_a": 1.55, "odd_time_b": 2.40}"""
+    elif sport.lower() == "beisebol":
+        bloco_futebol_extra = """,
+  "mercado_moneyline": {"odd_time_a": 1.55, "odd_time_b": 2.40}"""
 
     prompt = f"""Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
 {{
@@ -75,7 +83,18 @@ Regras:
 - "mercados_total_principal" deve conter APENAS linhas de {cfg['nome_mercado']} (Over/Under de {cfg['nome_stat']}) que estejam explicitamente visíveis nos prints, com odd real.
 - Cada lista deve conter APENAS linhas Over/Under desse mercado que estejam explicitamente visíveis nos prints, com odd real.
 - "lado" deve ser exatamente "over" ou "under".
-- Se não houver nenhuma linha de um mercado, retorne a lista vazia [] para ele.
+- Se não houver nenhuma linha de um mercado, retorne a lista vazia [] para ele (ou omita o campo, se for um objeto único como "mercado_moneyline"/"mercado_chance_dupla").
+- "mercado_moneyline" (beisebol/basquete): "odd_time_a" é a odd de vitória do
+  primeiro time mencionado ("time_a"), "odd_time_b" a odd de vitória do
+  segundo ("time_b"). Preencha só as que estiverem visíveis no print.
+- "mercado_chance_dupla" (futebol): "odd_1x" = casa-ou-empate, "odd_x2" =
+  empate-ou-fora, "odd_12" = casa-ou-fora (dupla chance sem empate). Preencha
+  só as que estiverem visíveis.
+- "mercados_handicap_asiatico" (futebol): "linha" é o valor do handicap
+  exatamente como aparece no print (ex: -1.0, -0.5, -0.25, +0.75 -- mantenha o
+  sinal correto). "time_referencia" é "A" se o handicap for do primeiro time
+  mencionado, "B" se for do segundo. "selecao_texto" é o texto da seleção como
+  aparece no print (ex: "Real Madrid (-1.5)").
 - NUNCA invente time, linha ou odd que não esteja no print."""
 
     try:
