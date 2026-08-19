@@ -829,6 +829,20 @@ function renderEntradaCard(entrada, numeroLabel, accentClass) {
 
 
 
+    const avisoEdgeBaixo = entrada.abaixo_do_edge_minimo
+
+        ? `<div class="flex items-center gap-1.5 text-[10px] text-amber-400/90 bg-amber-400/10 border border-amber-400/20 rounded-lg px-2.5 py-1.5">
+
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+            <span>Melhor opção encontrada nesta partida — não é uma entrada de alta convicção.</span>
+
+          </div>`
+
+        : '';
+
+
+
     return `
 
         <div class="bg-base-card border border-base-border rounded-xl p-4 space-y-3 relative overflow-hidden">
@@ -858,6 +872,8 @@ function renderEntradaCard(entrada, numeroLabel, accentClass) {
                 <div><span class="text-slate-500">Stake:</span> <span class="text-white font-bold">${entrada.stake_recomendada}</span></div>
 
             </div>
+
+            ${avisoEdgeBaixo}
 
             <p class="text-[11px] text-slate-400 italic bg-base-bg/50 p-2 rounded border border-base-border/30">"${entrada.motivo}"</p>
 
@@ -952,6 +968,24 @@ function renderizarBilhetesFormatados(dados) {
                 </p>
 
 
+
+
+                ${asymmetries.length > 0 ? `
+
+                <div class="space-y-2">
+
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Assimetrias Estatísticas Detalhadas</h4>
+
+                    <div class="grid grid-cols-1 gap-2">
+
+                        ${htmlAsymmetries}
+
+                    </div>
+
+                </div>
+
+                ` : ''}
+
             <div class="space-y-3">
 
                 <div class="flex items-center justify-between px-1">
@@ -993,22 +1027,6 @@ function renderizarBilhetesFormatados(dados) {
             </div>
 
 
-
-            ${asymmetries.length > 0 ? `
-
-                <div class="space-y-2 pt-2">
-
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Assimetrias Estatísticas Detalhadas</h4>
-
-                    <div class="grid grid-cols-1 gap-2">
-
-                        ${htmlAsymmetries}
-
-                    </div>
-
-                </div>
-
-            ` : ''}
 
         </div>
 
