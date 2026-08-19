@@ -16,7 +16,10 @@ try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
-    from api.candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
+    from api.candidatos import (
+        montar_candidatos_over_under_calculados, montar_candidato_btts,
+        montar_candidato_moneyline, montar_candidatos_chance_dupla, montar_candidatos_handicap_asiatico,
+    )
     from api.prompts_mie2 import montar_system_prompt_mie2
     from api.validacao import validar_e_sanear_entrada
     from api.db import get_connection, fechar_conexao
@@ -25,7 +28,10 @@ except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
     from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
-    from candidatos import montar_candidatos_over_under_calculados, montar_candidato_btts
+    from candidatos import (
+        montar_candidatos_over_under_calculados, montar_candidato_btts,
+        montar_candidato_moneyline, montar_candidatos_chance_dupla, montar_candidatos_handicap_asiatico,
+    )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
     from db import get_connection, fechar_conexao
@@ -208,6 +214,30 @@ async def analyze_tickets(
                         persona=analista_key, fatores_incerteza=fatores_incerteza,
                     )
                 )
+
+                if sport.lower() == "futebol":
+                    candidatos_calculados.extend(
+                        montar_candidatos_chance_dupla(
+                            dados_estruturados.get("mercado_chance_dupla"), lam_a, lam_b,
+                            persona=analista_key, fatores_incerteza=fatores_incerteza,
+                        )
+                    )
+                    candidatos_calculados.extend(
+                        montar_candidatos_handicap_asiatico(
+                            dados_estruturados.get("mercados_handicap_asiatico"), lam_a, lam_b,
+                            persona=analista_key, fatores_incerteza=fatores_incerteza,
+                        )
+                    )
+                elif sport.lower() in ("basquete", "beisebol"):
+                    nome_time_a = dados_estruturados.get("time_a", "Time A")
+                    nome_time_b = dados_estruturados.get("time_b", "Time B")
+                    candidatos_calculados.extend(
+                        montar_candidato_moneyline(
+                            dados_estruturados.get("mercado_moneyline"), lam_a, lam_b,
+                            esporte=sport, nome_time_a=nome_time_a, nome_time_b=nome_time_b,
+                            persona=analista_key, fatores_incerteza=fatores_incerteza,
+                        )
+                    )
 
     groq_client = get_groq_client()
     system_prompt = montar_system_prompt_mie2(sport, analista_key)
