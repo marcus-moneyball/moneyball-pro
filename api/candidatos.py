@@ -18,6 +18,9 @@ from calc import (
     calcular_fator_robustez,
     calcular_probabilidade_real_ajustada,
     calcular_msc,
+    calcular_probabilidades_1x2_skellam,
+    calcular_probabilidade_vitoria_2vias,
+    calcular_probabilidade_handicap_asiatico,
 )
 
 
@@ -124,4 +127,99 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
             **metricas,
         })
 
+    return candidatos
+
+
+def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
+                                esporte: str, nome_time_a: str = "Time A", nome_time_b: str = "Time B",
+                                persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+    """Moneyline (2 vias, sem empate) -- beisebol e basquete. `mercado_moneyline`
+    deve trazer "odd_time_a"/"odd_time_b" (as odds reais extraídas do print).
+    NÃO usar pra futebol -- lá o empate é resultado real, use
+    montar_candidatos_chance_dupla."""
+    if not mercado_moneyline or lam_a is None or lam_b is None:
+        return []
+
+    modelo = "normal" if esporte.lower() == "basquete" else "skellam"
+    p_a, p_b = calcular_probabilidade_vitoria_2vias(lam_a, lam_b, modelo=modelo)
+
+    candidatos = []
+    odd_a = mercado_moneyline.get("odd_time_a")
+    odd_b = mercado_moneyline.get("odd_time_b")
+
+    if odd_a:
+        metricas = _montar_metricas_candidato(p_a, odd_a, persona, fatores_incerteza, delta_pct=None)
+        candidatos.append({
+            "mercado": "Moneyline (Vencedor)", "selecao": nome_time_a, "odd": odd_a,
+            "probabilidade_real_calculada": p_a, **metricas,
+        })
+    if odd_b:
+        metricas = _montar_metricas_candidato(p_b, odd_b, persona, fatores_incerteza, delta_pct=None)
+        candidatos.append({
+            "mercado": "Moneyline (Vencedor)", "selecao": nome_time_b, "odd": odd_b,
+            "probabilidade_real_calculada": p_b, **metricas,
+        })
+    return candidatos
+
+
+def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
+                                    persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+    """Chance Dupla (1X / X2 / 12) -- futebol. `mercado_chance_dupla` deve trazer
+    "odd_1x"/"odd_x2"/"odd_12" (só as que existirem no print -- nem todo ticket
+    mostra as três)."""
+    if not mercado_chance_dupla or lam_a is None or lam_b is None:
+        return []
+
+    p_a, p_empate, p_b = calcular_probabilidades_1x2_skellam(lam_a, lam_b)
+    mapa = [
+        ("odd_1x", round(p_a + p_empate, 4), "1X (Casa ou Empate)"),
+        ("odd_x2", round(p_empate + p_b, 4), "X2 (Empate ou Fora)"),
+        ("odd_12", round(p_a + p_b, 4), "12 (Casa ou Fora -- sem Empate)"),
+    ]
+
+    candidatos = []
+    for campo_odd, prob, nome_selecao in mapa:
+        odd = mercado_chance_dupla.get(campo_odd)
+        if odd:
+            metricas = _montar_metricas_candidato(prob, odd, persona, fatores_incerteza, delta_pct=None)
+            candidatos.append({
+                "mercado": "Chance Dupla", "selecao": nome_selecao, "odd": odd,
+                "probabilidade_real_calculada": prob, **metricas,
+            })
+    return candidatos
+
+
+def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a: Optional[float], lam_b: Optional[float],
+                                         persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+    """Handicap Asiático -- futebol. Cada item de `mercados_handicap` deve
+    trazer "linha" (o handicap), "time_referencia" ("A" ou "B" -- de qual time
+    é esse handicap) e "odd_real_decimal". Linhas de quarto de gol (.25/.75)
+    são tratadas automaticamente via split -- ver calc.py."""
+    if not mercados_handicap or lam_a is None or lam_b is None:
+        return []
+
+    candidatos = []
+    for mercado in mercados_handicap:
+        linha = mercado.get("linha")
+        odd = mercado.get("odd_real_decimal")
+        time_ref = mercado.get("time_referencia", "A")
+        if linha is None or not odd:
+            continue
+
+        if time_ref == "B":
+            # Simetria: handicap do time B é o espelho do handicap do time A com
+            # sinal invertido -- inverte lam_a/lam_b em vez de duplicar a lógica.
+            p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_b, lam_a, -linha)
+        else:
+            p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
+
+        metricas = _montar_metricas_candidato(p_cobre, odd, persona, fatores_incerteza, delta_pct=None)
+        candidatos.append({
+            "mercado": "Handicap Asiático",
+            "selecao": mercado.get("selecao_texto") or f"Time {time_ref} ({linha:+g})",
+            "odd": odd,
+            "probabilidade_real_calculada": p_cobre,
+            "probabilidade_push": p_push,
+            **metricas,
+        })
     return candidatos
