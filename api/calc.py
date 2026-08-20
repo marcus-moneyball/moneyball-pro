@@ -804,6 +804,72 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 
 
 # ============================================================
+# APOSTA COMBINADA (Dupla de Elite como bet builder / múltipla única)
+# ============================================================
+# Quando a Dupla de Elite tem 2 entradas, o Moneyball Pro recomenda como UMA
+# aposta combinada (stake única no par), não duas apostas separadas. Isso muda
+# a matemática: a odd e a probabilidade combinadas precisam ser calculadas, e
+# a stake precisa ser mais conservadora que qualquer uma das duas pernas
+# isoladas -- é tudo ou nada.
+#
+# Duas fontes de incerteza que puxam em direções OPOSTAS, e nenhuma das duas
+# pode ser eliminada sem o dado real da casa de apostas:
+#
+# 1. Probabilidade: o produto p1*p2 assume INDEPENDÊNCIA entre as duas pernas.
+#    Mas a seção 3.2 do prompt seleciona as duas entradas JUSTAMENTE quando
+#    elas têm correlação POSITIVA -- ou seja, sabemos de antemão que a
+#    probabilidade real conjunta é MAIOR que p1*p2 (não temos um modelo
+#    bivariado calibrado pra calcular o quanto maior, então o produto aqui é
+#    uma subestimativa deliberadamente conservadora, nunca inventada pra cima).
+#
+# 2. Odd: o produto odd1*odd2 é a odd "de prateleira" de duas apostas
+#    separadas. A casa, ao montar a aposta combinada de verdade (bet builder/
+#    same-game parlay), tipicamente AJUSTA essa odd pra baixo por causa da
+#    correlação -- a odd real oferecida costuma ser MENOR que esse produto.
+#
+# Essas duas fontes de erro empurram o edge calculado em direções opostas (uma
+# subestima a probabilidade real, a outra superestima a odd real) -- sem dado
+# de mercado real não dá pra saber qual pesa mais. Por isso a stake de uma
+# aposta combinada nunca chega ao teto máximo da convergência (ver
+# MAPA_STAKE_COMBINADA) e o aviso ao usuário é obrigatório.
+
+MAPA_STAKE_COMBINADA = {2.0: 1.0, 1.0: 0.5, 0.5: 0.5}
+
+
+def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2: float,
+                               teto_stake_convergencia: float = 1.0) -> dict:
+    """
+    Calcula odd/probabilidade/edge estimados de uma aposta combinada (2 pernas
+    do mesmo jogo) a partir das probabilidades e odds individuais já validadas
+    de cada entrada. Ver aviso de conservadorismo acima -- os números aqui são
+    estimativas, não a odd real que a casa vai oferecer.
+    """
+    prob_combinada_estimada = round(prob_1 * prob_2, 4)
+    odd_combinada_estimada = round(odd_1 * odd_2, 2)
+    prob_implicita_combinada = round(1 / odd_combinada_estimada, 4) if odd_combinada_estimada else None
+    edge_combinado_pct = (
+        round((prob_combinada_estimada - prob_implicita_combinada) * 100, 2)
+        if prob_implicita_combinada is not None else None
+    )
+    stake_combinada = MAPA_STAKE_COMBINADA.get(teto_stake_convergencia, 0.5)
+
+    return {
+        "probabilidade_combinada_estimada": prob_combinada_estimada,
+        "odd_combinada_estimada": odd_combinada_estimada,
+        "probabilidade_implicita_combinada": prob_implicita_combinada,
+        "edge_combinado_estimado_pct": edge_combinado_pct,
+        "stake_recomendada": f"{stake_combinada}u",
+        "aviso": (
+            "Odd e probabilidade estimadas a partir das duas pernas separadas -- "
+            "a casa pode ajustar a odd pra baixo ao montar a aposta combinada de "
+            "verdade (bet builder / múltipla do mesmo jogo), por causa da "
+            "correlação entre as entradas. Confira a odd real oferecida antes de "
+            "apostar -- se vier mais baixa, o edge real também cai."
+        ),
+    }
+
+
+# ============================================================
 # CÁLCULO POR MERCADO ISOLADO (usado pelo endpoint utilitário /api/v1/calc)
 # ============================================================
 
