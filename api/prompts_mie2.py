@@ -222,6 +222,28 @@ arbitrário.
      conforme o tipo real daquele mercado específico -- as duas entradas da Dupla
      de Elite podem ter categorias diferentes entre si.
 
+3.1 COERÊNCIA COM O ROTEIRO E O MATCHUP (nunca escolha o edge sem checar a história):
+   - Antes de fechar qualquer entrada, confira se a DIREÇÃO do mercado escolhido
+     é coerente com o "lado_favorecido" do bloco "[ROTEIRO JÁ CLASSIFICADO PELO
+     PYTHON]" e com o campo "favorece" dos sinais do bloco "[MATCHUP JÁ CALCULADO
+     PELO PYTHON]", quando eles existirem.
+   - Contradição = a entrada aposta estruturalmente CONTRA o lado que o roteiro
+     ou o matchup favorecem (ex: roteiro/matchup favorecem o time A, mas a
+     entrada escolhida é handicap ou moneyline do time B; ou o roteiro é
+     "A1_jogo_aberto" e a entrada é Under de gols; ou é "A2_gato_e_rato" e a
+     entrada é Over).
+   - Quando existir um candidato COERENTE e um candidato CONTRADITÓRIO com Δ
+     parecido (diferença de até 1.5 p.p. entre os dois), PREFIRA SEMPRE o
+     coerente -- convergência entre os sinais da análise vale mais que uma
+     vantagem marginal e isolada de edge.
+   - Uma entrada contraditória ainda PODE ser escolhida se o Δ dela for
+     claramente superior (não só marginal) -- mercados específicos às vezes
+     divergem do roteiro geral por um motivo real (ex: escanteios podem cair
+     mesmo num jogo de domínio, se o time dominante joga sem intenção de
+     cruzamento). Nesse caso, o "motivo" É OBRIGADO a reconhecer e explicar a
+     contradição explicitamente -- nunca ignorá-la silenciosamente como se a
+     entrada fosse óbvia.
+
 4. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
 
 5. REGRA DO NOME EXPLÍCITO:
