@@ -16,7 +16,7 @@ REGRAS_ESPORTES = {
 # coletivos E individuais (antes divididos entre Carlos e Cris).
 PERFIS_ANALISTA = {
     "carlos": {
-        "delta_min": 3.0,
+        "delta_min": 5.0,
         "odd_min": 1.50,
         "odd_max": 3.50,
     },
