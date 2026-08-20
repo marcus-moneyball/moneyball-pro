@@ -14,7 +14,7 @@ from groq import Groq
 
 try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
+    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia, calcular_aposta_combinada
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from api.candidatos import (
         montar_candidatos_over_under_calculados, montar_candidato_btts,
@@ -22,12 +22,13 @@ try:
     )
     from api.prompts_mie2 import montar_system_prompt_mie2
     from api.validacao import validar_e_sanear_entrada
+    from api.utils import _parse_float_seguro
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia
+    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia, calcular_aposta_combinada
     from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from candidatos import (
         montar_candidatos_over_under_calculados, montar_candidato_btts,
@@ -35,6 +36,7 @@ except ImportError:
     )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
+    from utils import _parse_float_seguro
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
     from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
@@ -408,5 +410,31 @@ async def analyze_tickets(
 
         resultado_final["dupla_de_elite"]["entrada_1"] = validar_e_sanear_entrada(e1, perfil)
         resultado_final["dupla_de_elite"]["entrada_2"] = validar_e_sanear_entrada(e2, perfil)
+
+        # Aposta combinada (bet builder/múltipla única) -- só faz sentido
+        # calcular quando as DUAS entradas sobreviveram à validação. A
+        # matemática é 100% Python (regra de ouro do projeto) -- reconstrói a
+        # probabilidade de cada perna a partir de odd + delta_edge, já que o
+        # JSON do Carlos não retorna a probabilidade bruta diretamente.
+        e1_valida = resultado_final["dupla_de_elite"]["entrada_1"]
+        e2_valida = resultado_final["dupla_de_elite"]["entrada_2"]
+        resultado_final["dupla_de_elite"]["aposta_combinada"] = None
+
+        if e1_valida and e2_valida:
+            odd_1 = _parse_float_seguro(e1_valida.get("odd"))
+            delta_1 = _parse_float_seguro(e1_valida.get("delta_edge"))
+            odd_2 = _parse_float_seguro(e2_valida.get("odd"))
+            delta_2 = _parse_float_seguro(e2_valida.get("delta_edge"))
+
+            if odd_1 and odd_2 and delta_1 is not None and delta_2 is not None:
+                prob_1 = round(1 / odd_1 + delta_1 / 100, 4)
+                prob_2 = round(1 / odd_2 + delta_2 / 100, 4)
+                teto_convergencia = (
+                    convergencia_calculada.get("teto_stake_unidades", 1.0)
+                    if convergencia_calculada else 1.0
+                )
+                resultado_final["dupla_de_elite"]["aposta_combinada"] = calcular_aposta_combinada(
+                    prob_1, odd_1, prob_2, odd_2, teto_stake_convergencia=teto_convergencia,
+                )
 
     return resultado_final
