@@ -146,6 +146,16 @@ sinais são conflitantes, não apenas reduza o número silenciosamente. Isso val
 para candidatos individuais/props sem Kelly calculado (seção 3): o teto ainda se
 aplica como limite máximo.
 
+NOTA IMPORTANTE -- APOSTA COMBINADA: quando as duas entradas (Entrada 1 e Entrada 2)
+existirem, o Moneyball Pro recomenda a Dupla de Elite como UMA APOSTA COMBINADA
+(bet builder/múltipla do mesmo jogo), não como duas apostas separadas. A odd, a
+probabilidade e a stake dessa combinação são recalculadas em Python DEPOIS da sua
+resposta (você não precisa e não deve calcular isso) -- continue preenchendo
+"stake_recomendada" de CADA entrada normalmente (isso ainda é usado como referência
+de força individual de cada perna), mas saiba que, quando existir Entrada 2, o
+usuário vai ver a stake da aposta combinada como a recomendação principal, não a
+soma das duas stakes individuais.
+
 ------------------------------------------------
 
 [3. DADOS JÁ CALCULADOS -- REGRA DE OURO: NUNCA RECALCULE, NUNCA INVENTE]
