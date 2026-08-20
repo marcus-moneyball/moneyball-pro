@@ -215,12 +215,21 @@ arbitrário.
      EV/Delta real, respeitando a regra 1 acima (preenchimento obrigatório).
    - Entrada 2: o segundo melhor candidato ELEGÍVEL (Δ >= {delta_min}%),
      IGUALMENTE seguindo esse viés -- pode ser da mesma categoria da Entrada 1
-     ou da outra, o que for melhor.
+     ou da outra, o que for melhor, respeitando a regra de correlação da
+     seção 3.2 abaixo.
    - UNICIDADE DE MERCADO: Proibido sugerir duas entradas do mesmo mercado base.
-   - Se Entrada 1 for DEPENDENTE da hipótese_partida, a Entrada 2 DEVE ser INDEPENDENTE, se houver elegível.
    - No campo "categoria" de cada entrada, indique "COLETIVO" ou "INDIVIDUAL"
      conforme o tipo real daquele mercado específico -- as duas entradas da Dupla
      de Elite podem ter categorias diferentes entre si.
+   - No campo "dependencia_hipotese", indique "DEPENDENTE" se o resultado dessa
+     entrada só se confirma quando a hipótese_partida (o roteiro) se confirma
+     também (ex: um handicap do lado favorecido só cobre se o domínio previsto
+     realmente acontecer), ou "INDEPENDENTE" se o resultado da entrada pode
+     acontecer independente de a hipótese_partida se confirmar ou não (ex: um
+     prop pontual de jogador que pode bater mesmo que o roteiro geral falhe).
+     Isso é só METADADO INFORMATIVO -- não dita mais sozinho a escolha da
+     Entrada 2 (ver 3.2, que substituiu a regra antiga de "forçar
+     independência").
 
 3.1 COERÊNCIA COM O ROTEIRO E O MATCHUP (nunca escolha o edge sem checar a história):
    - Antes de fechar qualquer entrada, confira se a DIREÇÃO do mercado escolhido
@@ -243,6 +252,33 @@ arbitrário.
      cruzamento). Nesse caso, o "motivo" É OBRIGADO a reconhecer e explicar a
      contradição explicitamente -- nunca ignorá-la silenciosamente como se a
      entrada fosse óbvia.
+
+3.2 CORRELAÇÃO ENTRE ENTRADA 1 E ENTRADA 2 (o Motor de Correlação da Dupla):
+   Antes de fechar a Entrada 2, avalie como o resultado dela se relaciona com o
+   resultado da Entrada 1 -- existem três tipos possíveis:
+   - CORRELAÇÃO POSITIVA: as duas entradas tendem a vencer JUNTAS, porque nascem
+     da MESMA leitura tática da partida (ex: "Handicap do time A" + "Over de
+     escanteios", quando o roteiro é domínio territorial de A -- se A domina
+     como esperado, as duas entradas se confirmam ao mesmo tempo). Isso é
+     PERMITIDO E DESEJÁVEL -- não é redundância, é convergência: a dupla conta
+     uma única história coerente em vez de duas apostas soltas.
+   - CORRELAÇÃO NEGATIVA: se uma entrada tende a VENCER, a outra tende a
+     PERDER, porque elas implicam leituras táticas contraditórias da mesma
+     partida (ex: "Handicap do time A -1.0" + "Under de escanteios", no mesmo
+     roteiro de domínio territorial -- domínio territorial tende a GERAR mais
+     escanteios, não menos, então essas duas entradas remam contra si mesmas).
+     Isso é PROIBIDO -- nunca monte a Dupla de Elite com duas entradas que se
+     anulam entre si, mesmo que cada uma isoladamente tenha edge positivo.
+   - CORRELAÇÃO NEUTRA: os resultados são praticamente independentes um do
+     outro (ex: handicap do time A + prop pontual de um jogador específico sem
+     relação tática direta com o roteiro geral). PERMITIDO, mas não reforça a
+     convicção da dupla como a correlação positiva reforça.
+
+   TESTE PRÁTICO antes de fechar a Entrada 2: "se a Entrada 1 vencer, essa
+   segunda entrada fica MAIS ou MENOS provável de também vencer?" Se a resposta
+   for "menos provável" (correlação negativa), DESCARTE esse candidato e
+   procure o próximo melhor da lista. "entrada_2": null é sempre preferível a
+   uma dupla que se contradiz internamente.
 
 4. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
 
