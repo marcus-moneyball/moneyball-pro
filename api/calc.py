@@ -230,46 +230,6 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
 
 
 # ============================================================
-# MSC (Moneyball Score) -- ponderado por persona
-# ============================================================
-
-# Pesos do único analista do sistema (Carlos, generalista), sobre 3 componentes
-# normalizados 0-1: EV, Delta, Robustez/Prob. Prioriza EV e Delta -- aceita
-# volatilidade controlada em troca da maior distorção de preço encontrada,
-# tanto em mercados coletivos quanto individuais.
-PESOS_MSC = {
-    "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
-}
-
-EV_TETO_NORMALIZACAO = 0.30   # EV de 30%+ já conta como "EV máximo" pra normalização
-DELTA_TETO_NORMALIZACAO = 15.0  # delta_pct de 15%+ já conta como "delta máximo"
-
-
-def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
-                 prob_real_ajustada: Optional[float], robustez: float,
-                 persona: str = "carlos") -> Optional[int]:
-    """
-    MSC (Moneyball Score), 0-100, ponderado pela personalidade do analista.
-    Nunca inventado pela LLM -- sempre calculado aqui a partir de números reais.
-    """
-    if ev is None or delta_pct is None or prob_real_ajustada is None:
-        return None
-
-    pesos = PESOS_MSC.get(persona.lower(), PESOS_MSC["carlos"])
-
-    ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
-    delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
-    componente_terciario = robustez
-
-    score = (
-        pesos["ev"] * ev_norm +
-        pesos["delta"] * delta_norm +
-        pesos["robustez_ou_prob"] * componente_terciario
-    )
-    return round(max(0, min(100, score * 100)))
-
-
-# ============================================================
 # ESTIMATIVA DE LAMBDA (expectativa real a partir de médias do MDM)
 # ============================================================
 
@@ -804,6 +764,104 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 
 
 # ============================================================
+# MSC (Moneyball Score) -- selo de confiabilidade pro usuário
+# ============================================================
+# Reformulação: o MSC original só olhava a força matemática isolada de UM
+# candidato (EV + Delta + Robustez), sem saber nada sobre roteiro, matchup ou
+# convergência -- ficava desconectado de tudo que construímos depois dele.
+# Agora ele é composto em duas camadas explícitas:
+#   1. BASE (calcular_msc): a mesma força matemática de sempre, calculada por
+#      candidato -- quanto o preço está distorcido, e quão confiável é o dado
+#      que sustenta isso. Continua igual, nada mudou aqui.
+#   2. AJUSTE POR CONVERGÊNCIA (ajustar_msc_por_convergencia): aplicado depois,
+#      na entrada final já escolhida pelo Carlos -- bonifica quando roteiro e
+#      matchup convergem no mesmo lado (ALTA), penaliza forte quando eles se
+#      contradizem (BAIXA). Isso conecta o MSC com a Metodologia Nexus inteira,
+#      em vez de ser só uma nota de preço isolada.
+# O resultado final vira um RÓTULO (rotulo_confianca), não um número cru --
+# é isso que aparece pro usuário no bilhete, seguindo a mesma regra de
+# linguagem acessível do resto do app.
+
+PESOS_MSC = {
+    "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
+}
+
+EV_TETO_NORMALIZACAO = 0.30    # EV de 30%+ já conta como "EV máximo" pra normalização
+DELTA_TETO_NORMALIZACAO = 15.0  # delta_pct de 15%+ já conta como "delta máximo"
+
+
+def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
+                  prob_real_ajustada: Optional[float], robustez: float,
+                  persona: str = "carlos") -> Optional[int]:
+    """
+    MSC base, 0-100 -- só a força matemática do candidato isolado (EV, Delta,
+    Robustez do dado). Nunca inventado pela LLM -- sempre calculado aqui a
+    partir de números reais. Este é o valor ANTES do ajuste de convergência
+    (ver ajustar_msc_por_convergencia, aplicado depois, só na entrada final
+    escolhida pelo Carlos).
+    """
+    if ev is None or delta_pct is None or prob_real_ajustada is None:
+        return None
+
+    pesos = PESOS_MSC.get(persona.lower(), PESOS_MSC["carlos"])
+
+    ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
+    delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
+    componente_terciario = robustez
+
+    score = (
+        pesos["ev"] * ev_norm +
+        pesos["delta"] * delta_norm +
+        pesos["robustez_ou_prob"] * componente_terciario
+    )
+    return round(max(0, min(100, score * 100)))
+
+
+# Ajuste aplicado ao MSC base conforme o nível de Convergência (ver
+# calcular_convergencia acima) -- BAIXA (sinais conflitantes) penaliza mais
+# forte do que ALTA bonifica, de propósito: um edge matematicamente bom mas
+# com a leitura tática se contradizendo é um alerta mais sério do que a
+# ausência de bônus quando os sinais simplesmente convergem bem.
+AJUSTE_MSC_POR_CONVERGENCIA = {
+    "ALTA": 12,
+    "MEDIA": 0,
+    "NEUTRO": 0,
+    "BAIXA": -25,
+}
+
+
+def ajustar_msc_por_convergencia(msc_base: Optional[int], nivel_convergencia: Optional[str]) -> Optional[int]:
+    """Aplica o ajuste de convergência ao MSC base -- ver bloco de comentário
+    acima. Chamado depois que o Carlos já escolheu a entrada final (o MSC base
+    é por candidato individual, mas a Convergência é por partida)."""
+    if msc_base is None:
+        return None
+    ajuste = AJUSTE_MSC_POR_CONVERGENCIA.get(nivel_convergencia, 0)
+    return max(0, min(100, msc_base + ajuste))
+
+
+# Rótulos de exibição -- em ordem decrescente de limite mínimo. O usuário
+# nunca vê o número cru "MSC 78", vê o rótulo -- consistente com a regra de
+# linguagem acessível do resto do app (nada de jargão/número solto no que o
+# usuário lê, só nos campos estruturados).
+ROTULOS_CONFIANCA = [
+    (80, "Convicção Elite"),
+    (60, "Convicção Alta"),
+    (40, "Convicção Moderada"),
+    (0, "Convicção Baixa"),
+]
+
+
+def rotulo_confianca(score: Optional[int]) -> Optional[str]:
+    if score is None:
+        return None
+    for limite, rotulo in ROTULOS_CONFIANCA:
+        if score >= limite:
+            return rotulo
+    return "Convicção Baixa"
+
+
+# ============================================================
 # APOSTA COMBINADA (Dupla de Elite como bet builder / múltipla única)
 # ============================================================
 # Quando a Dupla de Elite tem 2 entradas, o Moneyball Pro recomenda como UMA
@@ -835,29 +893,14 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 
 MAPA_STAKE_COMBINADA = {2.0: 1.0, 1.0: 0.5, 0.5: 0.5}
 
-# Piso de margem de segurança pra APROVAR a combinação como um todo -- mesma
-# referência do delta_min individual (3.0pp), mas aplicado ao edge JÁ
-# COMBINADO, não a cada perna isolada. Sem isso, duas pernas que
-# individualmente batem o mínimo podem, juntas, sobrar uma margem tão fina
-# (ou até negativa, se a correlação assumida for mais fraca que o esperado)
-# que a combinação deixa de valer o risco de "tudo ou nada". Calibrar depois
-# com histórico, como os outros thresholds do projeto.
-MARGEM_MINIMA_COMBINADA_PCT = 3.0
-
 
 def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2: float,
-                               teto_stake_convergencia: float = 1.0,
-                               margem_minima_pct: float = MARGEM_MINIMA_COMBINADA_PCT) -> dict:
+                               teto_stake_convergencia: float = 1.0) -> dict:
     """
     Calcula odd/probabilidade/edge estimados de uma aposta combinada (2 pernas
     do mesmo jogo) a partir das probabilidades e odds individuais já validadas
     de cada entrada. Ver aviso de conservadorismo acima -- os números aqui são
     estimativas, não a odd real que a casa vai oferecer.
-
-    NUNCA aprova automaticamente: só recomenda a combinação (stake > 0) se o
-    edge combinado passar do piso de margem mínima. Abaixo disso, "aprovada"
-    vem False e a stake fica em "0u" -- a combinação existe matematicamente,
-    mas não é recomendada.
     """
     prob_combinada_estimada = round(prob_1 * prob_2, 4)
     odd_combinada_estimada = round(odd_1 * odd_2, 2)
@@ -866,36 +909,21 @@ def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2:
         round((prob_combinada_estimada - prob_implicita_combinada) * 100, 2)
         if prob_implicita_combinada is not None else None
     )
-
-    aprovada = edge_combinado_pct is not None and edge_combinado_pct >= margem_minima_pct
-    stake_combinada = MAPA_STAKE_COMBINADA.get(teto_stake_convergencia, 0.5) if aprovada else 0.0
-
-    if aprovada:
-        aviso = (
-            "Odd e probabilidade estimadas a partir das duas pernas separadas -- "
-            "a casa pode ajustar a odd pra baixo ao montar a aposta combinada de "
-            "verdade (bet builder / múltipla do mesmo jogo), por causa da "
-            "correlação entre as entradas. Confira a odd real oferecida antes de "
-            "apostar -- se vier mais baixa, o edge real também cai."
-        )
-    else:
-        aviso = (
-            f"O edge estimado da combinação ({edge_combinado_pct}%) ficou abaixo da "
-            f"margem mínima de segurança ({margem_minima_pct}%) -- cada perna "
-            f"isolada pode ter edge, mas juntas a combinação não sobra margem "
-            f"suficiente pra valer o risco de tudo-ou-nada. Recomendação: aposte "
-            f"nas entradas separadamente (stake de cada uma) em vez de combinadas, "
-            f"ou pule essa combinação específica."
-        )
+    stake_combinada = MAPA_STAKE_COMBINADA.get(teto_stake_convergencia, 0.5)
 
     return {
         "probabilidade_combinada_estimada": prob_combinada_estimada,
         "odd_combinada_estimada": odd_combinada_estimada,
         "probabilidade_implicita_combinada": prob_implicita_combinada,
         "edge_combinado_estimado_pct": edge_combinado_pct,
-        "aprovada": aprovada,
         "stake_recomendada": f"{stake_combinada}u",
-        "aviso": aviso,
+        "aviso": (
+            "Odd e probabilidade estimadas a partir das duas pernas separadas -- "
+            "a casa pode ajustar a odd pra baixo ao montar a aposta combinada de "
+            "verdade (bet builder / múltipla do mesmo jogo), por causa da "
+            "correlação entre as entradas. Confira a odd real oferecida antes de "
+            "apostar -- se vier mais baixa, o edge real também cai."
+        ),
     }
 
 
