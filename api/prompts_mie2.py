@@ -284,11 +284,48 @@ arbitrário.
      relação tática direta com o roteiro geral). PERMITIDO, mas não reforça a
      convicção da dupla como a correlação positiva reforça.
 
+   ARMADILHAS ESPECÍFICAS DE BEISEBOL (erros reais já identificados -- preste
+   atenção redobrada nesses dois padrões, eles parecem positivos mas são
+   NEGATIVOS):
+   - "Strikeouts do arremessador titular (Over)" + "Total de Runs do jogo
+     (Over)" -- ISSO É CORRELAÇÃO NEGATIVA, não positiva. Mais strikeouts
+     significa MENOS bola em jogo, o que tende a SUPRIMIR a produção de
+     corridas, não aumentar. Nunca combine essas duas assumindo que "o
+     arremessador dominante" e "jogo com muitas corridas" andam juntos --
+     normalmente é o oposto: arremessador dominante = jogo com POUCAS corridas.
+   - "Vitória do time A (Moneyline)" + "Strikeouts do arremessador ADVERSÁRIO
+     (Over)" -- TAMBÉM É CORRELAÇÃO NEGATIVA na maioria dos casos. Se o time A
+     domina ofensivamente a ponto de vencer com folga, o mais provável é que o
+     arremessador adversário tenha sido castigado (rebatidas, corridas
+     permitidas), não que ele tenha dominado com muitos strikeouts. Domínio
+     ofensivo de um lado e domínio de strikeouts do arremessador do OUTRO lado
+     raramente acontecem na mesma partida.
+   - Regra prática: strikeouts do arremessador é sempre uma métrica de quão
+     BEM esse arremessador específico está indo -- combine com coisas que
+     também dependem do arremessador ir bem (ex: F5 vitória do time dele,
+     Under de runs sofridas pelo time dele), nunca com o total geral de runs
+     do jogo ou com o desempenho ofensivo do time adversário.
+
+   ARMADILHA ESPECÍFICA DE BASQUETE: "Handicap de rebotes do time A" +
+   "Over de pontos do time A" nem sempre são positivamente correlacionados --
+   um time pode dominar rebote ofensivo justamente em jogos de baixa eficiência
+   de arremesso (muitos rebotes porque erra muito), o que não necessariamente
+   gera mais pontos. Confirme que o roteiro específico sustenta os dois antes
+   de assumir correlação positiva automática.
+
    TESTE PRÁTICO antes de fechar a Entrada 2: "se a Entrada 1 vencer, essa
    segunda entrada fica MAIS ou MENOS provável de também vencer?" Se a resposta
    for "menos provável" (correlação negativa), DESCARTE esse candidato e
    procure o próximo melhor da lista. "entrada_2": null é sempre preferível a
    uma dupla que se contradiz internamente.
+
+3.3 MARGEM MÍNIMA DA COMBINAÇÃO: mesmo que Entrada 1 e Entrada 2 individualmente
+   batam o edge mínimo e tenham correlação positiva, a combinação das duas
+   (calculada em Python depois da sua resposta) só é recomendada ao usuário se
+   sobrar margem de segurança suficiente no edge COMBINADO -- isso é automático
+   e você não precisa calcular, só saber que existe: às vezes a Dupla de Elite
+   vai aparecer pro usuário com um aviso de "margem insuficiente para combinar"
+   mesmo com as duas entradas certas. Isso é esperado e correto, não um erro.
 
 4. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
 
