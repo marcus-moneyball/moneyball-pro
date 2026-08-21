@@ -843,6 +843,26 @@ function renderEntradaCard(entrada, numeroLabel, accentClass) {
 
 
 
+    const cores_confianca = {
+
+        'Convicção Elite': 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+
+        'Convicção Alta': 'text-accent bg-accent/10 border-accent/20',
+
+        'Convicção Moderada': 'text-sky-300 bg-sky-400/10 border-sky-400/20',
+
+        'Convicção Baixa': 'text-amber-400 bg-amber-400/10 border-amber-400/20',
+
+    };
+
+    const selosConfianca = entrada.confianca_exibicao
+
+        ? `<span class="text-[9px] font-mono uppercase px-2 py-0.5 rounded border ${cores_confianca[entrada.confianca_exibicao.rotulo] || 'text-slate-400 bg-slate-400/10 border-slate-400/20'}">${entrada.confianca_exibicao.rotulo}</span>`
+
+        : '';
+
+
+
     return `
 
         <div class="bg-base-card border border-base-border rounded-xl p-4 space-y-3 relative overflow-hidden">
@@ -857,11 +877,17 @@ function renderEntradaCard(entrada, numeroLabel, accentClass) {
 
             </div>
 
-            <div>
+            <div class="flex items-center justify-between gap-2">
 
-                <p class="text-xs text-slate-400 font-medium">${entrada.mercado}</p>
+                <div>
 
-                <p class="text-sm font-bold text-white mt-0.5">${entrada.selecao}</p>
+                    <p class="text-xs text-slate-400 font-medium">${entrada.mercado}</p>
+
+                    <p class="text-sm font-bold text-white mt-0.5">${entrada.selecao}</p>
+
+                </div>
+
+                ${selosConfianca}
 
             </div>
 
@@ -1025,13 +1051,13 @@ function renderizarBilhetesFormatados(dados) {
 
                     ${combinada ? `
 
-                    <div class="${combinada.aprovada ? 'bg-accent/10 border-accent/30' : 'bg-slate-700/20 border-slate-600/30'} border rounded-xl p-4 space-y-2 mt-3">
+                    <div class="bg-accent/10 border border-accent/30 rounded-xl p-4 space-y-2 mt-3">
 
                         <div class="flex items-center justify-between">
 
-                            <span class="text-xs font-bold ${combinada.aprovada ? 'text-accent' : 'text-slate-400'} uppercase tracking-wide flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-accent uppercase tracking-wide flex items-center gap-1.5">
 
-                                <i class="fa-solid ${combinada.aprovada ? 'fa-layer-group' : 'fa-ban'}"></i> ${combinada.aprovada ? 'Aposta Combinada (Dupla)' : 'Combinação Não Recomendada'}
+                                <i class="fa-solid fa-layer-group"></i> Aposta Combinada (Dupla)
 
                             </span>
 
@@ -1041,13 +1067,13 @@ function renderizarBilhetesFormatados(dados) {
 
                         <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
 
-                            <div><span class="text-slate-500">Edge Estimado:</span> <span class="${combinada.aprovada ? 'text-accent' : 'text-slate-400'} font-bold">${combinada.edge_combinado_estimado_pct}%</span></div>
+                            <div><span class="text-slate-500">Edge Estimado:</span> <span class="text-accent font-bold">${combinada.edge_combinado_estimado_pct}%</span></div>
 
                             <div><span class="text-slate-500">Stake Recomendada:</span> <span class="text-white font-bold">${combinada.stake_recomendada}</span></div>
 
                         </div>
 
-                        <p class="text-[10px] ${combinada.aprovada ? 'text-amber-400/90 bg-amber-400/10 border-amber-400/20' : 'text-slate-400 bg-slate-700/30 border-slate-600/30'} border rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
+                        <p class="text-[10px] text-amber-400/90 bg-amber-400/10 border border-amber-400/20 rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
 
                             <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
 
