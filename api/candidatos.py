@@ -26,8 +26,11 @@ from calc import (
 
 def _montar_metricas_candidato(prob_bruta: float, odd: float, persona: str,
                                 fatores_incerteza: Optional[list], delta_pct: Optional[float]):
-    """Calcula robustez, prob ajustada, EV, Kelly e MSC pra um lado específico
-    (over ou under) de um mercado -- reaproveitado pelos dois construtores abaixo."""
+    """Calcula robustez, prob ajustada, EV, Kelly e MSC base pra um lado
+    específico (over ou under) de um mercado -- reaproveitado pelos dois
+    construtores abaixo. O MSC aqui é o valor BASE (só a força matemática do
+    candidato isolado) -- o ajuste por convergência acontece depois, em
+    main.py, só na entrada final que o Carlos escolher (ver calc.py)."""
     nivel_confianca = calcular_nivel_confianca_dados(fatores_incerteza=fatores_incerteza)
     robustez = calcular_fator_robustez(nivel_confianca)
     prob_ajustada = calcular_probabilidade_real_ajustada(prob_bruta, robustez)
