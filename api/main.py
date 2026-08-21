@@ -14,7 +14,10 @@ from groq import Groq
 
 try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from api.calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia, calcular_aposta_combinada
+    from api.calc import (
+        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
+        calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
+    )
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from api.candidatos import (
         montar_candidatos_over_under_calculados, montar_candidato_btts,
@@ -28,7 +31,10 @@ try:
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-    from calc import calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia, calcular_aposta_combinada
+    from calc import (
+        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
+        calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
+    )
     from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
     from candidatos import (
         montar_candidatos_over_under_calculados, montar_candidato_btts,
@@ -410,6 +416,23 @@ async def analyze_tickets(
 
         resultado_final["dupla_de_elite"]["entrada_1"] = validar_e_sanear_entrada(e1, perfil)
         resultado_final["dupla_de_elite"]["entrada_2"] = validar_e_sanear_entrada(e2, perfil)
+
+        # MSC reformulado -- ajusta o MSC base (matemática isolada, já veio no
+        # msc_score de cada entrada) pelo nível de Convergência da partida, e
+        # traduz o resultado num rótulo pro usuário -- ver calc.py pro
+        # racional completo. Feito aqui (não em candidatos.py) porque
+        # Convergência é uma leitura de partida inteira, só existe depois que
+        # sabemos QUAL entrada o Carlos escolheu.
+        nivel_convergencia = convergencia_calculada.get("nivel") if convergencia_calculada else None
+        for chave_entrada in ("entrada_1", "entrada_2"):
+            entrada_atual = resultado_final["dupla_de_elite"].get(chave_entrada)
+            if entrada_atual and entrada_atual.get("msc_score") is not None:
+                msc_base = _parse_float_seguro(entrada_atual.get("msc_score"))
+                msc_ajustado = ajustar_msc_por_convergencia(msc_base, nivel_convergencia) if msc_base is not None else None
+                entrada_atual["confianca_exibicao"] = {
+                    "score": msc_ajustado,
+                    "rotulo": rotulo_confianca(msc_ajustado),
+                } if msc_ajustado is not None else None
 
         # Aposta combinada (bet builder/múltipla única) -- só faz sentido
         # calcular quando as DUAS entradas sobreviveram à validação. A
