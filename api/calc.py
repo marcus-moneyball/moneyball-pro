@@ -835,14 +835,29 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 
 MAPA_STAKE_COMBINADA = {2.0: 1.0, 1.0: 0.5, 0.5: 0.5}
 
+# Piso de margem de segurança pra APROVAR a combinação como um todo -- mesma
+# referência do delta_min individual (3.0pp), mas aplicado ao edge JÁ
+# COMBINADO, não a cada perna isolada. Sem isso, duas pernas que
+# individualmente batem o mínimo podem, juntas, sobrar uma margem tão fina
+# (ou até negativa, se a correlação assumida for mais fraca que o esperado)
+# que a combinação deixa de valer o risco de "tudo ou nada". Calibrar depois
+# com histórico, como os outros thresholds do projeto.
+MARGEM_MINIMA_COMBINADA_PCT = 3.0
+
 
 def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2: float,
-                               teto_stake_convergencia: float = 1.0) -> dict:
+                               teto_stake_convergencia: float = 1.0,
+                               margem_minima_pct: float = MARGEM_MINIMA_COMBINADA_PCT) -> dict:
     """
     Calcula odd/probabilidade/edge estimados de uma aposta combinada (2 pernas
     do mesmo jogo) a partir das probabilidades e odds individuais já validadas
     de cada entrada. Ver aviso de conservadorismo acima -- os números aqui são
     estimativas, não a odd real que a casa vai oferecer.
+
+    NUNCA aprova automaticamente: só recomenda a combinação (stake > 0) se o
+    edge combinado passar do piso de margem mínima. Abaixo disso, "aprovada"
+    vem False e a stake fica em "0u" -- a combinação existe matematicamente,
+    mas não é recomendada.
     """
     prob_combinada_estimada = round(prob_1 * prob_2, 4)
     odd_combinada_estimada = round(odd_1 * odd_2, 2)
@@ -851,21 +866,36 @@ def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2:
         round((prob_combinada_estimada - prob_implicita_combinada) * 100, 2)
         if prob_implicita_combinada is not None else None
     )
-    stake_combinada = MAPA_STAKE_COMBINADA.get(teto_stake_convergencia, 0.5)
+
+    aprovada = edge_combinado_pct is not None and edge_combinado_pct >= margem_minima_pct
+    stake_combinada = MAPA_STAKE_COMBINADA.get(teto_stake_convergencia, 0.5) if aprovada else 0.0
+
+    if aprovada:
+        aviso = (
+            "Odd e probabilidade estimadas a partir das duas pernas separadas -- "
+            "a casa pode ajustar a odd pra baixo ao montar a aposta combinada de "
+            "verdade (bet builder / múltipla do mesmo jogo), por causa da "
+            "correlação entre as entradas. Confira a odd real oferecida antes de "
+            "apostar -- se vier mais baixa, o edge real também cai."
+        )
+    else:
+        aviso = (
+            f"O edge estimado da combinação ({edge_combinado_pct}%) ficou abaixo da "
+            f"margem mínima de segurança ({margem_minima_pct}%) -- cada perna "
+            f"isolada pode ter edge, mas juntas a combinação não sobra margem "
+            f"suficiente pra valer o risco de tudo-ou-nada. Recomendação: aposte "
+            f"nas entradas separadamente (stake de cada uma) em vez de combinadas, "
+            f"ou pule essa combinação específica."
+        )
 
     return {
         "probabilidade_combinada_estimada": prob_combinada_estimada,
         "odd_combinada_estimada": odd_combinada_estimada,
         "probabilidade_implicita_combinada": prob_implicita_combinada,
         "edge_combinado_estimado_pct": edge_combinado_pct,
+        "aprovada": aprovada,
         "stake_recomendada": f"{stake_combinada}u",
-        "aviso": (
-            "Odd e probabilidade estimadas a partir das duas pernas separadas -- "
-            "a casa pode ajustar a odd pra baixo ao montar a aposta combinada de "
-            "verdade (bet builder / múltipla do mesmo jogo), por causa da "
-            "correlação entre as entradas. Confira a odd real oferecida antes de "
-            "apostar -- se vier mais baixa, o edge real também cai."
-        ),
+        "aviso": aviso,
     }
 
 
