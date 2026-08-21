@@ -293,6 +293,36 @@ arbitrário.
    procure o próximo melhor da lista. "entrada_2": null é sempre preferível a
    uma dupla que se contradiz internamente.
 
+3.2.1 REGRA ESPECÍFICA -- PROP DE JOGADOR SÓ CORRELACIONA COM O TIME DELE:
+   Prop de jogador (strikeouts, chutes, pontos, rebotes, hits etc.) só pode
+   entrar na Dupla de Elite se a correlação com a Entrada 1 for LÓGICA E
+   EXPLICÁVEL -- nunca só "os dois têm edge, vou combinar":
+   - PERMITIDO: prop de um jogador combinado com mercado do MESMO TIME dele
+     (ex: strikeouts do arremessador titular + moneyline/handicap DESSE MESMO
+     time -- se ele domina, o time dele tende a vencer também).
+   - PROIBIDO POR PADRÃO: prop de um jogador combinado com mercado do time
+     ADVERSÁRIO dele, ou com um total que sua própria performance contradiz
+     (ex: strikeouts de um arremessador + Over de Runs/Gols do jogo inteiro --
+     um arremessador dominante tende a SUPRIMIR o placar total, não infla-lo;
+     ou strikeouts do arremessador do time B + moneyline/handicap do time A --
+     não existe lógica direta entre o arremessador de um lado dominar e o
+     resultado do outro lado, é uma combinação arbitrária).
+   - Se você identificar essa situação entre os dois melhores candidatos
+     disponíveis, NÃO force a combinação -- prefira "entrada_2": null, ou
+     troque por outro candidato com correlação de verdade, mesmo que o Δ dele
+     seja menor.
+
+3.2.2 REGRA DE LASTRO MATEMÁTICO MÍNIMO NA DUPLA:
+   Props/individuais (sem cálculo Python, sem Kelly real) são estimados por
+   você -- não existe forma de verificar objetivamente se o Δ que você escreveu
+   pra eles é real. Por isso: quando a Dupla de Elite tiver 2 entradas, PELO
+   MENOS UMA das duas precisa ser um candidato do bloco "[CANDIDATOS JÁ
+   CALCULADOS PELO PYTHON]" (mercado coletivo com Kelly/EV real) -- nunca as
+   duas entradas ao mesmo tempo sendo props/individuais 100% estimados por
+   você. Se os dois melhores candidatos disponíveis forem ambos sem cálculo
+   Python, prefira "entrada_2": null a montar uma combinada sem nenhum lastro
+   matemático verificável.
+
 4. JANELA DE ODDS: Cotações entre {odd_min} e {odd_max}.
 
 5. REGRA DO NOME EXPLÍCITO:
