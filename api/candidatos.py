@@ -36,27 +36,38 @@ def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
 
     `odd` pode chegar em qualquer formato (decimal ou americana, dependendo
     da fonte do print) -- é convertida pra decimal aqui, uma vez só, pra
-    todos os mercados que passam por essa função. Se a conversão falhar
-    (odd inválida/vazia), devolve odd_decimal_convertida=None e EV/Kelly
-    também None -- nunca calcula com um número que não existe de verdade.
+    todos os mercados que passam por essa função.
+
+    Retorna (odd_decimal, metricas_dict). odd_decimal vem None se a
+    conversão falhar (odd inválida/vazia) -- nesse caso metricas_dict vem
+    vazio, e o chamador deve descartar o candidato (nunca calcula com um
+    número que não existe de verdade).
+
+    IMPORTANTE: odd_decimal NUNCA entra dentro de metricas_dict -- fica só
+    no primeiro elemento da tupla. Isso evita duplicar o mesmo valor sob dois
+    nomes de campo (\"odd\" e algo tipo \"odd_decimal_convertida\") no JSON
+    final que vai pro prompt do Groq -- esse tipo de duplicação foi o que
+    estourou o limite de tokens por minuto da API em produção.
     """
     odd_decimal = converter_odd_para_decimal(odd)
+
+    if odd_decimal is None:
+        return None, {}
 
     nivel_confianca = calcular_nivel_confianca_dados(fatores_incerteza=fatores_incerteza)
     robustez = calcular_fator_robustez(nivel_confianca)
     prob_ajustada = calcular_probabilidade_real_ajustada(prob_bruta, robustez)
 
-    prob_implicita_odd = round(1 / odd_decimal, 4) if odd_decimal else None
-    edge_pct = round((prob_ajustada - prob_implicita_odd) * 100, 2) if prob_implicita_odd is not None else None
-    ev = calcular_ev(prob_ajustada, odd_decimal) if odd_decimal is not None else None
+    prob_implicita_odd = round(1 / odd_decimal, 4)
+    edge_pct = round((prob_ajustada - prob_implicita_odd) * 100, 2)
+    ev = calcular_ev(prob_ajustada, odd_decimal)
     kelly = kelly_fracionado(prob_ajustada, odd_decimal) if ev is not None and ev > 0 else None
     # Mercados sem linha numérica (ex: BTTS) não têm delta_pct -- usa o edge
     # percentual (prob ajustada vs prob implícita da odd) como sinal equivalente.
     sinal_distorcao = delta_pct if delta_pct is not None else edge_pct
     msc = calcular_msc(ev, sinal_distorcao, prob_ajustada, robustez, persona=persona) if ev is not None else None
 
-    return {
-        "odd_decimal_convertida": odd_decimal,
+    return odd_decimal, {
         "robustez": robustez,
         "probabilidade_real_ajustada": prob_ajustada,
         "probabilidade_implicita_odd": prob_implicita_odd,
@@ -94,14 +105,14 @@ def montar_candidatos_over_under_calculados(
         delta_abs = round(lam_total - linha, 3)
         delta_pct = round((delta_abs / linha) * 100, 2) if linha else None
 
-        metricas = _montar_metricas_candidato(prob_bruta, odd, persona, fatores_incerteza, delta_pct)
-        if metricas["odd_decimal_convertida"] is None:
+        odd_decimal, metricas = _montar_metricas_candidato(prob_bruta, odd, persona, fatores_incerteza, delta_pct)
+        if odd_decimal is None:
             continue  # odd extraída não foi reconhecível -- não inventa candidato sem odd real
 
         candidatos.append({
             "mercado": nome_mercado,
             "selecao": f"{'Mais' if lado == 'over' else 'Menos'} de {linha} {unidade_selecao}",
-            "odd": metricas["odd_decimal_convertida"],
+            "odd": odd_decimal,
             "esperado_partida": lam_total,
             "probabilidade_real_calculada": prob_bruta,
             **metricas,
@@ -125,23 +136,23 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
     odd_nao = mercado_btts.get("odd_nao")
 
     if odd_sim:
-        metricas = _montar_metricas_candidato(p_sim, odd_sim, persona, fatores_incerteza, delta_pct=None)
-        if metricas["odd_decimal_convertida"] is not None:
+        odd_decimal, metricas = _montar_metricas_candidato(p_sim, odd_sim, persona, fatores_incerteza, delta_pct=None)
+        if odd_decimal is not None:
             candidatos.append({
                 "mercado": "Ambos Marcam (BTTS)",
                 "selecao": "Sim",
-                "odd": metricas["odd_decimal_convertida"],
+                "odd": odd_decimal,
                 "probabilidade_real_calculada": p_sim,
                 **metricas,
             })
 
     if odd_nao:
-        metricas = _montar_metricas_candidato(p_nao, odd_nao, persona, fatores_incerteza, delta_pct=None)
-        if metricas["odd_decimal_convertida"] is not None:
+        odd_decimal, metricas = _montar_metricas_candidato(p_nao, odd_nao, persona, fatores_incerteza, delta_pct=None)
+        if odd_decimal is not None:
             candidatos.append({
                 "mercado": "Ambos Marcam (BTTS)",
                 "selecao": "Não",
-                "odd": metricas["odd_decimal_convertida"],
+                "odd": odd_decimal,
                 "probabilidade_real_calculada": p_nao,
                 **metricas,
             })
@@ -167,19 +178,19 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
     odd_b = mercado_moneyline.get("odd_time_b")
 
     if odd_a:
-        metricas = _montar_metricas_candidato(p_a, odd_a, persona, fatores_incerteza, delta_pct=None)
-        if metricas["odd_decimal_convertida"] is not None:
+        odd_decimal, metricas = _montar_metricas_candidato(p_a, odd_a, persona, fatores_incerteza, delta_pct=None)
+        if odd_decimal is not None:
             candidatos.append({
                 "mercado": "Moneyline (Vencedor)", "selecao": nome_time_a,
-                "odd": metricas["odd_decimal_convertida"],
+                "odd": odd_decimal,
                 "probabilidade_real_calculada": p_a, **metricas,
             })
     if odd_b:
-        metricas = _montar_metricas_candidato(p_b, odd_b, persona, fatores_incerteza, delta_pct=None)
-        if metricas["odd_decimal_convertida"] is not None:
+        odd_decimal, metricas = _montar_metricas_candidato(p_b, odd_b, persona, fatores_incerteza, delta_pct=None)
+        if odd_decimal is not None:
             candidatos.append({
                 "mercado": "Moneyline (Vencedor)", "selecao": nome_time_b,
-                "odd": metricas["odd_decimal_convertida"],
+                "odd": odd_decimal,
                 "probabilidade_real_calculada": p_b, **metricas,
             })
     return candidatos
@@ -204,11 +215,11 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
     for campo_odd, prob, nome_selecao in mapa:
         odd = mercado_chance_dupla.get(campo_odd)
         if odd:
-            metricas = _montar_metricas_candidato(prob, odd, persona, fatores_incerteza, delta_pct=None)
-            if metricas["odd_decimal_convertida"] is not None:
+            odd_decimal, metricas = _montar_metricas_candidato(prob, odd, persona, fatores_incerteza, delta_pct=None)
+            if odd_decimal is not None:
                 candidatos.append({
                     "mercado": "Chance Dupla", "selecao": nome_selecao,
-                    "odd": metricas["odd_decimal_convertida"],
+                    "odd": odd_decimal,
                     "probabilidade_real_calculada": prob, **metricas,
                 })
     return candidatos
@@ -239,13 +250,13 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
         else:
             p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
 
-        metricas = _montar_metricas_candidato(p_cobre, odd, persona, fatores_incerteza, delta_pct=None)
-        if metricas["odd_decimal_convertida"] is None:
+        odd_decimal, metricas = _montar_metricas_candidato(p_cobre, odd, persona, fatores_incerteza, delta_pct=None)
+        if odd_decimal is None:
             continue
         candidatos.append({
             "mercado": "Handicap Asiático",
             "selecao": mercado.get("selecao_texto") or f"Time {time_ref} ({linha:+g})",
-            "odd": metricas["odd_decimal_convertida"],
+            "odd": odd_decimal,
             "probabilidade_real_calculada": p_cobre,
             "probabilidade_push": p_push,
             **metricas,
