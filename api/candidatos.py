@@ -22,29 +22,41 @@ from calc import (
     calcular_probabilidade_vitoria_2vias,
     calcular_probabilidade_handicap_asiatico,
 )
+from utils import converter_odd_para_decimal
 
 
-def _montar_metricas_candidato(prob_bruta: float, odd: float, persona: str,
+def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
                                 fatores_incerteza: Optional[list], delta_pct: Optional[float]):
     """Calcula robustez, prob ajustada, EV, Kelly e MSC base pra um lado
-    específico (over ou under) de um mercado -- reaproveitado pelos dois
-    construtores abaixo. O MSC aqui é o valor BASE (só a força matemática do
+    específico (over ou under) de um mercado -- reaproveitado por TODOS os
+    construtores de mercado (Over/Under, BTTS, Moneyline, Chance Dupla,
+    Handicap). O MSC aqui é o valor BASE (só a força matemática do
     candidato isolado) -- o ajuste por convergência acontece depois, em
-    main.py, só na entrada final que o Carlos escolher (ver calc.py)."""
+    main.py, só na entrada final que o Carlos escolher (ver calc.py).
+
+    `odd` pode chegar em qualquer formato (decimal ou americana, dependendo
+    da fonte do print) -- é convertida pra decimal aqui, uma vez só, pra
+    todos os mercados que passam por essa função. Se a conversão falhar
+    (odd inválida/vazia), devolve odd_decimal_convertida=None e EV/Kelly
+    também None -- nunca calcula com um número que não existe de verdade.
+    """
+    odd_decimal = converter_odd_para_decimal(odd)
+
     nivel_confianca = calcular_nivel_confianca_dados(fatores_incerteza=fatores_incerteza)
     robustez = calcular_fator_robustez(nivel_confianca)
     prob_ajustada = calcular_probabilidade_real_ajustada(prob_bruta, robustez)
 
-    prob_implicita_odd = round(1 / odd, 4) if odd else None
+    prob_implicita_odd = round(1 / odd_decimal, 4) if odd_decimal else None
     edge_pct = round((prob_ajustada - prob_implicita_odd) * 100, 2) if prob_implicita_odd is not None else None
-    ev = calcular_ev(prob_ajustada, odd)
-    kelly = kelly_fracionado(prob_ajustada, odd) if ev is not None and ev > 0 else None
+    ev = calcular_ev(prob_ajustada, odd_decimal) if odd_decimal is not None else None
+    kelly = kelly_fracionado(prob_ajustada, odd_decimal) if ev is not None and ev > 0 else None
     # Mercados sem linha numérica (ex: BTTS) não têm delta_pct -- usa o edge
     # percentual (prob ajustada vs prob implícita da odd) como sinal equivalente.
     sinal_distorcao = delta_pct if delta_pct is not None else edge_pct
     msc = calcular_msc(ev, sinal_distorcao, prob_ajustada, robustez, persona=persona) if ev is not None else None
 
     return {
+        "odd_decimal_convertida": odd_decimal,
         "robustez": robustez,
         "probabilidade_real_ajustada": prob_ajustada,
         "probabilidade_implicita_odd": prob_implicita_odd,
@@ -83,11 +95,13 @@ def montar_candidatos_over_under_calculados(
         delta_pct = round((delta_abs / linha) * 100, 2) if linha else None
 
         metricas = _montar_metricas_candidato(prob_bruta, odd, persona, fatores_incerteza, delta_pct)
+        if metricas["odd_decimal_convertida"] is None:
+            continue  # odd extraída não foi reconhecível -- não inventa candidato sem odd real
 
         candidatos.append({
             "mercado": nome_mercado,
             "selecao": f"{'Mais' if lado == 'over' else 'Menos'} de {linha} {unidade_selecao}",
-            "odd": odd,
+            "odd": metricas["odd_decimal_convertida"],
             "esperado_partida": lam_total,
             "probabilidade_real_calculada": prob_bruta,
             **metricas,
@@ -112,23 +126,25 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
 
     if odd_sim:
         metricas = _montar_metricas_candidato(p_sim, odd_sim, persona, fatores_incerteza, delta_pct=None)
-        candidatos.append({
-            "mercado": "Ambos Marcam (BTTS)",
-            "selecao": "Sim",
-            "odd": odd_sim,
-            "probabilidade_real_calculada": p_sim,
-            **metricas,
-        })
+        if metricas["odd_decimal_convertida"] is not None:
+            candidatos.append({
+                "mercado": "Ambos Marcam (BTTS)",
+                "selecao": "Sim",
+                "odd": metricas["odd_decimal_convertida"],
+                "probabilidade_real_calculada": p_sim,
+                **metricas,
+            })
 
     if odd_nao:
         metricas = _montar_metricas_candidato(p_nao, odd_nao, persona, fatores_incerteza, delta_pct=None)
-        candidatos.append({
-            "mercado": "Ambos Marcam (BTTS)",
-            "selecao": "Não",
-            "odd": odd_nao,
-            "probabilidade_real_calculada": p_nao,
-            **metricas,
-        })
+        if metricas["odd_decimal_convertida"] is not None:
+            candidatos.append({
+                "mercado": "Ambos Marcam (BTTS)",
+                "selecao": "Não",
+                "odd": metricas["odd_decimal_convertida"],
+                "probabilidade_real_calculada": p_nao,
+                **metricas,
+            })
 
     return candidatos
 
@@ -137,9 +153,9 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
                                 esporte: str, nome_time_a: str = "Time A", nome_time_b: str = "Time B",
                                 persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
     """Moneyline (2 vias, sem empate) -- beisebol e basquete. `mercado_moneyline`
-    deve trazer "odd_time_a"/"odd_time_b" (as odds reais extraídas do print).
-    NÃO usar pra futebol -- lá o empate é resultado real, use
-    montar_candidatos_chance_dupla."""
+    deve trazer "odd_time_a"/"odd_time_b" (as odds reais extraídas do print,
+    em decimal OU americana -- convertida internamente). NÃO usar pra futebol
+    -- lá o empate é resultado real, use montar_candidatos_chance_dupla."""
     if not mercado_moneyline or lam_a is None or lam_b is None:
         return []
 
@@ -152,16 +168,20 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
 
     if odd_a:
         metricas = _montar_metricas_candidato(p_a, odd_a, persona, fatores_incerteza, delta_pct=None)
-        candidatos.append({
-            "mercado": "Moneyline (Vencedor)", "selecao": nome_time_a, "odd": odd_a,
-            "probabilidade_real_calculada": p_a, **metricas,
-        })
+        if metricas["odd_decimal_convertida"] is not None:
+            candidatos.append({
+                "mercado": "Moneyline (Vencedor)", "selecao": nome_time_a,
+                "odd": metricas["odd_decimal_convertida"],
+                "probabilidade_real_calculada": p_a, **metricas,
+            })
     if odd_b:
         metricas = _montar_metricas_candidato(p_b, odd_b, persona, fatores_incerteza, delta_pct=None)
-        candidatos.append({
-            "mercado": "Moneyline (Vencedor)", "selecao": nome_time_b, "odd": odd_b,
-            "probabilidade_real_calculada": p_b, **metricas,
-        })
+        if metricas["odd_decimal_convertida"] is not None:
+            candidatos.append({
+                "mercado": "Moneyline (Vencedor)", "selecao": nome_time_b,
+                "odd": metricas["odd_decimal_convertida"],
+                "probabilidade_real_calculada": p_b, **metricas,
+            })
     return candidatos
 
 
@@ -169,7 +189,7 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
                                     persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
     """Chance Dupla (1X / X2 / 12) -- futebol. `mercado_chance_dupla` deve trazer
     "odd_1x"/"odd_x2"/"odd_12" (só as que existirem no print -- nem todo ticket
-    mostra as três)."""
+    mostra as três; decimal ou americana, convertida internamente)."""
     if not mercado_chance_dupla or lam_a is None or lam_b is None:
         return []
 
@@ -185,10 +205,12 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
         odd = mercado_chance_dupla.get(campo_odd)
         if odd:
             metricas = _montar_metricas_candidato(prob, odd, persona, fatores_incerteza, delta_pct=None)
-            candidatos.append({
-                "mercado": "Chance Dupla", "selecao": nome_selecao, "odd": odd,
-                "probabilidade_real_calculada": prob, **metricas,
-            })
+            if metricas["odd_decimal_convertida"] is not None:
+                candidatos.append({
+                    "mercado": "Chance Dupla", "selecao": nome_selecao,
+                    "odd": metricas["odd_decimal_convertida"],
+                    "probabilidade_real_calculada": prob, **metricas,
+                })
     return candidatos
 
 
@@ -196,15 +218,16 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
                                          persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
     """Handicap Asiático -- futebol. Cada item de `mercados_handicap` deve
     trazer "linha" (o handicap), "time_referencia" ("A" ou "B" -- de qual time
-    é esse handicap) e "odd_real_decimal". Linhas de quarto de gol (.25/.75)
-    são tratadas automaticamente via split -- ver calc.py."""
+    é esse handicap) e "odd" (decimal ou americana, convertida internamente).
+    Linhas de quarto de gol (.25/.75) são tratadas automaticamente via split
+    -- ver calc.py."""
     if not mercados_handicap or lam_a is None or lam_b is None:
         return []
 
     candidatos = []
     for mercado in mercados_handicap:
         linha = mercado.get("linha")
-        odd = mercado.get("odd_real_decimal")
+        odd = mercado.get("odd") or mercado.get("odd_real_decimal")
         time_ref = mercado.get("time_referencia", "A")
         if linha is None or not odd:
             continue
@@ -217,10 +240,12 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
             p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
 
         metricas = _montar_metricas_candidato(p_cobre, odd, persona, fatores_incerteza, delta_pct=None)
+        if metricas["odd_decimal_convertida"] is None:
+            continue
         candidatos.append({
             "mercado": "Handicap Asiático",
             "selecao": mercado.get("selecao_texto") or f"Time {time_ref} ({linha:+g})",
-            "odd": odd,
+            "odd": metricas["odd_decimal_convertida"],
             "probabilidade_real_calculada": p_cobre,
             "probabilidade_push": p_push,
             **metricas,
