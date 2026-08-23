@@ -16,13 +16,13 @@ REGRAS_ESPORTES = {
 # coletivos E individuais (antes divididos entre Carlos e Cris).
 PERFIS_ANALISTA = {
     "carlos": {
-        "delta_min": 3.5,
+        "delta_min": 2.0,
         "odd_min": 1.50,
-        "odd_max": 3.80,
+        "odd_max": 3.20,
     },
 }
 
-DELTA_MAX_PLAUSIVEL = 16.0
+DELTA_MAX_PLAUSIVEL = 10.0
 
 CONFIG_MERCADO_PRINCIPAL = {
     "futebol": {"nome_stat": "gols", "nome_mercado": "Total de Gols da Partida", "unidade_selecao": "Gols"},
