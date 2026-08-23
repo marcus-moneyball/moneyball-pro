@@ -51,32 +51,32 @@ def extrair_mercados_estruturados(
     if sport.lower() == "futebol":
         bloco_futebol_extra = """,
   "mercados_escanteios": [
-    {"linha": 9.5, "odd": 1.90, "lado": "over"}
+    {"linha": 9.5, "odd": "1.90", "lado": "over"}
   ],
   "mercados_cartoes": [
-    {"linha": 3.5, "odd": 1.80, "lado": "over"}
+    {"linha": 3.5, "odd": "1.80", "lado": "over"}
   ],
-  "mercado_btts": {"odd_sim": 1.75, "odd_nao": 2.00},
-  "mercado_chance_dupla": {"odd_1x": 1.30, "odd_x2": 1.40, "odd_12": 1.20},
+  "mercado_btts": {"odd_sim": "1.75", "odd_nao": "2.00"},
+  "mercado_chance_dupla": {"odd_1x": "1.30", "odd_x2": "1.40", "odd_12": "1.20"},
   "mercados_handicap_asiatico": [
-    {"linha": -1.0, "time_referencia": "A", "odd_real_decimal": 1.90, "selecao_texto": "Time A (-1.0)"}
+    {"linha": -1.0, "time_referencia": "A", "odd_real_decimal": "1.90", "selecao_texto": "Time A (-1.0)"}
   ]"""
     elif sport.lower() == "basquete":
         bloco_futebol_extra = """,
   "mercados_player_props": [
-    {"jogador": "Nome do Atleta", "prop": "Pontos/Jardas/Rebotes", "linha": 24.5, "odd": 1.85, "lado": "over"}
+    {"jogador": "Nome do Atleta", "prop": "Pontos/Jardas/Rebotes", "linha": 24.5, "odd": "1.85", "lado": "over"}
   ],
-  "mercado_moneyline": {"odd_time_a": 1.55, "odd_time_b": 2.40}"""
+  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"}"""
     elif sport.lower() == "beisebol":
         bloco_futebol_extra = """,
-  "mercado_moneyline": {"odd_time_a": 1.55, "odd_time_b": 2.40}"""
+  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"}"""
 
     prompt = f"""Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
 {{
   "time_a": "Nome do primeiro time mencionado",
   "time_b": "Nome do segundo time mencionado",
   "mercados_total_principal": [
-    {{"linha": 215.5, "odd": 1.85, "lado": "under"}}
+    {{"linha": 215.5, "odd": "1.85", "lado": "under"}}
   ]{bloco_futebol_extra}
 }}
 Regras:
@@ -95,6 +95,17 @@ Regras:
   sinal correto). "time_referencia" é "A" se o handicap for do primeiro time
   mencionado, "B" se for do segundo. "selecao_texto" é o texto da seleção como
   aparece no print (ex: "Real Madrid (-1.5)").
+- REGRA CRÍTICA DE FORMATO DE ODD -- todo campo de odd ("odd", "odd_sim",
+  "odd_nao", "odd_1x", "odd_x2", "odd_12", "odd_real_decimal", "odd_time_a",
+  "odd_time_b") deve ser extraído como TEXTO (string), EXATAMENTE como aparece
+  no print -- nunca convertido ou reinterpretado por você. Casas de apostas
+  diferentes mostram odds em formatos diferentes: decimal (ex: "1.85") ou
+  americana, com sinal (ex: "-150", "+130"). Se a odd tiver sinal de "+" ou
+  "-" no print, PRESERVE ESSE SINAL EXATO no texto extraído -- nunca omita o
+  "-" de uma odd negativa, isso inverteria o significado (o favorito passaria
+  a parecer zebra). Não faça nenhuma conta ou conversão você mesmo -- apenas
+  copie o texto exato que está visível, a conversão pra decimal é feita depois
+  por outro sistema.
 - NUNCA invente time, linha ou odd que não esteja no print."""
 
     try:
