@@ -29,7 +29,7 @@ from utils import converter_odd_para_decimal
 # bug de pipeline (odd mal lida, dado errado, cálculo quebrado) do que
 # ineficiência real de mercado -- mercados líquidos raramente erram tanto.
 # Candidato com edge acima disso é descartado direto, nunca chega no Groq.
-EDGE_MAXIMO_PLAUSIVEL_PCT = 8.0
+EDGE_MAXIMO_PLAUSIVEL_PCT = 10.0
 
 
 def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
