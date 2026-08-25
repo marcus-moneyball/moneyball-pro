@@ -609,3 +609,56 @@ def calcular_score_convergencia(roteiro: Optional[dict], matchup: Optional[dict]
         return {"convergencia": "conflito", "score": 0.35, "detalhes": "Roteiro e Matchup apresentam sinais conflitantes."}
 
     return {"convergencia": "neutra", "score": 0.5, "detalhes": "Análise de convergência em nível padrão."}
+
+# ============================================================
+# MSC (Score de Confiança Matemática)
+# ============================================================
+
+def calcular_msc(ev: float, sinal_distorcao: float, prob_ajustada: float, robustez: float, persona: str = "carlos") -> float:
+    """
+    Calcula o MSC (Model Score) base de uma seleção antes da convergência.
+    """
+    if ev is None or ev <= 0:
+        return 0.0
+    
+    pesos = {"ev": 0.45, "prob": 0.35, "robustez": 0.20}
+    distorcao_fator = min(2.0, max(0.5, 1.0 + (sinal_distorcao or 0) / 100))
+    
+    score_base = (ev * 100 * pesos["ev"]) + (prob_ajustada * 100 * pesos["prob"]) + (robustez * 100 * pesos["robustez"])
+    msc_final = score_base * distorcao_fator
+    
+    return round(max(0.0, min(100.0, msc_final)), 2)
+
+
+# ============================================================
+# DOSSIÊ (Função Orquestradora esperada pelo main.py)
+# ============================================================
+
+def calcular_dossie(dados_input: dict) -> dict:
+    """
+    Consolida Roteiro, Matchup, Convergência e Nível de Confiança
+    no dicionário de Dossiê que a rota /api/v1/analyze espera.
+    """
+    if not isinstance(dados_input, dict):
+        return {}
+
+    esporte = dados_input.get("esporte", "futebol")
+    dados_a = dados_input.get("dados_time_a", {})
+    dados_b = dados_input.get("dados_time_b", {})
+    fatores = dados_input.get("fatores_incerteza", [])
+    amostra = dados_input.get("tamanho_amostra")
+
+    nivel_confianca = calcular_nivel_confianca_dados(tamanho_amostra=amostra, fatores_incerteza=fatores)
+    robustez = calcular_fator_robustez(nivel_confianca)
+
+    roteiro = classificar_roteiro_jogo(esporte, dados_a, dados_b)
+    matchup = calcular_matchup(esporte, dados_a, dados_b)
+    convergencia = calcular_score_convergencia(roteiro, matchup)
+
+    return {
+        "nivel_confianca_dados": nivel_confianca,
+        "fator_robustez": robustez,
+        "roteiro_jogo": roteiro,
+        "matchup_engine": matchup,
+        "score_convergencia": convergencia,
+    }
