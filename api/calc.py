@@ -586,7 +586,7 @@ def calcular_matchup(esporte: str, dados_time_a: Optional[dict], dados_time_b: O
 # SCORE DE CONVERGÊNCIA (Framework Mestre -- Gestão de Confiança)
 # ============================================================
 
-def calcular_score_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> dict:
+def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> dict:
     """
     Mede a convergência entre os dois sinais que já existem no pipeline:
     Roteiro (Força) e Matchup (Encaixe).
@@ -653,7 +653,7 @@ def calcular_dossie(dados_input: dict) -> dict:
 
     roteiro = classificar_roteiro_jogo(esporte, dados_a, dados_b)
     matchup = calcular_matchup(esporte, dados_a, dados_b)
-    convergencia = calcular_score_convergencia(roteiro, matchup)
+    convergencia = calcular_convergencia(roteiro, matchup)
 
     return {
         "nivel_confianca_dados": nivel_confianca,
