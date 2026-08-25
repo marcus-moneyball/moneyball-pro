@@ -39,7 +39,7 @@ def converter_odd_para_decimal(valor) -> Optional[float]:
     """
     Conversão de odds americanas para decimais -- determinística, sem LLM.
     A entrada pode trazer odds em qualquer um dos dois formatos (dependendo da
-    fonte do print: Scores24 costuma ser decimal, Action Network costuma ser
+    fonte do print: bet365 costuma ser decimal, Action Network costuma ser
     americana) -- essa função normaliza tudo pra decimal antes de qualquer
     cálculo de EV/Kelly.
 
