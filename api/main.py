@@ -15,7 +15,7 @@ from groq import Groq
 try:
     from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from api.calc import (
-        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_score_convergencia,
+        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
         calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
     )
     from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
