@@ -194,7 +194,8 @@ def calcular_ev(prob_real: float, odd_decimal: float):
     return round((prob_real * odd_decimal) - 1, 4)
 
 
-def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[float]:
+def kelly_fracionado(prob_real: float, odd_decimal: float, robustez: float = 1.0, 
+                    fracao: float = 0.25, teto_unidades: float = 2.5) -> Optional[float]:
     if prob_real is None or odd_decimal is None or odd_decimal <= 1:
         return None
     b = odd_decimal - 1
@@ -204,14 +205,16 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
     if f_star <= 0:
         return None
 
-    unidades = f_star * fracao * 10.0
+    # O fator de robustez reduz a exposição na banca proporcionalmente à incerteza dos dados,
+    # mantendo o EV matemático limpo.
+    fator_ajuste = math.pow(robustez, 2)
+    unidades = f_star * fracao * 10.0 * fator_ajuste
     unidades = min(teto_unidades, unidades)
     unidades_arredondadas = round(round(unidades * 4) / 4, 2)
 
     if unidades_arredondadas <= 0:
         return None
     return unidades_arredondadas
-
 
 # ============================================================
 # ESTIMATIVA DE LAMBDA / MÉDIA (expectativa real via MDM)
