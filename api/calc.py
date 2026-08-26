@@ -57,7 +57,7 @@ def prob_over_under_normal(linha: float, media: float, desvio_padrao: float = 11
 # histórico de jogos do próprio Moneyball ainda) -- recalibrar essa razão
 # assim que houver volume suficiente de jogos reais analisados, mesma
 # filosofia já aplicada aos outros limiares do projeto.
-RAZAO_VARIANCIA_MEDIA_BEISEBOL = 2.06
+RAZAO_VARIANCIA_MEDIA_BEISEBOL = 2.11
 
 
 def _theta_binomial_negativa(media: float, razao_var_media: float = RAZAO_VARIANCIA_MEDIA_BEISEBOL) -> float:
