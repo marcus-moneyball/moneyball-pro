@@ -29,11 +29,17 @@ from utils import converter_odd_para_decimal
 # bug de pipeline (odd mal lida, dado errado, cálculo quebrado) do que
 # ineficiência real de mercado -- mercados líquidos raramente erram tanto.
 # Candidato com edge acima disso é descartado direto, nunca chega no Groq.
-EDGE_MAXIMO_PLAUSIVEL_PCT = 10.0
+#
+# Ajustado de 10.0 -> 22.0: o valor original estava cortando edges reais
+# (mercados de ligas menores, props e beisebol via Binomial Negativa
+# legitimamente geram edge > 10% às vezes). 22.0 ainda pega erro grosseiro
+# de parsing (odd trocada, dado absurdo) sem descartar valor real.
+EDGE_MAXIMO_PLAUSIVEL_PCT = 25.0
 
 
 def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
-                                fatores_incerteza: Optional[list], delta_pct: Optional[float]):
+                                fatores_incerteza: Optional[list], delta_pct: Optional[float],
+                                contexto_log: Optional[str] = None):
     """Calcula robustez, prob ajustada, EV, Kelly e MSC base pra um lado
     específico (over ou under) de um mercado -- reaproveitado por TODOS os
     construtores de mercado (Over/Under, BTTS, Moneyline, Chance Dupla,
@@ -45,10 +51,17 @@ def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
     da fonte do print) -- é convertida pra decimal aqui, uma vez só, pra
     todos os mercados que passam por essa função.
 
+    `contexto_log` é só uma string curta (ex: "beisebol/Total de Corridas")
+    usada nas mensagens de descarte, pra facilitar auditoria -- opcional,
+    não afeta o cálculo. Nenhum chamador precisa passar isso; se não passar,
+    vira "n/d" no log.
+
     Retorna (odd_decimal, metricas_dict). odd_decimal vem None se a
-    conversão falhar (odd inválida/vazia) -- nesse caso metricas_dict vem
-    vazio, e o chamador deve descartar o candidato (nunca calcula com um
-    número que não existe de verdade).
+    conversão falhar (odd inválida/vazia) OU se o edge estourar o teto de
+    sanidade -- nesse caso metricas_dict vem vazio, e o chamador deve
+    descartar o candidato (nunca calcula com um número que não existe de
+    verdade). A diferença entre os dois casos de descarte fica só no log
+    (print), pra não mudar o contrato que os chamadores já usam.
 
     IMPORTANTE: odd_decimal NUNCA entra dentro de metricas_dict -- fica só
     no primeiro elemento da tupla. Isso evita duplicar o mesmo valor sob dois
@@ -68,10 +81,16 @@ def _montar_metricas_candidato(prob_bruta: float, odd, persona: str,
     prob_implicita_odd = round(1 / odd_decimal, 4)
     edge_pct = round((prob_ajustada - prob_implicita_odd) * 100, 2)
 
-    # Teto de sanidade: edge calculado maior que isso é sinal mais provável
-    # de bug de pipeline (odd mal lida, dado errado) do que ineficiência real
-    # de mercado -- descarta o candidato inteiro, nunca deixa chegar no Groq.
+    # Teto de sanidade: descarta, mas deixa rastro no log -- antes esse
+    # candidato simplesmente desaparecia, sem forma de saber quantos edges
+    # "bons" estavam sendo cortados junto com os bugados. Auditar esses
+    # prints depois de rodar um lote de jogos ajuda a calibrar o teto certo.
     if edge_pct > EDGE_MAXIMO_PLAUSIVEL_PCT:
+        print(
+            f"[SANIDADE] Candidato descartado -- edge {edge_pct}% acima do "
+            f"teto ({EDGE_MAXIMO_PLAUSIVEL_PCT}%). odd={odd_decimal} "
+            f"prob_ajustada={prob_ajustada} contexto={contexto_log or 'n/d'}"
+        )
         return None, {}
 
     ev = calcular_ev(prob_ajustada, odd_decimal)
