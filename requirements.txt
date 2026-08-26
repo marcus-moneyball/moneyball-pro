@@ -6,3 +6,6 @@ google-genai
 pillow
 uvicorn
 psycopg2-binary
+stripe
+pyjwt
+requests
