@@ -1,0 +1,3 @@
+npm init -y
+npm install next stripe jsonwebtoken
+npm install -D typescript @types/node @types/jsonwebtoken
