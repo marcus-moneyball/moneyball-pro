@@ -155,8 +155,28 @@ def health_check():
     }
 
 
+SMARTCENTER_SERVICE_KEY = os.getenv("SMARTCENTER_SERVICE_KEY")
+
+
+def _validar_chave_servico(request: Request):
+    """
+    Protege endpoints chamados server-to-server (ex: SmartCenter), não por
+    usuários finais do app. Mesmo padrão fail-open-com-aviso do webhook do
+    Ghost: se a chave ainda não foi configurada na Vercel, deixa passar mas
+    avisa alto no log -- pra não travar o Passo 1 da integração antes de você
+    configurar a variável. Depois de configurada, passa a bloquear de verdade.
+    """
+    if not SMARTCENTER_SERVICE_KEY:
+        print("[SERVICE AUTH] ATENÇÃO: SMARTCENTER_SERVICE_KEY não configurada -- endpoint SEM proteção.")
+        return
+    chave_recebida = request.headers.get("x-service-key")
+    if chave_recebida != SMARTCENTER_SERVICE_KEY:
+        raise HTTPException(status_code=401, detail="Chave de serviço inválida ou ausente.")
+
+
 @app.post("/api/v1/calc")
-async def calcular_mercados(payload: dict):
+async def calcular_mercados(payload: dict, request: Request):
+    _validar_chave_servico(request)
     mercados = payload.get("mercados")
     esporte = payload.get("esporte", "futebol")
     if not mercados or not isinstance(mercados, list):
