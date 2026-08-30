@@ -245,6 +245,24 @@
     <!-- MODAL DE WAITLIST (LISTA DE ESPERA) -->
 
     <div id="waitlist-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
+        <div id="email-capture-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
+        <div class="bg-base-panel border border-accent/30 rounded-2xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-value to-accent"></div>
+            <div class="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center mx-auto mb-2 border border-accent/20">
+                <i class="fa-solid fa-envelope text-accent text-2xl"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-display text-white tracking-wide">ANTES DE COMEÇAR</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Seu e-mail identifica sua conta -- é o que controla suas análises gratuitas do dia e libera acesso ilimitado se você for membro Pro.</p>
+            </div>
+            <div class="space-y-3 pt-2">
+                <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
+                <button onclick="confirmarEmailUsuario()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
+                    Continuar
+                </button>
+            </div>
+        </div>
+    </div>
 
         <div class="bg-base-panel border border-accent/30 rounded-2xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
 
@@ -547,132 +565,135 @@ function atualizarContadorUso() {
 
 
 
-async function processarPrintComEngine() {
-
-    const formData = new FormData();
-
-    formData.append("sport", sportAtivo);
-
-
-
-    for (const file of imagensArquivosSelecionados) {
-
-        formData.append("files", file);
-
-    }
-
-
-
-    const res = await fetch("/api/v1/analyze", {
-
-        method: "POST",
-
-        body: formData
-
-    });
-
-
-
-    if (!res.ok) {
-
-        let det = "";
-
-        try {
-
-            const errJson = await res.json();
-
-            det = errJson.detail || JSON.stringify(errJson);
-
-        } catch(e) {
-
-            det = await res.text().catch(() => "");
-
-        }
-
-        throw new Error(det || `Erro ${res.status} retornado pelo servidor.`);
-
-    }
-
-
-
-    return await res.json();
-
+// ============================================================
+// IDENTIDADE DO USUÁRIO (e-mail) -- controla cota real no backend
+// (checar_e_consumir_cota / sync_ghost_member em usuarios.py)
+// ============================================================
+function obterEmailSalvo() {
+    return localStorage.getItem('mb_user_email');
 }
 
+function salvarEmailUsuario(email) {
+    localStorage.setItem('mb_user_email', email);
+}
 
+let _resolverEmailModal = null;
+let _rejeitarEmailModal = null;
 
-async function executarAnalise() {
+function abrirModalEmail() {
+    document.getElementById('email-capture-modal').classList.remove('hidden');
+    return new Promise((resolve, reject) => {
+        _resolverEmailModal = resolve;
+        _rejeitarEmailModal = reject;
+    });
+}
 
-    if (!isDevMode && usosHoje >= LIMITE_DIARIO) {
-
-        abrirModal();
-
+function confirmarEmailUsuario() {
+    const input = document.getElementById('email-capture-input');
+    const email = (input.value || '').trim();
+    if (!email.includes('@') || !email.includes('.')) {
+        alert('Por favor, insira um e-mail válido.');
         return;
+    }
+    salvarEmailUsuario(email);
+    document.getElementById('email-capture-modal').classList.add('hidden');
+    if (_resolverEmailModal) {
+        _resolverEmailModal(email);
+        _resolverEmailModal = null;
+        _rejeitarEmailModal = null;
+    }
+}
 
+async function obterEmailUsuario() {
+    const salvo = obterEmailSalvo();
+    if (salvo) return salvo;
+    return await abrirModalEmail();
+}
+
+// ============================================================
+// CHAMADA AO BACKEND -- agora envia email, e propaga status/detalhe
+// do erro (em vez de achatar tudo em texto), pra executarAnalise
+// conseguir distinguir 402 (cota excedida) de outros erros.
+// ============================================================
+async function processarPrintComEngine(email) {
+    const formData = new FormData();
+    formData.append("sport", sportAtivo);
+    formData.append("email", email);
+
+    for (const file of imagensArquivosSelecionados) {
+        formData.append("files", file);
     }
 
+    const res = await fetch("/api/v1/analyze", {
+        method: "POST",
+        body: formData
+    });
 
+    if (!res.ok) {
+        let detalhe = null;
+        let mensagem = "";
+        try {
+            const errJson = await res.json();
+            detalhe = errJson.detail;
+            mensagem = (typeof detalhe === "string")
+                ? detalhe
+                : (detalhe && detalhe.mensagem) || JSON.stringify(detalhe);
+        } catch (e) {
+            mensagem = await res.text().catch(() => "");
+        }
+        const erro = new Error(mensagem || `Erro ${res.status} retornado pelo servidor.`);
+        erro.status = res.status;
+        erro.detalhe = detalhe;
+        throw erro;
+    }
 
+    return await res.json();
+}
+
+async function executarAnalise() {
     const btn = document.getElementById("analisar-btn");
-
     const display = document.getElementById("display-area");
 
-
+    let email;
+    try {
+        email = await obterEmailUsuario();
+    } catch (e) {
+        return; // usuário fechou o modal de e-mail sem preencher
+    }
 
     btn.disabled = true;
 
-
-
     try {
-
         if (!imagensArquivosSelecionados || imagensArquivosSelecionados.length === 0) {
-
             display.innerHTML = alertaErro("Selecione ao menos 1 print antes de executar o funil quantitativo.");
-
             btn.disabled = false;
-
             return;
-
         }
-
-
 
         btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Carlos está analisando...`;
 
-
-
-        const dados = await processarPrintComEngine();
-
+        const dados = await processarPrintComEngine(email);
         ultimoResultadoGlobal = dados;
 
-
-
         registrarUsoDoDia();
-
         atualizarContadorUso();
 
-
-
         recolherEntrada();
-
         renderizarBilhetesFormatados(dados);
 
-
-
     } catch (error) {
-
         console.error(error);
-
-        display.innerHTML = alertaErro(`Erro no Servidor: ${error.message}`);
-
+        if (error.status === 402) {
+            // Cota real do backend esgotada (free ou pro) -- reaproveita o
+            // modal de waitlist já existente, mesma UI de "limite atingido".
+            abrirModal();
+        } else {
+            display.innerHTML = alertaErro(`Erro no Servidor: ${error.message}`);
+        }
     } finally {
-
         btn.disabled = false;
-
         btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Funil Quantitativo`;
-
     }
-
 }
 
 
