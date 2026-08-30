@@ -11,7 +11,6 @@ from typing import Optional, Tuple, Dict, Any
 from calc import (
     prob_over_under_normal,
     prob_over_under_poisson,
-    prob_over_under_neg_binomial,
     poisson_pmf,
     calcular_ev,
     kelly_fracionado,
@@ -37,10 +36,6 @@ def _montar_metricas_candidato(
     delta_pct: Optional[float],
     contexto_log: Optional[str] = None
 ) -> Tuple[Optional[float], Dict[str, Any]]:
-    """Calcula robustez, prob ajustada, EV, Kelly e MSC base pra um lado
-    específico (over ou under) de um mercado -- reaproveitado por TODOS os
-    construtores de mercado.
-    """
     odd_decimal = converter_odd_para_decimal(odd)
 
     if odd_decimal is None:
@@ -94,10 +89,9 @@ def montar_candidatos_over_under_calculados(
         if linha is None or odd is None or lado not in ("over", "under"):
             continue
 
+        # Correção: Removida a Binomial Negativa desalinhada; beisebol e futebol voltam a usar Poisson padronizado
         if esporte_key == "basquete" and "escanteios" not in nome_mercado.lower() and "cartoes" not in nome_mercado.lower():
             p_over, p_under = prob_over_under_normal(linha, lam_total, STD_DEV_BASQUETE_DEFAULT)
-        elif esporte_key == "beisebol":
-            p_over, p_under = prob_over_under_neg_binomial(linha, lam_total)
         else:
             p_over, p_under = prob_over_under_poisson(linha, lam_total)
 
