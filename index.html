@@ -364,11 +364,14 @@ async function executarAnalise() {
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
 
-    let email;
-    try {
-        email = await obterEmailUsuario();
-    } catch (e) {
-        return; 
+    let email = "dev@moneyballpro.com.br"; // E-mail padrão para o modo dev
+    
+    if (!isDevMode) {
+        try {
+            email = await obterEmailUsuario();
+        } catch (e) {
+            return; 
+        }
     }
 
     btn.disabled = true;
@@ -403,7 +406,7 @@ async function executarAnalise() {
         btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Análise de Carlos`;
     }
 }
-
+    
 function abrirModal() {
     document.getElementById('waitlist-modal').classList.remove('hidden');
 }
