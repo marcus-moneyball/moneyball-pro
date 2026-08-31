@@ -389,10 +389,10 @@ async def analyze_tickets(
     if matchup_calculado and matchup_calculado.get("matchup_detectado"):
         user_prompt_content += f"\n\n[MATCHUP JÁ CALCULADO PELO PYTHON]\n" + json.dumps(matchup_calculado, indent=2, ensure_ascii=False)
 
-    if convergencia_calculada:
+if convergencia_calculada:
         user_prompt_content += f"\n\n[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]\n" + json.dumps(convergencia_calculada, indent=2, ensure_ascii=False)
 
-   ocr_res = gemini_client.models.generate_content(
+    ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
         config=types.GenerateContentConfig(temperature=0)
