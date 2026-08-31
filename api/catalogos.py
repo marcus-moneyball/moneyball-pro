@@ -40,33 +40,21 @@ FONTES_AUTORIZADAS_POR_ESPORTE = {
 # buscar por esporte, além do team_a_projected/team_b_projected já existente.
 CAMPOS_ROTEIRO_POR_ESPORTE = {
     "futebol": [
-        # Produção e Volume Ofensivo
         "xg_medio", "xg_sofrido_medio", "shots_on_target_medio",
-        # Controle Territorial e Ritmo
-        "posse_media", "ppda_medio",  # PPDA = intensidade de pressão (Passes Per Defensive Action)
-        # Eficiência e Momento Recente
+        "posse_media", "ppda_medio",
         "conversion_rate", "forma_recente_xg",
     ],
-
     "basquete": [
-        # Ritmo e Eficiências Macro
         "pace", "ortg", "drtg",
-        # Eficiência de Arremesso (Shooting Splits)
-        "efg_pct", "ts_pct",   # Effective Field Goal % / True Shooting %
-        # Controle de Posse e Rebotes
-        "tov_pct", "reb_pct",  # Turnover Rate / Rebound Rate
-        # Contexto de Elenco
-        "fatigue_index",       # Back-to-back / Desfalques críticos
+        "efg_pct", "ts_pct",
+        "tov_pct", "reb_pct",
+        "fatigue_index",
     ],
-
     "beisebol": [
-        # Duelo do Titular (Pitcher)
         "pitcher_era", "pitcher_whip", "pitcher_k_per_9", "pitcher_h_per_9", "pitcher_opp_ba", "pitcher_xfip",
-        "pitcher_mao",  # "R" ou "L" -- necessário pro matchup de platoon split
-        # Produção do Lineup Contra a Mão do Arremessador Adversário
-        "lineup_ops_vs_mao_adversaria",  # OPS deste lineup especificamente contra a mão do pitcher rival
-        "lineup_wrc_plus",  # Weighted Runs Created Plus
-        # Fatores de Bullpen (O calcanhar de Aquiles para Props finais)
+        "pitcher_mao",
+        "lineup_ops_vs_mao_adversaria",
+        "lineup_wrc_plus",
         "bullpen_era_last_30", "bullpen_workload_fatigue",
     ],
 }
