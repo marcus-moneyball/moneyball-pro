@@ -328,7 +328,10 @@ async function obterEmailUsuario() {
 async function processarPrintComEngine(email) {
     const formData = new FormData();
     formData.append("sport", sportAtivo);
-    formData.append("email", email);
+    
+    if (!isDevMode && email) {
+        formData.append("email", email);
+    }
 
     for (const file of imagensArquivosSelecionados) {
         formData.append("files", file);
