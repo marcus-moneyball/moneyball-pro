@@ -392,14 +392,12 @@ async def analyze_tickets(
     if convergencia_calculada:
         user_prompt_content += f"\n\n[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]\n" + json.dumps(convergencia_calculada, indent=2, ensure_ascii=False)
 
-   partes_conteudo = list(contents)
-    partes_conteudo.append("Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints.")
-
-    ocr_res = gemini_client.models.generate_content(
-        model="gemini-3.5-flash-lite", 
-        contents=partes_conteudo,
+   ocr_res = gemini_client.models.generate_content(
+        model="gemini-3.5-flash-lite",
+        contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
+        config=types.GenerateContentConfig(temperature=0)
     )
-    texto_ocr = ocr_res.text if ocr_res and hasattr(ocr_res, "text") else ""
+    texto_ocr = ocr_res.text or ""
 
     groq_response = groq_client.chat.completions.create(
         model="openai/gpt-oss-120b",
