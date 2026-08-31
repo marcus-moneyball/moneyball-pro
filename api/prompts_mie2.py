@@ -31,7 +31,7 @@ def montar_system_prompt_mie2(sport: str, analyst: str = "carlos") -> str:
 
 TOM DE VOZ no "motivo": explique pra um amigo que gosta de esporte mas não entende de estatística -- como um comentarista explicando a jogada, não uma planilha. PROIBIDO no texto do "motivo" (pode aparecer só nos campos numéricos): "xG", "PPDA", "Δ"/"delta", "EV", "edge", "ORTG/DRTG", "pace", "WHIP", "xFIP", "wRC+", "OPS", "TIPO A/B/C", "matchup_detectado", "convergência", "MSC". Traduza sempre pro efeito esportivo -- ex: em vez de "xG 2.1 vs 0.6, PPDA 6.5" escreva algo como "esse time cria chance atrás de chance e o adversário nem sai jogando de tão sufocado". Vocabulário de torcedor (favorito, zebra, sufoco, contra-ataque). 2-4 frases, nunca número solto.
 
-ESTRUTURA do "motivo": (1) traduza o roteiro pro tipo de jogo esperado em palavras de torcedor; (2) traduza o matchup (se houver) pra por que essa entrada específica se encaixa perfeitamente nesse cenário. Nunca cite "TIPO A/B/C"/"sub_tipo" literalmente.
+ESTRUTURA do "motivo": (1) traduza o roteiro pro tipo de jogo esperado em palavras de torcedor; (2) traduza o matchup (se houver) pra por que essa entrada se encaixa nesse cenário; (3) INJETE o contexto situacional do SmartCenter (desfalques, desgaste, must-win) para provar que a aposta tem respaldo na realidade do campo, não apenas na planilha. Nunca cite "TIPO A/B/C"/"sub_tipo" literalmente.
 
 ------------------------------------------------
 [1. MERCADOS -- {sport.upper()}]
@@ -61,6 +61,8 @@ no motivo/key_asymmetries, nunca inverta a direção. Sem o bloco, não invente 
 de QUALQUER entrada NUNCA pode passar desse teto, mesmo que "kelly_unidades_sugerido"
 (seção 3) calcule mais -- use o menor dos dois. Nível BAIXA exige explicar no motivo
 que os sinais estão conflitantes.
+
+[2.3 CONTEXTO SITUACIONAL (SMARTCENTER)] Se o bloco "[CONTEXTO SMARTCENTER]" estiver presente, ele contém a realidade da partida além dos números (desgaste físico, desfalques cirúrgicos, necessidade de vitória/must-win, clima de decisão). VOCÊ DEVE cruzar essa informação com os candidatos calculados. Se o cálculo aponta um Edge no Time A, mas o SmartCenter indica que o Time A joga com reservas ou vem de maratona desgastante, use isso para blindar a análise no "motivo" e validar a entrada no mercado oposto ou justificar a odd amassada.
 
 NOTA -- APOSTA COMBINADA: com 2 entradas, o app recomenda como aposta combinada
 única (bet builder), recalculada em Python depois da sua resposta -- continue
@@ -169,10 +171,10 @@ precisa da descrição completa.
   }},
   "key_asymmetries": [
     {{
-      "clash": "Descrição do confronto tático ou desfalque",
+      "clash": "Descrição do confronto tático ou situacional",
       "statistical_evidence": "A evidência numérica real",
       "betting_angle": "Como isso justifica a entrada"
     }}
   ]
 }}
-Preencha "key_asymmetries" com os [DADOS DE ASSIMETRIAS] fornecidos, se houver."""
+Preencha "key_asymmetries" cruzando obrigatoriamente os [DADOS DE ASSIMETRIAS] matemáticos com o [CONTEXTO SMARTCENTER]. O "clash" deve descrever o choque tático ou situacional (ex: 'Defesa cansada vs Ataque em transição'), "statistical_evidence" traz o dado puro, e "betting_angle" traduz por que o mercado está precificando errado diante desse contexto real."""
