@@ -60,6 +60,10 @@ def extrair_mercados_estruturados(
   "mercado_chance_dupla": {"odd_1x": "1.30", "odd_x2": "1.40", "odd_12": "1.20"},
   "mercados_handicap_asiatico": [
     {"linha": -1.0, "time_referencia": "A", "odd_real_decimal": "1.90", "selecao_texto": "Time A (-1.0)"}
+  ]
+  ,
+  "mercados_player_props": [
+    {"jogador": "Nome do Atleta", "prop": "Chutes no Gol/Gols/Cartão/Assistências", "linha": 2.5, "odd": "1.90", "lado": "over"}
   ]"""
     elif sport.lower() == "basquete":
         bloco_futebol_extra = """,
@@ -77,7 +81,11 @@ def extrair_mercados_estruturados(
   "time_b": "Nome do segundo time mencionado",
   "mercados_total_principal": [
     {{"linha": 215.5, "odd": "1.85", "lado": "under"}}
-  ]{bloco_futebol_extra}
+  ]
+  ,
+  "mercados_player_props": [
+    {"jogador": "Nome do Atleta", "prop": "Strikeouts/Hits/Total Bases/RBIs/Home Runs", "linha": 5.5, "odd": "1.85", "lado": "over"}
+  ]
 }}
 Regras:
 - "mercados_total_principal" deve conter APENAS linhas de {cfg['nome_mercado']} (Over/Under de {cfg['nome_stat']}) que estejam explicitamente visíveis nos prints, com odd real.
