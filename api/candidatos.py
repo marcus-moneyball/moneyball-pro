@@ -61,6 +61,17 @@ def _montar_metricas_candidato(
     sinal_distorcao = delta_pct if delta_pct is not None else edge_pct
     msc = calcular_msc(ev, sinal_distorcao, prob_ajustada, robustez, persona=persona) if ev is not None else None
 
+    # --- TRAVA DE EMERGÊNCIA: FILTRO RIGOROSO DE MSC ---
+    MSC_MINIMO_EXIGIDO = 80.0  # Sobe o sarrafo para aceitar apenas entradas de alta confiança
+    if msc is None or msc < MSC_MINIMO_EXIGIDO:
+        print(
+            f"[MSC CIRCUIT BREAKER] Candidato descartado por baixa confiança -- "
+            f"MSC gerado: {msc} (Mínimo exigido: {MSC_MINIMO_EXIGIDO}). "
+            f"contexto={contexto_log or 'n/d'}"
+        )
+        return None, {}
+    # --------------------------------------------------
+
     return odd_decimal, {
         "robustez": robustez,
         "probabilidade_real_ajustada": prob_ajustada,
