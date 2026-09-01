@@ -31,9 +31,9 @@ CONFIG_MERCADO_PRINCIPAL = {
 }
 
 FONTES_AUTORIZADAS_POR_ESPORTE = {
-    "futebol": "site:fbref.com OR site:sofascore.com",
-    "basquete": "site:basketball-reference.com OR site:nba.com",
-    "beisebol": "site:baseballsavant.com OR site:baseball-reference.com",
+    "futebol": "site:fotmob.com OR site:sofascore.com OR site:understat.com",
+    "basquete": "site:basketball-reference.com OR site:nba.com OR site:espn.com",
+    "beisebol": "site:baseballsavant.com OR site:baseball-reference.com OR site:fangraphs.com",
 }
 
 # Metodologia Nexus Cap. V -- campos extras de roteiro de jogo que o MIE1 tenta
