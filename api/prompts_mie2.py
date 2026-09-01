@@ -64,6 +64,18 @@ que os sinais estão conflitantes.
 
 [2.3 CONTEXTO SITUACIONAL (SMARTCENTER)] Se o bloco "[CONTEXTO SMARTCENTER]" estiver presente, ele contém a realidade da partida além dos números (desgaste físico, desfalques cirúrgicos, necessidade de vitória/must-win, clima de decisão). VOCÊ DEVE cruzar essa informação com os candidatos calculados. Se o cálculo aponta um Edge no Time A, mas o SmartCenter indica que o Time A joga com reservas ou vem de maratona desgastante, use isso para blindar a análise no "motivo" e validar a entrada no mercado oposto ou justificar a odd amassada.
 
+[2.4 COERÊNCIA ENTRE ASSIMETRIAS E BILHETE -- ANTI-CONTRADIÇÃO] "key_asymmetries"
+e "dupla_de_elite" contam a MESMA história, nunca duas histórias diferentes. Um
+"betting_angle" só pode usar tom de recomendação/vantagem (ex: "boa margem", "vale
+a pena", "edge claro", "aposta segura") se esse mercado e essa seleção específicos
+forem a entrada_1 ou entrada_2 real, com "abaixo_do_edge_minimo": false. Caso
+contrário -- a assimetria é real, mas não virou entrada (Δ insuficiente, fora da
+janela de odds, correlação negativa com a outra entrada, ou contradiz o roteiro
+sem Δ absurdamente superior) -- descreva o padrão como CONTEXTO tático, e feche
+deixando claro que não bateu o piso de segurança de Carlos. Se "dupla_de_elite"
+ficou vazio ("entrada_1": null), NENHUM "betting_angle" pode soar como recomendação
+-- interessante não é sinônimo de recomendável.
+
 NOTA -- APOSTA COMBINADA: com 2 entradas, o app recomenda como aposta combinada
 única (bet builder), recalculada em Python depois da sua resposta -- continue
 preenchendo "stake_recomendada" de cada entrada normalmente (é referência
@@ -79,7 +91,11 @@ números já calculados com Poisson/Normal + Robustez + Kelly a partir de dado r
 - "kelly_unidades_sugerido" -> vira "stake_recomendada" (texto + "u"). Se vier null
   e mesmo assim você incluir o candidato, use "0.5u" como piso.
 - "msc_calculado" -> vira "msc_score" EXATO. É o valor BASE (sem ajuste de
-  convergência -- esse ajuste acontece depois, em Python).
+  convergência -- esse ajuste acontece depois, em Python). "confiabilidade"
+  também é provisória: será recalculada em Python a partir do MSC já ajustado
+  por convergência -- preencha com sua melhor leitura (ALTA/MODERADA/BAIXA
+  seguindo o msc_score), mas o valor final exibido ao usuário pode não ser
+  exatamente o que você escreveu aqui.
 
 Para candidatos INDIVIDUAIS/props (sem cálculo prévio: chutes, gols de jogador,
 pontos/rebotes/assistências, strikeouts, jardas etc.), continue estimando Δ
@@ -177,4 +193,4 @@ precisa da descrição completa.
     }}
   ]
 }}
-Preencha "key_asymmetries" cruzando obrigatoriamente os [DADOS DE ASSIMETRIAS] matemáticos com o [CONTEXTO SMARTCENTER]. O "clash" deve descrever o choque tático ou situacional (ex: 'Defesa cansada vs Ataque em transição'), "statistical_evidence" traz o dado puro, e "betting_angle" traduz por que o mercado está precificando errado diante desse contexto real."""
+Preencha "key_asymmetries" cruzando obrigatoriamente os [DADOS DE ASSIMETRIAS] matemáticos com o [CONTEXTO SMARTCENTER]. O "clash" deve descrever o choque tático ou situacional (ex: 'Defesa cansada vs Ataque em transição'), "statistical_evidence" traz o dado puro, e "betting_angle" traduz por que o mercado está precificando errado diante desse contexto real -- sempre seguindo a regra 2.4 de coerência com o bilhete."""
