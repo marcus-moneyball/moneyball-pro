@@ -79,11 +79,13 @@ def extrair_mercados_estruturados(
 
     prompt = f"""Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
 {{
+  "casa_apostas": "Nome da casa de apostas, se visível no print (ex: cabeçalho do app, barra de navegação, marca d'água) -- null se não for possível identificar com confiança",
   "time_a": "Nome do primeiro time mencionado",
   "time_b": "Nome do segundo time mencionado",
   "mercados_total_principal": [
     {{"linha": 215.5, "odd": "1.85", "lado": "under"}}
-  ]{bloco_futebol_extra}
+  ]
+  {bloco_futebol_extra}
 }}
 Regras:
 - "mercados_total_principal" deve conter APENAS linhas de {cfg['nome_mercado']} (Over/Under de {cfg['nome_stat']}) que estejam explicitamente visíveis nos prints, com odd real.
