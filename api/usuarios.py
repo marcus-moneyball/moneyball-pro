@@ -137,9 +137,14 @@ def _atualizar_contagem(conn, email: str, consultas_hoje: int, data):
     conn.commit()
 
 
-def sync_ghost_member(conn, email: str, ghost_member_id: Optional[str], plano: str) -> bool:
+def sync_ghost_member(conn, email: str, ghost_member_id: Optional[str], plano: str) -> dict:
+    """
+    Retorna {'sucesso': bool, 'plano_anterior': str|None, 'plano_novo': str}.
+    plano_anterior vem None se o usuário nunca existiu no cache local antes
+    (não dá pra saber se "desceu" de plano nesse caso -- trata como não-downgrade).
+    """
     if conn is None or not email_valido(email):
-        return False
+        return {"sucesso": False, "plano_anterior": None, "plano_novo": plano}
 
     email = email.strip().lower()
     placeholder = "%s" if _is_postgres(conn) else "?"
@@ -147,6 +152,10 @@ def sync_ghost_member(conn, email: str, ghost_member_id: Optional[str], plano: s
 
     try:
         cursor = conn.cursor()
+        cursor.execute(f"SELECT plano FROM app_users WHERE email = {placeholder}", (email,))
+        row = cursor.fetchone()
+        plano_anterior = row[0] if row else None
+
         cursor.execute(
             f"""
             INSERT INTO app_users (email, ghost_member_id, plano, consultas_hoje, data_ultima_consulta)
@@ -166,11 +175,11 @@ def sync_ghost_member(conn, email: str, ghost_member_id: Optional[str], plano: s
             (email, ghost_member_id, plano, hoje),
         )
         conn.commit()
-        return True
+        return {"sucesso": True, "plano_anterior": plano_anterior, "plano_novo": plano}
     except Exception as e:
         print(f"[GHOST SYNC] Falha ao sincronizar '{email}': {e}")
         try:
             conn.rollback()
         except Exception:
             pass
-        return False
+        return {"sucesso": False, "plano_anterior": None, "plano_novo": plano}
