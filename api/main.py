@@ -29,6 +29,8 @@ try:
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from api.notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
+    from api.utils import gerar_codigo_auditoria
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import (
@@ -42,10 +44,11 @@ except ImportError:
     )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
-    from utils import _parse_float_seguro
+    from utils import _parse_float_seguro, gerar_codigo_auditoria
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
     from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
 
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
@@ -359,6 +362,7 @@ async def analyze_tickets(
         resultado_final.pop(chave_lixeira, None)
 
     resultado_final["fonte_projecao"] = fonte_projecao
+    resultado_final["casa_apostas"] = dados_estruturados.get("casa_apostas") if dados_estruturados else None
     resultado_final["roteiro_classificado_python"] = roteiro_classificado
     resultado_final["matchup_calculado_python"] = matchup_calculado
     resultado_final["convergencia_calculada_python"] = convergencia_calculada
@@ -402,5 +406,17 @@ async def analyze_tickets(
                 resultado_final["dupla_de_elite"]["aposta_combinada"] = calcular_aposta_combinada(
                     prob_1, odd_1, prob_2, odd_2, teto_stake_convergencia=teto_convergencia,
                 )
+
+    resultado_final["codigo_auditoria"] = gerar_codigo_auditoria()
+
+    try:
+        publicar_recomendacao_publica(resultado_final)
+    except Exception as e:
+        print(f"[TELEGRAM] Falha inesperada ao publicar recomendação pública: {e}")
+
+    try:
+        publicar_ouvidoria(resultado_final)
+    except Exception as e:
+        print(f"[TELEGRAM] Falha inesperada ao publicar na ouvidoria: {e}")
 
     return resultado_final
