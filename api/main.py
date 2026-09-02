@@ -31,6 +31,11 @@ try:
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
     from api.notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
     from api.utils import gerar_codigo_auditoria
+    from api.telegram_membros import (
+        gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
+        salvar_telegram_user_id, obter_plano_e_telegram,
+        enviar_convite_grupo_pro, remover_do_grupo_pro,
+    )
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import (
@@ -49,6 +54,11 @@ except ImportError:
     from projecao import obter_projecoes_partida
     from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
     from notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
+    from telegram_membros import (
+        gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
+        salvar_telegram_user_id, obter_plano_e_telegram,
+        enviar_convite_grupo_pro, remover_do_grupo_pro,
+    )
 
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
@@ -98,15 +108,97 @@ async def webhook_ghost(payload: dict, request: Request):
 
         conn = get_connection()
         try:
-            sucesso = sync_ghost_member(conn, email, ghost_member_id, plano)
+            sync_info = sync_ghost_member(conn, email, ghost_member_id, plano)
+
+            # Downgrade real (era pro, virou free) -- remove do grupo Telegram
+            # se essa pessoa já tinha vinculado a conta.
+            if sync_info["sucesso"] and sync_info["plano_anterior"] == "pro" and plano == "free":
+                info = obter_plano_e_telegram(conn, email)
+                if info.get("telegram_user_id"):
+                    try:
+                        remover_do_grupo_pro(info["telegram_user_id"])
+                    except Exception as e:
+                        print(f"[WEBHOOK GHOST] Falha ao remover '{email}' do grupo Telegram: {e}")
         finally:
             fechar_conexao(conn)
 
-        return {"ok": True, "processado": sucesso, "email": email, "plano": plano}
+        return {"ok": True, "processado": sync_info["sucesso"], "email": email, "plano": plano}
 
     except Exception as e:
         print(f"[WEBHOOK GHOST] Erro inesperado processando payload: {e}")
         return {"ok": True, "processado": False, "motivo": "erro interno -- ver logs"}
+
+
+@app.post("/api/webhooks/telegram")
+async def webhook_telegram(update: dict):
+    """
+    Recebe updates do bot. Só trata /start <token> por enquanto -- é o
+    passo de vínculo e-mail <-> telegram_user_id (ver telegram_membros.py).
+    Sempre responde 200 com {"ok": True}, mesmo em erro -- o Telegram
+    reenvia updates que falham, e não queremos reenvio infinito por causa
+    de um token inválido, por exemplo.
+    """
+    try:
+        mensagem = update.get("message") or {}
+        texto = (mensagem.get("text") or "").strip()
+        from_user = mensagem.get("from") or {}
+        telegram_user_id = from_user.get("id")
+
+        if not texto.startswith("/start") or not telegram_user_id:
+            return {"ok": True, "processado": False}
+
+        partes = texto.split(maxsplit=1)
+        if len(partes) < 2:
+            return {"ok": True, "processado": False, "motivo": "sem token"}
+        token = partes[1].strip()
+
+        conn = get_connection()
+        try:
+            email = consumir_token_vinculo(conn, token)
+            if not email:
+                return {"ok": True, "processado": False, "motivo": "token inválido ou já usado"}
+
+            info = obter_plano_e_telegram(conn, email)
+            if info.get("plano") != "pro":
+                return {"ok": True, "processado": False, "motivo": "e-mail não é PRO"}
+
+            salvar_telegram_user_id(conn, email, telegram_user_id)
+        finally:
+            fechar_conexao(conn)
+
+        enviar_convite_grupo_pro(telegram_user_id)
+        return {"ok": True, "processado": True, "email": email}
+
+    except Exception as e:
+        print(f"[WEBHOOK TELEGRAM] Erro inesperado: {e}")
+        return {"ok": True, "processado": False, "motivo": "erro interno -- ver logs"}
+
+
+@app.get("/api/v1/membro/status")
+def status_membro(email: str):
+    """
+    Consultado pelo frontend pra saber se deve mostrar o botão de conectar
+    Telegram. Se plano é 'pro' e ainda não vinculou, já devolve o link de
+    vínculo pronto (gera um token novo a cada chamada -- token velho não
+    usado fica órfão no banco, sem problema).
+    """
+    if not email_valido(email):
+        raise HTTPException(status_code=400, detail="E-mail inválido.")
+
+    conn = get_connection()
+    try:
+        info = obter_plano_e_telegram(conn, email)
+        resultado = {
+            "plano": info["plano"],
+            "telegram_vinculado": bool(info.get("telegram_user_id")),
+            "link_vinculo_telegram": None,
+        }
+        if info["plano"] == "pro" and not info.get("telegram_user_id"):
+            token = gerar_token_vinculo(conn, email)
+            resultado["link_vinculo_telegram"] = montar_link_vinculo(token) if token else None
+        return resultado
+    finally:
+        fechar_conexao(conn)
 
 
 @app.get("/api/health")
@@ -410,13 +502,11 @@ async def analyze_tickets(
     resultado_final["codigo_auditoria"] = gerar_codigo_auditoria()
 
     try:
-        publicar_recomendacao_publica(resultado_final)
-    except Exception as e:
-        print(f"[TELEGRAM] Falha inesperada ao publicar recomendação pública: {e}")
-
-    try:
         publicar_ouvidoria(resultado_final)
     except Exception as e:
         print(f"[TELEGRAM] Falha inesperada ao publicar na ouvidoria: {e}")
+    # publicar_recomendacao_publica fica pronta em api/notificacoes_telegram.py
+    # pra quando você tiver um segundo destino/bot -- só chame ela aqui do
+    # mesmo jeito quando for a hora.
 
     return resultado_final
