@@ -226,13 +226,14 @@ Regras:
 
     try:
         res = gemini_client.models.generate_content(
-            model="gemini-3.5-flash-lite",
-            contents=[prompt],
-            config=types.GenerateContentConfig(
-                temperature=0,
-                tools=[types.Tool(google_search=types.GoogleSearch())],
-            ),
-        )
+    model="gemini-3.5-flash-lite",
+    contents=[prompt],
+    config=types.GenerateContentConfig(
+        temperature=0.0,
+        top_p=0.1,
+        tools=[types.Tool(google_search=types.GoogleSearch())],
+    ),
+)
         dados = _extrair_json_de_texto(res.text)
         print(
             f"[MIE1 DEBUG] time_a={time_a} time_b={time_b} sport={sport} resultado={dados}"
