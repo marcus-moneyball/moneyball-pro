@@ -6,7 +6,24 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
 import re
+import secrets
 from typing import Optional
+
+# Alfabeto sem caracteres ambíguos (sem 0/O, 1/I/L) -- pensado pra usuário
+# digitar ou falar o código sem confusão na hora de pedir auditoria.
+_ALFABETO_CODIGO = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+
+
+def gerar_codigo_auditoria(tamanho: int = 8) -> str:
+    """
+    Gera um código curto único pra identificar um bilhete na ouvidoria do
+    Telegram (ex: 'MBP-7K3PQ9XM'). Não é uma chave garantidamente única
+    (não checa contra banco) -- pra esse volume de uso, a chance de colisão
+    é desprezível, mas se o volume crescer muito vale trocar por uma checagem
+    de unicidade real no Postgres antes de usar.
+    """
+    corpo = "".join(secrets.choice(_ALFABETO_CODIGO) for _ in range(tamanho))
+    return f"MBP-{corpo}"
 
 
 def _extrair_json_de_texto(texto: str) -> Optional[dict]:
