@@ -667,32 +667,69 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 # ============================================================
 # MSC (Moneyball Score) -- selo de confiabilidade pro usuário
 # ============================================================
+#
+# REVERTIDO (2026-09-03): a versão que rodava na "época boa" (muito green)
+# media EV + IP (Probabilidade Implícita) + Robustez. Numa fase de ajustes
+# posteriores, o componente IP foi trocado por Delta -- e como Delta nasce
+# da mesma fonte que o EV (a distância entre o lambda do PRÓPRIO modelo e a
+# linha do mercado), os dois passaram a inflar juntos sempre que o modelo
+# tava sistematicamente enviesado (fonte de xG ruim, Binomial Negativa mal
+# calibrada etc.) -- um modelo "confiantemente errado" gerava MSC alto do
+# mesmo jeito, sem nenhum freio externo. Delta continua calculado e exibido
+# no bilhete via calcular_delta_mercado() -- só não entra mais nesta fórmula.
+#
+# IP é a probabilidade implícita do MERCADO (externa ao modelo), não a
+# probabilidade do seu próprio lambda -- funciona como validação
+# independente do EV: pra uma mesma probabilidade estimada, EV e IP se
+# movem em direções OPOSTAS (odd mais esticada = maior EV, mas menor IP),
+# então o freio é real, não dupla contagem. FONTE EM ABERTO -- pode ser a
+# odd da Pinnacle, pode ser a Odd Justa/GLV de outro app do ecossistema, ou
+# outra coisa; a função abaixo não fixa a fonte, só espera um valor de
+# probabilidade já pronto. prob_implicita_da_odd() é só um fallback
+# PROVISÓRIO usando a odd real disponível (a mesma que já vira EV) enquanto
+# nenhuma fonte externa de verdade estiver conectada. Pesos 30/40/30 abaixo
+# são ponto de partida -- não temos os pesos originais da época boa.
 
 PESOS_MSC = {
-    "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
+    "carlos": {"ev": 0.30, "ip": 0.40, "robustez": 0.30},
 }
 
-EV_TETO_NORMALIZACAO = 0.30    
-DELTA_TETO_NORMALIZACAO = 15.0  
+EV_TETO_NORMALIZACAO = 0.30
 
 
-def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
-                  prob_real_ajustada: Optional[float], robustez: float,
-                  persona: str = "carlos") -> Optional[int]:
-    """MSC base, 0-100 -- só a força matemática do candidato isolado."""
-    if ev is None or delta_pct is None or prob_real_ajustada is None:
+def prob_implicita_da_odd(odd_decimal: Optional[float]) -> Optional[float]:
+    """
+    Probabilidade implícita simples (1/odd), sem devig -- fallback
+    PROVISÓRIO pro componente IP do MSC enquanto nenhuma fonte externa
+    (Pinnacle, Odd Justa/GLV de outro app, etc.) estiver conectada a este
+    pipeline (ver nota acima). Ainda embute a margem da casa; ao trocar
+    por uma fonte de mercado mais eficiente, considerar devig (normalizar
+    Over+Under pra somar 1) já que mesmo margens pequenas não são zero.
+    """
+    if odd_decimal is None or odd_decimal <= 1:
+        return None
+    return round(1.0 / odd_decimal, 4)
+
+
+def calcular_msc(ev: Optional[float], prob_implicita: Optional[float],
+                  robustez: float, persona: str = "carlos") -> Optional[int]:
+    """MSC base, 0-100 -- só a força matemática do candidato isolado.
+    Três componentes independentes: EV (valor segundo o próprio modelo),
+    IP (probabilidade implícita do mercado -- freio externo) e Robustez
+    (confiança nos dados de entrada)."""
+    if ev is None or prob_implicita is None or robustez is None:
         return None
 
     pesos = PESOS_MSC.get(persona.lower(), PESOS_MSC["carlos"])
 
     ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
-    delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
-    componente_terciario = robustez
+    ip_norm = max(0.0, min(1.0, prob_implicita))
+    robustez_norm = max(0.0, min(1.0, robustez))
 
     score = (
         pesos["ev"] * ev_norm +
-        pesos["delta"] * delta_norm +
-        pesos["robustez_ou_prob"] * componente_terciario
+        pesos["ip"] * ip_norm +
+        pesos["robustez"] * robustez_norm
     )
     return round(max(0, min(100, score * 100)))
 
