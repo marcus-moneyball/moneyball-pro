@@ -150,7 +150,7 @@
             </div>
             <div>
                 <h3 class="text-2xl font-display text-white tracking-wide">LIMITE DIÁRIO ATINGIDO</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 5 análises gratuitas de hoje. Entre para a nossa Lista VIP e garanta acesso antecipado ao plano ilimitado.</p>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Entre para a nossa Lista VIP e garanta acesso antecipado ao plano ilimitado.</p>
             </div>
             <div class="space-y-3 pt-2">
                 <input type="email" id="waitlist-email" placeholder="Digite seu melhor e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
@@ -170,7 +170,7 @@ let ultimoResultadoGlobal = null;
 
 let sportAtivo = "futebol";
 let usosHoje = 0;
-const LIMITE_DIARIO = 5;
+const LIMITE_DIARIO = 3;
 const CHAVE_USO_DIARIO = "mb_uso_diario";
 
 const DEV_KEY = "marcus-mb-2026-brasilia";
@@ -421,11 +421,18 @@ function fecharModal() {
     document.getElementById('waitlist-modal').classList.add('hidden');
 }
 
-function entrarWaitlist() {
+async function entrarWaitlist() {
     const email = document.getElementById('waitlist-email').value;
     if(!email.includes('@')) {
         alert("Por favor, insira um e-mail válido.");
         return;
+    }
+    try {
+        const formData = new FormData();
+        formData.append("email", email);
+        await fetch("/api/v1/waitlist", { method: "POST", body: formData });
+    } catch (e) {
+        console.error("Falha ao registrar na waitlist:", e);
     }
     alert("Inscrição confirmada! Avisaremos assim que novas vagas forem liberadas.");
     fecharModal();
