@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Optional
 from zoneinfo import ZoneInfo
 
-LIMITE_CONSULTAS_FREE_DIARIO = 5
+LIMITE_CONSULTAS_FREE_DIARIO = 3
 TZ_BRASIL = ZoneInfo("America/Sao_Paulo")
 
 _REGEX_EMAIL_SIMPLES = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
