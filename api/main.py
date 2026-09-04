@@ -3,7 +3,6 @@ MoneyballPro Engine -- ponto de entrada FastAPI.
 """
 import sys
 import os
-import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
@@ -11,7 +10,6 @@ from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
-from google.genai.errors import ServerError
 from groq import Groq
 
 try:
@@ -38,6 +36,7 @@ try:
         salvar_telegram_user_id, obter_plano_e_telegram,
         enviar_convite_grupo_pro, remover_do_grupo_pro,
     )
+    from api.ghost_admin import criar_membro_free_ghost
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import (
@@ -61,6 +60,7 @@ except ImportError:
         salvar_telegram_user_id, obter_plano_e_telegram,
         enviar_convite_grupo_pro, remover_do_grupo_pro,
     )
+    from ghost_admin import criar_membro_free_ghost
 
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
@@ -81,32 +81,6 @@ def get_groq_client():
     if not GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY não configurada na Vercel.")
     return Groq(api_key=GROQ_API_KEY)
-
-
-def chamar_gemini_resiliente(gemini_client, contents, config):
-    """Função auxiliar para tratar instabilidades 503 do Gemini com retry e fallback."""
-    modelos = ["gemini-3.5-flash-lite", "gemini-3.5-flash"]
-    
-    for model_name in modelos:
-        for tentativa in range(3):
-            try:
-                return gemini_client.models.generate_content(
-                    model=model_name,
-                    contents=contents,
-                    config=config
-                )
-            except ServerError as e:
-                if e.code == 503:
-                    time.sleep(1.5 * (tentativa + 1))
-                    continue
-                raise e
-            except Exception as e:
-                raise e
-
-    raise HTTPException(
-        status_code=503, 
-        detail="O motor de IA está temporariamente sobrecarregado. Tente novamente em instantes."
-    )
 
 
 @app.post("/api/webhooks/ghost")
@@ -138,6 +112,8 @@ async def webhook_ghost(payload: dict, request: Request):
         try:
             sync_info = sync_ghost_member(conn, email, ghost_member_id, plano)
 
+            # Downgrade real (era pro, virou free) -- remove do grupo Telegram
+            # se essa pessoa já tinha vinculado a conta.
             if sync_info["sucesso"] and sync_info["plano_anterior"] == "pro" and plano == "free":
                 info = obter_plano_e_telegram(conn, email)
                 if info.get("telegram_user_id"):
@@ -157,6 +133,13 @@ async def webhook_ghost(payload: dict, request: Request):
 
 @app.post("/api/webhooks/telegram")
 async def webhook_telegram(update: dict):
+    """
+    Recebe updates do bot. Só trata /start <token> por enquanto -- é o
+    passo de vínculo e-mail <-> telegram_user_id (ver telegram_membros.py).
+    Sempre responde 200 com {"ok": True}, mesmo em erro -- o Telegram
+    reenvia updates que falham, e não queremos reenvio infinito por causa
+    de um token inválido, por exemplo.
+    """
     try:
         mensagem = update.get("message") or {}
         texto = (mensagem.get("text") or "").strip()
@@ -195,6 +178,12 @@ async def webhook_telegram(update: dict):
 
 @app.get("/api/v1/membro/status")
 def status_membro(email: str):
+    """
+    Consultado pelo frontend pra saber se deve mostrar o botão de conectar
+    Telegram. Se plano é 'pro' e ainda não vinculou, já devolve o link de
+    vínculo pronto (gera um token novo a cada chamada -- token velho não
+    usado fica órfão no banco, sem problema).
+    """
     if not email_valido(email):
         raise HTTPException(status_code=400, detail="E-mail inválido.")
 
@@ -212,6 +201,26 @@ def status_membro(email: str):
         return resultado
     finally:
         fechar_conexao(conn)
+
+
+@app.post("/api/v1/waitlist")
+def entrar_waitlist(email: str = Form(...)):
+    """
+    Recebe o e-mail de quem bateu o limite gratuito e quis entrar na lista
+    de espera. Cria um membro FREE no Ghost (best-effort) -- isso NUNCA
+    desbloqueia a cota, só coloca a pessoa no funil de e-mail do Ghost pra
+    receber comunicação sobre o plano PRO.
+    """
+    if not email_valido(email):
+        raise HTTPException(status_code=400, detail="E-mail inválido.")
+
+    try:
+        criado = criar_membro_free_ghost(email)
+    except Exception as e:
+        print(f"[WAITLIST] Falha inesperada ao criar membro no Ghost: {e}")
+        criado = False
+
+    return {"ok": True, "criado_no_ghost": criado}
 
 
 @app.get("/api/health")
@@ -443,9 +452,8 @@ async def analyze_tickets(
     if convergencia_calculada:
         user_prompt_content += f"\n\n[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]\n" + json.dumps(convergencia_calculada, indent=2, ensure_ascii=False)
 
-    # Chamada resiliente para o Gemini OCR
-    ocr_res = chamar_gemini_resiliente(
-        gemini_client=gemini_client,
+    ocr_res = gemini_client.models.generate_content(
+        model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
         config=types.GenerateContentConfig(temperature=0)
     )
@@ -457,8 +465,7 @@ async def analyze_tickets(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
         ],
-        temperature=0.0,
-        top_p=0.1,
+        temperature=0.2,
         response_format={"type": "json_object"}
     )
 
@@ -519,5 +526,8 @@ async def analyze_tickets(
         publicar_ouvidoria(resultado_final)
     except Exception as e:
         print(f"[TELEGRAM] Falha inesperada ao publicar na ouvidoria: {e}")
+    # publicar_recomendacao_publica fica pronta em api/notificacoes_telegram.py
+    # pra quando você tiver um segundo destino/bot -- só chame ela aqui do
+    # mesmo jeito quando for a hora.
 
     return resultado_final
