@@ -241,7 +241,7 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
             continue
 
         if time_ref == "B":
-            p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_b, lam_a, -linha)
+            p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_b, lam_a, linha)
         else:
             p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
 
