@@ -31,7 +31,7 @@ CONFIG_MERCADO_PRINCIPAL = {
 }
 
 FONTES_AUTORIZADAS_POR_ESPORTE = {
-    "futebol": "site:fotmob.com OR site:sofascore.com OR site:understat.com",
+    "futebol": "site:fbref.com OR site:fotmob.com OR site:sofascore.com OR site:understat.com",
     "basquete": "site:basketball-reference.com OR site:nba.com OR site:espn.com",
     "beisebol": "site:baseballsavant.com OR site:baseball-reference.com OR site:fangraphs.com",
 }
