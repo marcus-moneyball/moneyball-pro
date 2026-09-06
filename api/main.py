@@ -28,9 +28,9 @@ try:
     from api.utils import _parse_float_seguro
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
+    from api.football_data_org import obter_forma_recente_estruturada
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
-    from api.notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
-    from api.utils import gerar_codigo_auditoria
+    from api.notificacoes_telegram import publicar_recomendacao_publica
     from api.telegram_membros import (
         gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
         salvar_telegram_user_id, obter_plano_e_telegram,
@@ -50,11 +50,12 @@ except ImportError:
     )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
-    from utils import _parse_float_seguro, gerar_codigo_auditoria
+    from utils import _parse_float_seguro
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
+    from football_data_org import obter_forma_recente_estruturada
     from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
-    from notificacoes_telegram import publicar_recomendacao_publica, publicar_ouvidoria
+    from notificacoes_telegram import publicar_recomendacao_publica
     from telegram_membros import (
         gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
         salvar_telegram_user_id, obter_plano_e_telegram,
@@ -267,6 +268,7 @@ async def analyze_tickets(
     sport: str = Form(...),
     analyst: str = Form("carlos"),
     email: Optional[str] = Form(None),
+    liga: Optional[str] = Form(None),
     files: List[UploadFile] = File(...)
 ):
     if not files:
@@ -340,6 +342,17 @@ async def analyze_tickets(
             fatores_incerteza = mie1_data.get("contextual_factors", []) if mie1_data else []
 
             if mie1_data:
+                if sport.lower() == "futebol" and liga:
+                    try:
+                        forma_a = obter_forma_recente_estruturada(time_a, liga)
+                        forma_b = obter_forma_recente_estruturada(time_b, liga)
+                        if forma_a and mie1_data.get("team_a_roteiro"):
+                            mie1_data["team_a_roteiro"]["forma_recente_estruturada"] = forma_a
+                        if forma_b and mie1_data.get("team_b_roteiro"):
+                            mie1_data["team_b_roteiro"]["forma_recente_estruturada"] = forma_b
+                    except Exception as e:
+                        print(f"[FOOTBALL-DATA] Falha ao buscar forma recente estruturada: {e}")
+
                 roteiro_classificado = classificar_roteiro_jogo(
                     sport,
                     mie1_data.get("team_a_roteiro"),
@@ -452,6 +465,14 @@ async def analyze_tickets(
     if convergencia_calculada:
         user_prompt_content += f"\n\n[CONVERGÊNCIA JÁ CALCULADA PELO PYTHON]\n" + json.dumps(convergencia_calculada, indent=2, ensure_ascii=False)
 
+    if mie1_data:
+        forma_estruturada = {
+            "time_a": (mie1_data.get("team_a_roteiro") or {}).get("forma_recente_estruturada"),
+            "time_b": (mie1_data.get("team_b_roteiro") or {}).get("forma_recente_estruturada"),
+        }
+        if forma_estruturada["time_a"] or forma_estruturada["time_b"]:
+            user_prompt_content += f"\n\n[FORMA RECENTE ESTRUTURADA (football-data.org) -- FONTE DE VERDADE]\n" + json.dumps(forma_estruturada, indent=2, ensure_ascii=False)
+
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
@@ -465,7 +486,7 @@ async def analyze_tickets(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
         ],
-        temperature=0.2,
+        temperature=0.1,
         response_format={"type": "json_object"}
     )
 
@@ -520,14 +541,9 @@ async def analyze_tickets(
                     prob_1, odd_1, prob_2, odd_2, teto_stake_convergencia=teto_convergencia,
                 )
 
-    resultado_final["codigo_auditoria"] = gerar_codigo_auditoria()
-
     try:
-        publicar_ouvidoria(resultado_final)
+        publicar_recomendacao_publica(resultado_final)
     except Exception as e:
-        print(f"[TELEGRAM] Falha inesperada ao publicar na ouvidoria: {e}")
-    # publicar_recomendacao_publica fica pronta em api/notificacoes_telegram.py
-    # pra quando você tiver um segundo destino/bot -- só chame ela aqui do
-    # mesmo jeito quando for a hora.
+        print(f"[TELEGRAM] Falha inesperada ao publicar: {e}")
 
     return resultado_final
