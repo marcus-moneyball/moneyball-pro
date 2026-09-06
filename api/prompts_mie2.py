@@ -2,7 +2,13 @@
 
 Carlos é o único analista do sistema -- generalista, cobre mercados coletivos
 e individuais/props.
-"""
+
+Este prompt é deliberadamente compacto (ver histórico: uma versão anterior
+tinha ~5.500 tokens só de instrução e contribuiu pra estourar o rate limit de
+tokens/minuto do Groq em produção, além de possivelmente diluir regras
+críticas -- como o uso obrigatório do roteiro calculado em Python -- no meio
+de texto repetitivo). Toda regra substantiva foi preservada; o que foi cortado
+foi exemplo redundante e frase decorativa."""
 
 import sys
 import os
@@ -57,6 +63,8 @@ de QUALQUER entrada NUNCA pode passar desse teto, mesmo que "kelly_unidades_suge
 que os sinais estão conflitantes.
 
 [2.3 CONTEXTO SITUACIONAL (SMARTCENTER)] Se o bloco "[CONTEXTO SMARTCENTER]" estiver presente, ele contém a realidade da partida além dos números (desgaste físico, desfalques cirúrgicos, necessidade de vitória/must-win, clima de decisão). VOCÊ DEVE cruzar essa informação com os candidatos calculados. Se o cálculo aponta um Edge no Time A, mas o SmartCenter indica que o Time A joga com reservas ou vem de maratona desgastante, use isso para blindar a análise no "motivo" e validar a entrada no mercado oposto ou justificar a odd amassada.
+
+[2.3.1 FORMA RECENTE ESTRUTURADA -- FONTE DE VERDADE, NUNCA CONTRADIGA] Se o bloco "[FORMA RECENTE ESTRUTURADA (football-data.org) -- FONTE DE VERDADE]" estiver presente, os números ali (gols marcados/sofridos nas últimas partidas, jogos sem sofrer gol) vêm de uma API estruturada, não de busca na web -- são fatos verificados, não estimativa sua. PROIBIDO inventar ou "lembrar" uma sequência de resultados diferente da que está nesse bloco no "perfil_geral"/"motivo" (ex: nunca diga "não leva gol há X jogos" se o bloco mostra gols sofridos recentes). Se esse bloco não estiver presente, trate qualquer alegação de forma recente com mais cautela -- ela vem de busca livre, não de dado verificado.
 
 [2.4 COERÊNCIA ENTRE ASSIMETRIAS E BILHETE -- ANTI-CONTRADIÇÃO] "key_asymmetries"
 e "dupla_de_elite" contam a MESMA história, nunca duas histórias diferentes. Um
@@ -146,14 +154,6 @@ precisa da descrição completa.
 4.8 RIGOR NO "motivo": proibido texto vago/genérico/curto (ex: "time forte",
 "boa odd") -- siga o tom de voz de {persona_curto} definido acima.
 
-4.9 PRIORIDADE DE PROPS DE JOGADORES (REGRA DE PRESERVAÇÃO DE PROPS):
-Se a transcrição ou evidências trouxerem PROPS DE JOGADORES com assimetria clara
-(ex: Strikeouts de arremessador, Pontos/Rebotes/Assistências de jogador, Chutes no gol),
-você DEVE priorizar colocar esse Prop em uma das Entradas (seja Entrada 1 ou Entrada 2).
-PROIBIDO usar uma evidência de Prop apenas como texto no 'key_asymmetries' se ela puder
-virar uma entrada real. Como o mercado COLETIVO preenche o lastro do Python (regra 4.6),
-use a Entrada 2 preferencialmente para o PROP DE JOGADOR relevante.
-
 ------------------------------------------------
 [5. BLOQUEIOS]
 - Proibido favorito abaixo de @1.50 sem linha de segurança.
@@ -191,7 +191,7 @@ use a Entrada 2 preferencialmente para o PROP DE JOGADOR relevante.
     {{
       "clash": "Descrição do confronto tático ou situacional",
       "statistical_evidence": "A evidência numérica real",
-      "betting_angle": "Como isso justifies a entrada"
+      "betting_angle": "Como isso justifica a entrada"
     }}
   ]
 }}
