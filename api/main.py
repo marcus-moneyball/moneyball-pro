@@ -481,14 +481,16 @@ async def analyze_tickets(
     texto_ocr = ocr_res.text or ""
 
     groq_response = groq_client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
-        ],
-        temperature=0.0,
-        response_format={"type": "json_object"}
-    )
+    model="openai/gpt-oss-120b",
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
+    ],
+    temperature=0.0,
+    top_p=0.1,
+    seed=42,
+    response_format={"type": "json_object"}
+)
 
     resultado_final = json.loads(groq_response.choices[0].message.content)
 
