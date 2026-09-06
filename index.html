@@ -66,6 +66,16 @@
         <!-- SELEÇÃO DE ESPORTE -->
         <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
+        <!-- SELEÇÃO DE LIGA (só aparece pra futebol) -->
+        <div id="liga-container" class="hidden space-y-2">
+            <label class="text-[11px] font-mono text-slate-400 uppercase tracking-wide">Liga da partida</label>
+            <div id="liga-tabs" class="grid grid-cols-3 gap-2"></div>
+            <div id="liga-aviso" class="hidden items-center gap-1.5 px-3 py-2 rounded-lg bg-amber-400/10 border border-amber-400/20 text-[11px] text-amber-300 font-medium">
+                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                <span>Ligas fora do Brasileirão/Premier League ainda não têm o reforço de dados extra — a confiabilidade da análise pode ser menor.</span>
+            </div>
+        </div>
+
         <!-- CAIXA PRINCIPAL DE ENTRADA -->
         <div id="input-box" class="bg-base-panel border border-base-border rounded-2xl p-6 space-y-6">
 
@@ -189,6 +199,7 @@ const MODULES = {
 
 document.addEventListener("DOMContentLoaded", () => {
     buildSportTabs();
+    atualizarVisibilidadeLiga();
     carregarUsoDoDia();
     atualizarContadorUso();
 });
@@ -239,6 +250,53 @@ function buildSportTabs() {
 function selecionarSport(key) {
     sportAtivo = key;
     buildSportTabs();
+    atualizarVisibilidadeLiga();
+}
+
+const LIGAS_FUTEBOL = {
+    brasileirao: { label: "Brasileirão", codigo: "BSA" },
+    premier_league: { label: "Premier League", codigo: "PL" },
+    outra: { label: "Outra liga", codigo: null },
+};
+let ligaAtiva = "brasileirao";
+
+function atualizarVisibilidadeLiga() {
+    const container = document.getElementById("liga-container");
+    if (!container) return;
+    if (sportAtivo === "futebol") {
+        container.classList.remove("hidden");
+        buildLigaTabs();
+    } else {
+        container.classList.add("hidden");
+    }
+}
+
+function buildLigaTabs() {
+    const container = document.getElementById("liga-tabs");
+    if (!container) return;
+    container.innerHTML = Object.entries(LIGAS_FUTEBOL).map(([key, liga]) => `
+        <button type="button" onclick="selecionarLiga('${key}')" id="liga-tab-${key}" class="py-2.5 px-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${key === ligaAtiva ? 'bg-accent-soft border-accent text-accent' : 'bg-base-panel border-base-border text-slate-400 hover:border-slate-700'}">
+            ${liga.label}
+        </button>
+    `).join("");
+    atualizarAvisoLiga();
+}
+
+function selecionarLiga(key) {
+    ligaAtiva = key;
+    buildLigaTabs();
+}
+
+function atualizarAvisoLiga() {
+    const aviso = document.getElementById("liga-aviso");
+    if (!aviso) return;
+    if (ligaAtiva === "outra") {
+        aviso.classList.remove("hidden");
+        aviso.classList.add("flex");
+    } else {
+        aviso.classList.add("hidden");
+        aviso.classList.remove("flex");
+    }
 }
 
 function previewImagens(input) {
@@ -331,7 +389,10 @@ async function obterEmailUsuario() {
 async function processarPrintComEngine(email) {
     const formData = new FormData();
     formData.append("sport", sportAtivo);
-    
+    if (sportAtivo === "futebol") {
+        formData.append("liga", ligaAtiva);
+    }
+
     if (!isDevMode && email) {
         formData.append("email", email);
     }
@@ -609,7 +670,6 @@ function renderizarBilhetesFormatados(dados) {
                     <div class="text-right">
                         <span class="text-[10px] font-mono text-slate-400 block">Hipótese Tática</span>
                         <span class="text-xs font-bold text-value font-mono bg-value/10 border border-value/20 px-2 py-0.5 rounded">${dados.hipotese_partida || 'TIPO A'}</span>
-                        ${dados.codigo_auditoria ? `<span class="text-[9px] font-mono text-slate-500 block mt-1">Código: ${dados.codigo_auditoria}</span>` : ''}
                     </div>
                 </div>
 
