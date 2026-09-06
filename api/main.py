@@ -487,6 +487,7 @@ async def analyze_tickets(
             {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
         ],
         temperature=0.1,
+        top_p: 0,1,
         response_format={"type": "json_object"}
     )
 
