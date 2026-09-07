@@ -23,9 +23,48 @@ from calc import (
     calcular_probabilidade_handicap_asiatico,
 )
 from utils import converter_odd_para_decimal
+from odds_sharp import buscar_odds_sharp
 
 EDGE_MAXIMO_PLAUSIVEL_PCT = 25.0
 STD_DEV_BASQUETE_DEFAULT = 12.0
+
+
+def _ajustar_msc_por_sharp(
+    msc: Optional[float], prob_ajustada: float, conn, esporte: Optional[str],
+    time_a: Optional[str], time_b: Optional[str], data_jogo: Optional[str],
+    mercado_sharp: Optional[str], indice_selecao: Optional[int],
+    fair_prob_precalculado: Optional[float] = None,
+) -> Optional[float]:
+    """
+    Ajusta o MSC comparando a probabilidade do modelo com o fair odds (sem
+    vig) de uma fonte sharp externa. Segue o mesmo espírito da Convergência:
+    bônus se confirma, NEUTRO se não tem dado (nunca penaliza ausência),
+    penalidade só se discordar de verdade.
+
+    Se `fair_prob_precalculado` for passado, usa direto (caso de mercados
+    combinados como Chance Dupla, onde o fair prob já vem somado de fora).
+    Caso contrário, busca no cache pelo índice de seleção (mercados 2 vias
+    simples, como Moneyline).
+    """
+    if msc is None:
+        return msc
+
+    if fair_prob_precalculado is not None:
+        fair_prob_sharp = fair_prob_precalculado
+    else:
+        if conn is None or not mercado_sharp or indice_selecao is None:
+            return msc
+        info = buscar_odds_sharp(conn, esporte or "", time_a or "", time_b or "", data_jogo or "", mercado_sharp)
+        if not info or not info.get("fair_probs") or indice_selecao >= len(info["fair_probs"]):
+            return msc  # neutro -- sharp não cobre esse jogo/mercado ainda
+        fair_prob_sharp = info["fair_probs"][indice_selecao]
+
+    diferenca = prob_ajustada - fair_prob_sharp
+    if diferenca > 0.01:
+        return min(100, round(msc + 8, 2))
+    if diferenca < -0.03:
+        return max(0, round(msc - 20, 2))
+    return msc
 
 
 def _montar_metricas_candidato(
@@ -34,7 +73,15 @@ def _montar_metricas_candidato(
     persona: str,
     fatores_incerteza: Optional[list], 
     delta_pct: Optional[float],
-    contexto_log: Optional[str] = None
+    contexto_log: Optional[str] = None,
+    conn=None,
+    esporte: Optional[str] = None,
+    time_a: Optional[str] = None,
+    time_b: Optional[str] = None,
+    data_jogo: Optional[str] = None,
+    mercado_sharp: Optional[str] = None,
+    indice_selecao: Optional[int] = None,
+    fair_prob_sharp_precalculado: Optional[float] = None,
 ) -> Tuple[Optional[float], Dict[str, Any]]:
     odd_decimal = converter_odd_para_decimal(odd)
 
@@ -60,6 +107,10 @@ def _montar_metricas_candidato(
     kelly = kelly_fracionado(prob_ajustada, odd_decimal) if ev is not None and ev > 0 else None
     sinal_distorcao = delta_pct if delta_pct is not None else edge_pct
     msc = calcular_msc(ev, sinal_distorcao, prob_ajustada, robustez, persona=persona) if ev is not None else None
+    msc = _ajustar_msc_por_sharp(
+        msc, prob_ajustada, conn, esporte, time_a, time_b, data_jogo, mercado_sharp, indice_selecao,
+        fair_prob_precalculado=fair_prob_sharp_precalculado,
+    )
 
     # --- TRAVA DE EMERGÊNCIA: FILTRO RIGOROSO DE MSC ---
     MSC_MINIMO_EXIGIDO = 80.0  # Sobe o sarrafo para aceitar apenas entradas de alta confiança
@@ -165,7 +216,8 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
 
 def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
                                 esporte: str, nome_time_a: str = "Time A", nome_time_b: str = "Time B",
-                                persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+                                persona: str = "carlos", fatores_incerteza: Optional[list] = None,
+                                conn=None, data_jogo: Optional[str] = None) -> list:
     if not mercado_moneyline or lam_a is None or lam_b is None:
         return []
 
@@ -174,15 +226,17 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
 
     candidatos = []
     opcoes = [
-        (nome_time_a, mercado_moneyline.get("odd_time_a"), p_a),
-        (nome_time_b, mercado_moneyline.get("odd_time_b"), p_b),
+        (nome_time_a, mercado_moneyline.get("odd_time_a"), p_a, 0),
+        (nome_time_b, mercado_moneyline.get("odd_time_b"), p_b, 1),
     ]
 
-    for selecao, odd, prob in opcoes:
+    for selecao, odd, prob, indice in opcoes:
         if odd:
             ctx_log = f"{esporte}/Moneyline - {selecao}"
             odd_decimal, metricas = _montar_metricas_candidato(
-                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log
+                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log,
+                conn=conn, esporte=esporte, time_a=nome_time_a, time_b=nome_time_b,
+                data_jogo=data_jogo, mercado_sharp="moneyline", indice_selecao=indice,
             )
             if odd_decimal is not None:
                 candidatos.append({
@@ -197,24 +251,39 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
 
 
 def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
-                                    persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+                                    persona: str = "carlos", fatores_incerteza: Optional[list] = None,
+                                    conn=None, time_a: Optional[str] = None, time_b: Optional[str] = None,
+                                    data_jogo: Optional[str] = None) -> list:
     if not mercado_chance_dupla or lam_a is None or lam_b is None:
         return []
 
     p_a, p_empate, p_b = calcular_probabilidades_1x2_skellam(lam_a, lam_b)
+
+    # Uma única consulta ao cache sharp -- serve pras três combinações,
+    # em vez de bater no banco três vezes pro mesmo jogo.
+    fair_1x2 = None
+    if conn is not None:
+        info_sharp = buscar_odds_sharp(conn, "futebol", time_a or "", time_b or "", data_jogo or "", "1x2")
+        if info_sharp and info_sharp.get("fair_probs") and len(info_sharp["fair_probs"]) == 3:
+            fair_1x2 = info_sharp["fair_probs"]  # [fair_casa, fair_empate, fair_fora]
+
     mapa = [
-        ("odd_1x", round(p_a + p_empate, 4), "1X (Casa ou Empate)"),
-        ("odd_x2", round(p_empate + p_b, 4), "X2 (Empate ou Fora)"),
-        ("odd_12", round(p_a + p_b, 4), "12 (Casa ou Fora -- sem Empate)"),
+        ("odd_1x", round(p_a + p_empate, 4), "1X (Casa ou Empate)",
+         (fair_1x2[0] + fair_1x2[1]) if fair_1x2 else None),
+        ("odd_x2", round(p_empate + p_b, 4), "X2 (Empate ou Fora)",
+         (fair_1x2[1] + fair_1x2[2]) if fair_1x2 else None),
+        ("odd_12", round(p_a + p_b, 4), "12 (Casa ou Fora -- sem Empate)",
+         (fair_1x2[0] + fair_1x2[2]) if fair_1x2 else None),
     ]
 
     candidatos = []
-    for campo_odd, prob, nome_selecao in mapa:
+    for campo_odd, prob, nome_selecao, fair_combo in mapa:
         odd = mercado_chance_dupla.get(campo_odd)
         if odd:
             ctx_log = f"futebol/Chance Dupla - {nome_selecao}"
             odd_decimal, metricas = _montar_metricas_candidato(
-                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log
+                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log,
+                fair_prob_sharp_precalculado=fair_combo,
             )
             if odd_decimal is not None:
                 candidatos.append({
