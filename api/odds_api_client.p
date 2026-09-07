@@ -94,7 +94,10 @@ def _extrair_odds_h2h(evento: dict) -> Optional[list]:
 
 
 def _salvar_no_cache(conn, esporte: str, time_a: str, time_b: str, data_jogo: str, mercado: str, odds: list):
-    from odds_sharp import montar_chave
+    try:
+        from odds_sharp import montar_chave
+    except ImportError:
+        from api.odds_sharp import montar_chave
     chave = montar_chave(esporte, time_a, time_b, data_jogo)
     placeholder = "%s" if _is_postgres(conn) else "?"
     upsert = (
