@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,6 +30,7 @@ try:
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
     from api.football_data_org import obter_forma_recente_estruturada
+    from api.odds_api_client import atualizar_cache_da_liga
     from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
     from api.notificacoes_telegram import publicar_recomendacao_publica
     from api.telegram_membros import (
@@ -54,6 +56,7 @@ except ImportError:
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
     from football_data_org import obter_forma_recente_estruturada
+    from odds_api_client import atualizar_cache_da_liga
     from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
     from notificacoes_telegram import publicar_recomendacao_publica
     from telegram_membros import (
@@ -369,79 +372,94 @@ async def analyze_tickets(
                 lam_total = lam_a + lam_b
                 cfg = CONFIG_MERCADO_PRINCIPAL.get(sport.lower(), CONFIG_MERCADO_PRINCIPAL["futebol"])
 
-                candidatos_calculados.extend(
-                    montar_candidatos_over_under_calculados(
-                        dados_estruturados.get("mercados_total_principal", []),
-                        lam_total,
-                        cfg["nome_mercado"],
-                        cfg["unidade_selecao"],
-                        esporte=sport,
-                        persona=analista_key,
-                        fatores_incerteza=fatores_incerteza,
-                    )
-                )
+                # Conexão dedicada pro cache de odds sharp -- aberta e fechada
+                # só ao redor dessa parte, não junto com o resto da análise.
+                data_jogo_hoje = datetime.now(timezone.utc).date().isoformat()
+                conn_odds = get_connection()
+                try:
+                    if sport.lower() == "futebol" and liga in ("brasileirao", "premier_league"):
+                        try:
+                            atualizar_cache_da_liga(conn_odds, liga)
+                        except Exception as e:
+                            print(f"[ODDS API] Falha ao atualizar cache da liga '{liga}': {e}")
 
-                if sport.lower() == "futebol":
-                    cantos_a = (mie1_data or {}).get("team_a_escanteios_projected")
-                    cantos_b = (mie1_data or {}).get("team_b_escanteios_projected")
-                    if cantos_a and cantos_b:
+                    candidatos_calculados.extend(
+                        montar_candidatos_over_under_calculados(
+                            dados_estruturados.get("mercados_total_principal", []),
+                            lam_total,
+                            cfg["nome_mercado"],
+                            cfg["unidade_selecao"],
+                            esporte=sport,
+                            persona=analista_key,
+                            fatores_incerteza=fatores_incerteza,
+                        )
+                    )
+
+                    if sport.lower() == "futebol":
+                        cantos_a = (mie1_data or {}).get("team_a_escanteios_projected")
+                        cantos_b = (mie1_data or {}).get("team_b_escanteios_projected")
+                        if cantos_a and cantos_b:
+                            candidatos_calculados.extend(
+                                montar_candidatos_over_under_calculados(
+                                    dados_estruturados.get("mercados_escanteios", []),
+                                    cantos_a + cantos_b,
+                                    "Total de Escanteios da Partida",
+                                    "Escanteios",
+                                    esporte=sport,
+                                    persona=analista_key,
+                                    fatores_incerteza=fatores_incerteza,
+                                )
+                            )
+
+                        cartoes_a = (mie1_data or {}).get("team_a_cartoes_projected")
+                        cartoes_b = (mie1_data or {}).get("team_b_cartoes_projected")
+                        if cartoes_a and cartoes_b:
+                            candidatos_calculados.extend(
+                                montar_candidatos_over_under_calculados(
+                                    dados_estruturados.get("mercados_cartoes", []),
+                                    cartoes_a + cartoes_b,
+                                    "Total de Cartões da Partida",
+                                    "Cartões",
+                                    esporte=sport,
+                                    persona=analista_key,
+                                    fatores_incerteza=fatores_incerteza,
+                                )
+                            )
+
+                    candidatos_calculados.extend(
+                        montar_candidato_btts(
+                            dados_estruturados.get("mercado_btts"), lam_a, lam_b,
+                            persona=analista_key, fatores_incerteza=fatores_incerteza,
+                        )
+                    )
+
+                    if sport.lower() == "futebol":
                         candidatos_calculados.extend(
-                            montar_candidatos_over_under_calculados(
-                                dados_estruturados.get("mercados_escanteios", []),
-                                cantos_a + cantos_b,
-                                "Total de Escanteios da Partida",
-                                "Escanteios",
-                                esporte=sport,
-                                persona=analista_key,
-                                fatores_incerteza=fatores_incerteza,
+                            montar_candidatos_chance_dupla(
+                                dados_estruturados.get("mercado_chance_dupla"), lam_a, lam_b,
+                                persona=analista_key, fatores_incerteza=fatores_incerteza,
+                                conn=conn_odds, time_a=time_a, time_b=time_b, data_jogo=data_jogo_hoje,
                             )
                         )
-
-                    cartoes_a = (mie1_data or {}).get("team_a_cartoes_projected")
-                    cartoes_b = (mie1_data or {}).get("team_b_cartoes_projected")
-                    if cartoes_a and cartoes_b:
                         candidatos_calculados.extend(
-                            montar_candidatos_over_under_calculados(
-                                dados_estruturados.get("mercados_cartoes", []),
-                                cartoes_a + cartoes_b,
-                                "Total de Cartões da Partida",
-                                "Cartões",
-                                esporte=sport,
-                                persona=analista_key,
-                                fatores_incerteza=fatores_incerteza,
+                            montar_candidatos_handicap_asiatico(
+                                dados_estruturados.get("mercados_handicap_asiatico"), lam_a, lam_b,
+                                persona=analista_key, fatores_incerteza=fatores_incerteza,
                             )
                         )
-
-                candidatos_calculados.extend(
-                    montar_candidato_btts(
-                        dados_estruturados.get("mercado_btts"), lam_a, lam_b,
-                        persona=analista_key, fatores_incerteza=fatores_incerteza,
-                    )
-                )
-
-                if sport.lower() == "futebol":
-                    candidatos_calculados.extend(
-                        montar_candidatos_chance_dupla(
-                            dados_estruturados.get("mercado_chance_dupla"), lam_a, lam_b,
-                            persona=analista_key, fatores_incerteza=fatores_incerteza,
+                    elif sport.lower() in ("basquete", "beisebol"):
+                        nome_time_a = dados_estruturados.get("time_a", "Time A")
+                        nome_time_b = dados_estruturados.get("time_b", "Time B")
+                        candidatos_calculados.extend(
+                            montar_candidato_moneyline(
+                                dados_estruturados.get("mercado_moneyline"), lam_a, lam_b,
+                                esporte=sport, nome_time_a=nome_time_a, nome_time_b=nome_time_b,
+                                persona=analista_key, fatores_incerteza=fatores_incerteza,
+                                conn=conn_odds, data_jogo=data_jogo_hoje,
+                            )
                         )
-                    )
-                    candidatos_calculados.extend(
-                        montar_candidatos_handicap_asiatico(
-                            dados_estruturados.get("mercados_handicap_asiatico"), lam_a, lam_b,
-                            persona=analista_key, fatores_incerteza=fatores_incerteza,
-                        )
-                    )
-                elif sport.lower() in ("basquete", "beisebol"):
-                    nome_time_a = dados_estruturados.get("time_a", "Time A")
-                    nome_time_b = dados_estruturados.get("time_b", "Time B")
-                    candidatos_calculados.extend(
-                        montar_candidato_moneyline(
-                            dados_estruturados.get("mercado_moneyline"), lam_a, lam_b,
-                            esporte=sport, nome_time_a=nome_time_a, nome_time_b=nome_time_b,
-                            persona=analista_key, fatores_incerteza=fatores_incerteza,
-                        )
-                    )
+                finally:
+                    fechar_conexao(conn_odds)
 
     groq_client = get_groq_client()
     system_prompt = montar_system_prompt_mie2(sport, analista_key)
@@ -481,16 +499,16 @@ async def analyze_tickets(
     texto_ocr = ocr_res.text or ""
 
     groq_response = groq_client.chat.completions.create(
-    model="openai/gpt-oss-120b",
-    messages=[
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
-    ],
-    temperature=0.0,
-    top_p=0.1,
-    seed=42,
-    response_format={"type": "json_object"}
-)
+        model="openai/gpt-oss-120b",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
+        ],
+           temperature=0.0,
+           top_p=0.1,
+           seed=42,
+           response_format={"type": "json_object"}
+        )
 
     resultado_final = json.loads(groq_response.choices[0].message.content)
 
