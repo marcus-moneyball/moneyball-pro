@@ -4,8 +4,10 @@ MoneyballPro Engine -- ponto de entrada FastAPI.
 import sys
 import os
 
-# Força o Python a priorizar a pasta atual (api) na busca de módulos
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Garante a resolução dos módulos locais no ambiente Serverless
+dir_path = os.path.dirname(os.path.abspath(__file__))
+if dir_path not in sys.path:
+    sys.path.insert(0, dir_path)
 
 import json
 from datetime import datetime, timezone
@@ -15,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
 from groq import Groq
 
-# Imports diretos e sem try/except
+# Imports diretos dos módulos da mesma pasta
 from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
 from calc import (
     calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
