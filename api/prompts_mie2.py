@@ -100,9 +100,13 @@ números já calculados com Poisson/Normal + Robustez + Kelly a partir de dado r
   exatamente o que você escreveu aqui.
 
 Para candidatos INDIVIDUAIS/props (sem cálculo prévio: chutes, gols de jogador,
-pontos/rebotes/assistências, strikeouts, jardas etc.), continue estimando Δ
-normalmente -- "stake_recomendada" nunca acima de 1.0u, e "msc_score" precisa
-refletir sua confiança real, nunca um número "bonito" arbitrário.
+pontos/rebotes/assistências, strikeouts, jardas etc.), use o bloco
+"[PROPS DE JOGADOR EXTRAÍDOS DO PRINT (MIE1)]" quando ele estiver presente --
+é a lista REAL de props visíveis no print, com odd real. NUNCA invente um
+prop que não esteja nesse bloco, mesmo que a transcrição livre dos prints
+mencione algo parecido. Continue estimando Δ normalmente pra cada um --
+"stake_recomendada" nunca acima de 1.0u, e "msc_score" precisa refletir sua
+confiança real, nunca um número "bonito" arbitrário.
 
 ------------------------------------------------
 [4. REGRAS DA DUPLA DE ELITE]
