@@ -139,8 +139,8 @@
                 <i class="fa-solid fa-envelope text-accent text-2xl"></i>
             </div>
             <div>
-                <h3 class="text-2xl font-display text-white tracking-wide">IDENTIFIQUE SUA CONTA</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed"> Digite seu e-mail para contabilizar suas análises gratuitas de hoje ou ativar seu acesso ilimitado como membro Pro.</p>
+                <h3 class="text-2xl font-display text-white tracking-wide">ANTES DE COMEÇAR</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Seu e-mail identifica sua conta — é o que controla suas análises gratuitas do dia e libera acesso ilimitado se você for membro Pro.</p>
             </div>
             <div class="space-y-3 pt-2">
                 <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
@@ -177,19 +177,12 @@
 <script>
 let imagensArquivosSelecionados = [];
 let ultimoResultadoGlobal = null;
+let planoAtualConhecido = null;
 
 let sportAtivo = "futebol";
 let usosHoje = 0;
 const LIMITE_DIARIO = 3;
 const CHAVE_USO_DIARIO = "mb_uso_diario";
-
-const DEV_KEY = "marcus-mb-2026-brasilia";
-const urlParams = new URLSearchParams(window.location.search);
-
-if (urlParams.get("dev") === DEV_KEY) {
-    localStorage.setItem("mb_dev_mode", "1");
-}
-const isDevMode = localStorage.getItem("mb_dev_mode") === "1";
 
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
@@ -204,7 +197,9 @@ document.addEventListener("DOMContentLoaded", () => {
     atualizarContadorUso();
 
     // Gatekeeper: trava a tela logo de cara se ainda não tem e-mail salvo.
-    if (!isDevMode && !obterEmailSalvo()) {
+    // Sem exceção de "modo dev" aqui -- acesso ilimitado é resolvido no
+    // backend via DEV_EMAILS, comparando o e-mail real digitado no modal.
+    if (!obterEmailSalvo()) {
         abrirModalEmail();
     }
 });
@@ -235,7 +230,6 @@ function carregarUsoDoDia() {
 }
 
 function registrarUsoDoDia() {
-    if (isDevMode) return;
     const hoje = obterDataLocalYYYYMMDD();
     usosHoje += 1;
     localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify({ data: hoje, contagem: usosHoje }));
@@ -329,11 +323,11 @@ function previewImagens(input) {
     container.classList.remove("hidden");
 }
 
-function atualizarContadorUso() {
+function atualizarContadorUso(cotaInfo) {
     const counter = document.getElementById('usage-counter');
 
-    if (isDevMode) {
-        counter.innerText = "Modo Dev — Uso Ilimitado";
+    if (cotaInfo && (cotaInfo.plano === 'pro' || cotaInfo.plano === 'dev')) {
+        counter.innerText = cotaInfo.plano === 'dev' ? "Acesso Dev — Uso Ilimitado" : "Plano Pro — Uso Ilimitado";
         counter.classList.remove('text-risk');
         counter.classList.add('text-slate-300');
         counter.parentElement.classList.remove('border-risk/40');
@@ -436,14 +430,11 @@ async function executarAnalise() {
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
 
-    let email = "dev@moneyballpro.com.br"; // E-mail padrão para o modo dev
-
-    if (!isDevMode) {
-        try {
-            email = await obterEmailUsuario();
-        } catch (e) {
-            return;
-        }
+    let email;
+    try {
+        email = await obterEmailUsuario();
+    } catch (e) {
+        return;
     }
 
     btn.disabled = true;
@@ -461,7 +452,8 @@ async function executarAnalise() {
         ultimoResultadoGlobal = dados;
 
         registrarUsoDoDia();
-        atualizarContadorUso();
+        planoAtualConhecido = dados.cota_info ? dados.cota_info.plano : null;
+        atualizarContadorUso(dados.cota_info);
 
         recolherEntrada();
         renderizarBilhetesFormatados(dados);
@@ -511,7 +503,8 @@ function recolherEntrada() {
 }
 
 function resetarEntrada() {
-    if (!isDevMode && usosHoje >= LIMITE_DIARIO) {
+    const temAcessoIlimitado = planoAtualConhecido === 'pro' || planoAtualConhecido === 'dev';
+    if (!temAcessoIlimitado && usosHoje >= LIMITE_DIARIO) {
         abrirModal();
         return;
     }
