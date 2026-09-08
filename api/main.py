@@ -26,7 +26,7 @@ try:
     )
     from api.prompts_mie2 import montar_system_prompt_mie2
     from api.validacao import validar_e_sanear_entrada
-    from api.utils import _parse_float_seguro
+    from api.utils import _parse_float_seguro, converter_odd_para_decimal
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
     from api.football_data_org import obter_forma_recente_estruturada
@@ -52,7 +52,7 @@ except ImportError:
     )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
-    from utils import _parse_float_seguro
+    from utils import _parse_float_seguro, converter_odd_para_decimal
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
     from football_data_org import obter_forma_recente_estruturada
@@ -491,13 +491,16 @@ async def analyze_tickets(
         if forma_estruturada["time_a"] or forma_estruturada["time_b"]:
             user_prompt_content += f"\n\n[FORMA RECENTE ESTRUTURADA (football-data.org) -- FONTE DE VERDADE]\n" + json.dumps(forma_estruturada, indent=2, ensure_ascii=False)
 
-    props_extraidos = dados_estruturados.get("mercados_player_props")
+       props_extraidos = dados_estruturados.get("mercados_player_props")
     if props_extraidos:
+        for prop in props_extraidos:
+            odd_convertida = converter_odd_para_decimal(prop.get("odd"))
+            if odd_convertida is not None:
+                prop["odd"] = str(odd_convertida)
         user_prompt_content += (
             f"\n\n[PROPS DE JOGADOR EXTRAÍDOS DO PRINT (MIE1) -- CANDIDATOS REAIS, NÃO INVENTE OUTROS]\n"
             + json.dumps(props_extraidos, indent=2, ensure_ascii=False)
         )
-
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
