@@ -308,6 +308,15 @@ async def analyze_tickets(
                 },
             )
 
+        # Primeira vez que esse e-mail passa pelo gatekeeper -- cria como
+        # membro free no Ghost também (best-effort, não trava a análise
+        # se o Ghost falhar).
+        if cota_info.get("novo_usuario"):
+            try:
+                criar_membro_free_ghost(email)
+            except Exception as e:
+                print(f"[GATEKEEPER] Falha ao criar membro free no Ghost para '{email}': {e}")
+
     analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "carlos"
     perfil = PERFIS_ANALISTA[analista_key]
 
