@@ -1,7 +1,7 @@
 """
-Camada de cálculo determinístico multi-esporte (Delta + Poisson + Normal + Kelly).
-Integrado com o motor de decisão de Carlos, analista único e generalista do sistema.
-Sem chamadas de rede — 100% testável isoladamente.
+Camada de cálculo determinístico multi-esporte (Delta + Poisson + Normal + Kelly).[cite: 1]
+Integrado com o motor de decisão de Carlos, analista único e generalista do sistema.[cite: 1]
+Sem chamadas de rede — 100% testável isoladamente.[cite: 1]
 """
 import sys
 import os
@@ -43,19 +43,14 @@ def prob_over_under_normal(linha: float, media: float, desvio_padrao: float = 11
     return round(p_over, 4), round(p_under, 4)
 
 
-# Razão variância/média empírica pro beisebol -- derivada de dados acadêmicos
-# reais de superdispersão de corridas por entrada.
-# NOTA (2026-09-02): mantida no código como referência histórica, mas
-# calcular_mercado() voltou a usar Poisson puro pro beisebol (ver mais abaixo).
-# A razão fixa 2.11 não escalava com o lambda do jogo e coincidiu com queda
-# de rendimento após a introdução da Binomial Negativa -- revertido pra
-# reavaliar isoladamente antes de tentar uma versão dependente do lambda.
+# Razão variância/média empírica pro beisebol -- derivada de dados acadêmicos[cite: 1]
+# reais de superdispersão de corridas por entrada.[cite: 1]
 RAZAO_VARIANCIA_MEDIA_BEISEBOL = 2.11
 
 
 def _theta_binomial_negativa(media: float, razao_var_media: float = RAZAO_VARIANCIA_MEDIA_BEISEBOL) -> float:
     """Deriva o parâmetro de dispersão (theta) a partir da média esperada e
-    da razão variância/média alvo. razao = 1 + media/theta."""
+    da razão variância/média alvo. razao = 1 + media/theta.[cite: 1]"""
     if media <= 0:
         return 1.0  
     
@@ -67,10 +62,7 @@ def prob_over_under_neg_binomial(linha: float, media: float,
                                   razao_var_media: float = RAZAO_VARIANCIA_MEDIA_BEISEBOL):
     """
     Probabilidade real de Over/Under uma linha, usando Binomial Negativa em
-    vez de Poisson -- captura a superdispersão real de corridas no beisebol.
-    NÃO É MAIS USADA POR calcular_mercado() (revertido para Poisson em
-    2026-09-02) -- mantida disponível caso se queira retestar mais adiante
-    com uma razão variância/média sensível ao lambda.
+    vez de Poisson -- captura a superdispersão real de corridas no beisebol.[cite: 1]
     """
     theta = _theta_binomial_negativa(media, razao_var_media)
     p = theta / (theta + media)
@@ -88,11 +80,11 @@ def calcular_delta_mercado(lam: float, linha: float):
 
 
 # ============================================================
-# RESULTADO DA PARTIDA -- Moneyline (2 vias), 1X2/Chance Dupla, Handicap Asiático
+# RESULTADO DA PARTIDA -- Moneyline (2 vias), 1X2/Chance Dupla, Handicap Asiático[cite: 1]
 # ============================================================
 
 def calcular_probabilidades_1x2_skellam(lam_a: float, lam_b: float):
-    """P(vitória A), P(empate), P(vitória B) via Skellam."""
+    """P(vitória A), P(empate), P(vitória B) via Skellam.[cite: 1]"""
     p_empate = float(stats.skellam.pmf(0, lam_a, lam_b))
     p_vitoria_a = float(1 - stats.skellam.cdf(0, lam_a, lam_b))
     p_vitoria_b = float(stats.skellam.cdf(-1, lam_a, lam_b))
@@ -102,7 +94,7 @@ def calcular_probabilidades_1x2_skellam(lam_a: float, lam_b: float):
 def calcular_probabilidade_vitoria_2vias(lam_a: float, lam_b: float, modelo: str = "skellam",
                                           desvio_padrao: Optional[float] = None):
     """
-    Moneyline (2 vias, sem empate possível) -- beisebol e basquete.
+    Moneyline (2 vias, sem empate possível) -- beisebol e basquete.[cite: 1]
     """
     if modelo == "normal":
         if desvio_padrao is None or desvio_padrao <= 0:
@@ -121,7 +113,7 @@ def calcular_probabilidade_vitoria_2vias(lam_a: float, lam_b: float, modelo: str
 
 def _cobre_handicap_linha_simples(lam_a: float, lam_b: float, linha: float):
     """Probabilidade de cobertura (e de push) pra UMA linha inteira ou de meio
-    gol -- nunca chamada direto de fora, só pelo split de quarto de gol abaixo."""
+    gol -- nunca chamada direto de fora, só pelo split de quarto de gol abaixo.[cite: 1]"""
     limite = -linha
     if float(limite).is_integer():
         p_push = float(stats.skellam.pmf(int(limite), lam_a, lam_b))
@@ -135,7 +127,7 @@ def _cobre_handicap_linha_simples(lam_a: float, lam_b: float, linha: float):
 def calcular_probabilidade_handicap_asiatico(lam_a: float, lam_b: float, linha: float):
     """
     Handicap Asiático aplicado ao time A (pra calcular do lado do time B, chame
-    invertendo lam_a/lam_b e o sinal da linha). Suporta linhas inteiras, de meio e quarto.
+    invertendo lam_a/lam_b e o sinal da linha). Suporta linhas inteiras, de meio e quarto.[cite: 1]
     """
     linha_x4 = round(linha * 4)
     eh_quarto = linha_x4 % 4 not in (0, 2)  
@@ -154,7 +146,7 @@ def calcular_probabilidade_handicap_asiatico(lam_a: float, lam_b: float, linha: 
 
 
 # ============================================================
-# ROBUSTEZ (confiança nos dados de entrada)
+# ROBUSTEZ (confiança nos dados de entrada)[cite: 1]
 # ============================================================
 
 AMOSTRA_MINIMA_JOGOS = 10
@@ -185,7 +177,7 @@ def calcular_nivel_confianca_dados(tamanho_amostra: Optional[int] = None,
 
 
 def calcular_fator_robustez(nivel_confianca: float) -> float:
-    """Robustez = min(1.0, 0.85 + 0.15 * nivel_confianca). Piso 0.85, teto 1.0."""
+    """Robustez = min(1.0, 0.85 + 0.15 * nivel_confianca). Piso 0.85, teto 1.0.[cite: 1]"""
     nivel_confianca = max(0.0, min(1.0, nivel_confianca))
     return round(min(1.0, 0.85 + 0.15 * nivel_confianca), 4)
 
@@ -205,7 +197,7 @@ def calcular_probabilidade_real_ajustada(p_modelo: float, robustez: float) -> fl
 
 
 # ============================================================
-# EV + KELLY FRACIONADO
+# EV + KELLY FRACIONADO[cite: 1]
 # ============================================================
 
 def calcular_ev(prob_real: float, odd_decimal: float):
@@ -216,9 +208,9 @@ def calcular_ev(prob_real: float, odd_decimal: float):
 
 def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_unidades=2.5) -> Optional[float]:
     """
-    Kelly fracionado em unidades (escala de referência: banca = 10u).
+    Kelly fracionado em unidades (escala de referência: banca = 10u).[cite: 1]
     SEM piso artificial -- um edge minúsculo gera stake minúscula, um edge forte
-    gera stake maior (até o teto). Arredondado em degraus de 0.25u.
+    gera stake maior (até o teto). Arredondado em degraus de 0.25u.[cite: 1]
     """
     if prob_real is None or odd_decimal is None or odd_decimal <= 1:
         return None
@@ -239,7 +231,7 @@ def kelly_fracionado(prob_real: float, odd_decimal: float, fracao=0.25, teto_uni
 
 
 # ============================================================
-# ESTIMATIVA DE LAMBDA (expectativa real a partir de médias do MDM)
+# ESTIMATIVA DE LAMBDA (expectativa real a partir de médias do MDM)[cite: 1]
 # ============================================================
 
 def estimar_lambda(mercado: dict) -> Optional[float]:
@@ -263,7 +255,7 @@ def estimar_lambda(mercado: dict) -> Optional[float]:
 
 
 # ============================================================
-# ROTEIRO DE JOGO (Metodologia Nexus Cap. V) -- classificação determinística
+# ROTEIRO DE JOGO (Metodologia Nexus Cap. V) -- classificação determinística[cite: 1]
 # ============================================================
 
 CONFIANCA_ROTEIRO_GROUNDED = {
@@ -274,7 +266,7 @@ CONFIANCA_ROTEIRO_GROUNDED = {
 
 
 def classificar_roteiro_futebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Modelo territorial completo (5 arquétipos -- B1/B2/A1/A2/C1)."""
+    """Modelo territorial completo (5 arquétipos -- B1/B2/A1/A2/C1).[cite: 1]"""
     xg_a = dados_time_a.get("xg_medio")
     xg_b = dados_time_b.get("xg_medio")
     xg_sofrido_a = dados_time_a.get("xg_sofrido_medio")
@@ -346,7 +338,7 @@ def classificar_roteiro_futebol(dados_time_a: dict, dados_time_b: dict) -> Optio
 
 
 def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Modelo de pace + eficiência líquida (ORTG do ataque vs DRTG da defesa adversária)."""
+    """Modelo de pace + eficiência líquida (ORTG do ataque vs DRTG da defesa adversária).[cite: 1]"""
     ortg_a, drtg_a = dados_time_a.get("ortg"), dados_time_a.get("drtg")
     ortg_b, drtg_b = dados_time_b.get("ortg"), dados_time_b.get("drtg")
     pace_a, pace_b = dados_time_a.get("pace"), dados_time_b.get("pace")
@@ -393,7 +385,7 @@ def classificar_roteiro_basquete(dados_time_a: dict, dados_time_b: dict) -> Opti
 
 
 def classificar_roteiro_beisebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Beisebol não é territorial -- é uma sequência de duelos individuais."""
+    """Beisebol não é territorial -- é uma sequência de duelos individuais.[cite: 1]"""
     era_a = dados_time_a.get("pitcher_era")
     era_b = dados_time_b.get("pitcher_era")
     ops_a = dados_time_a.get("lineup_ops_vs_mao_adversaria")
@@ -444,7 +436,7 @@ _CLASSIFICADORES_ROTEIRO = {
 
 
 def classificar_roteiro_jogo(esporte: str, dados_time_a: Optional[dict], dados_time_b: Optional[dict]) -> Optional[dict]:
-    """Classificador determinístico de roteiro de jogo (Metodologia Nexus, Cap. V)."""
+    """Classificador determinístico de roteiro de jogo (Metodologia Nexus, Cap. V).[cite: 1]"""
     if not dados_time_a or not dados_time_b:
         return None
 
@@ -459,11 +451,11 @@ def classificar_roteiro_jogo(esporte: str, dados_time_a: Optional[dict], dados_t
 
 
 # ============================================================
-# MATCHUP ENGINE (Framework Mestre da Análise Esportiva -- Pilar 1)
+# MATCHUP ENGINE (Framework Mestre da Análise Esportiva -- Pilar 1)[cite: 1]
 # ============================================================
 
 def calcular_matchup_futebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Pulo do gato do futebol: Pressão (PPDA) x Fragilidade na Construção."""
+    """Pulo do gato do futebol: Pressão (PPDA) x Fragilidade na Construção.[cite: 1]"""
     ppda_a = dados_time_a.get("ppda_medio")
     ppda_b = dados_time_b.get("ppda_medio")
 
@@ -506,7 +498,7 @@ def calcular_matchup_futebol(dados_time_a: dict, dados_time_b: dict) -> Optional
 
 
 def calcular_matchup_basquete(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
-    """Pulo do gato do basquete: Ritmo (Pace) x Fadiga (fatigue_index -- back-to-back ou desfalques)."""
+    """Pulo do gato do basquete: Ritmo (Pace) x Fadiga (fatigue_index -- back-to-back ou desfalques).[cite: 1]"""
     pace_a = dados_time_a.get("pace")
     pace_b = dados_time_b.get("pace")
     fadiga_a = dados_time_a.get("fatigue_index")
@@ -550,7 +542,7 @@ def calcular_matchup_basquete(dados_time_a: dict, dados_time_b: dict) -> Optiona
 
 def calcular_matchup_beisebol(dados_time_a: dict, dados_time_b: dict) -> Optional[dict]:
     """Pulo do gato do beisebol: Platoon Split -- a mão do arremessador titular
-    contra o desempenho do lineup adversário especificamente contra essa mão."""
+    contra o desempenho do lineup adversário especificamente contra essa mão.[cite: 1]"""
     mao_pitcher_a = dados_time_a.get("pitcher_mao")
     mao_pitcher_b = dados_time_b.get("pitcher_mao")
     ops_a_vs_b = dados_time_a.get("lineup_ops_vs_mao_adversaria")
@@ -599,7 +591,7 @@ _CALCULADORES_MATCHUP = {
 
 
 def calcular_matchup(esporte: str, dados_time_a: Optional[dict], dados_time_b: Optional[dict]) -> Optional[dict]:
-    """Matchup Engine determinístico (Framework Mestre, Pilar 1: Força vs. Encaixe)."""
+    """Matchup Engine determinístico (Framework Mestre, Pilar 1: Força vs. Encaixe).[cite: 1]"""
     if not dados_time_a or not dados_time_b:
         return None
 
@@ -614,18 +606,18 @@ def calcular_matchup(esporte: str, dados_time_a: Optional[dict], dados_time_b: O
 
 
 # ============================================================
-# SCORE DE CONVERGÊNCIA (Framework Mestre -- Parte 3: Gestão de Confiança)
+# SCORE DE CONVERGÊNCIA (Framework Mestre -- Parte 3: Gestão de Confiança)[cite: 1]
 # ============================================================
 
 def _lado_favorecido_pelo_roteiro(roteiro: Optional[dict]) -> Optional[str]:
-    """Lê o lado (A/B) que o roteiro favorece, quando aplicável."""
+    """Lê o lado (A/B) que o roteiro favorece, quando aplicável.[cite: 1]"""
     if not roteiro:
         return None
     return roteiro.get("lado_favorecido")
 
 
 def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> dict:
-    """Mede se roteiro (Força) e matchup (Encaixe) apontam pro mesmo lado."""
+    """Mede se roteiro (Força) e matchup (Encaixe) apontam pro mesmo lado.[cite: 1]"""
     lado_roteiro = _lado_favorecido_pelo_roteiro(roteiro)
     sinais_matchup = (matchup or {}).get("sinais", []) if matchup and matchup.get("matchup_detectado") else []
     lados_matchup = {s["favorece"] for s in sinais_matchup}
@@ -665,71 +657,34 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 
 
 # ============================================================
-# MSC (Moneyball Score) -- selo de confiabilidade pro usuário
+# MSC (Moneyball Score) -- selo de confiabilidade pro usuário[cite: 1]
 # ============================================================
-#
-# REVERTIDO (2026-09-03): a versão que rodava na "época boa" (muito green)
-# media EV + IP (Probabilidade Implícita) + Robustez. Numa fase de ajustes
-# posteriores, o componente IP foi trocado por Delta -- e como Delta nasce
-# da mesma fonte que o EV (a distância entre o lambda do PRÓPRIO modelo e a
-# linha do mercado), os dois passaram a inflar juntos sempre que o modelo
-# tava sistematicamente enviesado (fonte de xG ruim, Binomial Negativa mal
-# calibrada etc.) -- um modelo "confiantemente errado" gerava MSC alto do
-# mesmo jeito, sem nenhum freio externo. Delta continua calculado e exibido
-# no bilhete via calcular_delta_mercado() -- só não entra mais nesta fórmula.
-#
-# IP é a probabilidade implícita do MERCADO (externa ao modelo), não a
-# probabilidade do seu próprio lambda -- funciona como validação
-# independente do EV: pra uma mesma probabilidade estimada, EV e IP se
-# movem em direções OPOSTAS (odd mais esticada = maior EV, mas menor IP),
-# então o freio é real, não dupla contagem. FONTE EM ABERTO -- pode ser a
-# odd da Pinnacle, pode ser a Odd Justa/GLV de outro app do ecossistema, ou
-# outra coisa; a função abaixo não fixa a fonte, só espera um valor de
-# probabilidade já pronto. prob_implicita_da_odd() é só um fallback
-# PROVISÓRIO usando a odd real disponível (a mesma que já vira EV) enquanto
-# nenhuma fonte externa de verdade estiver conectada. Pesos 30/40/30 abaixo
-# são ponto de partida -- não temos os pesos originais da época boa.
 
 PESOS_MSC = {
-    "carlos": {"ev": 0.30, "ip": 0.40, "robustez": 0.30},
+    "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
 }
 
-EV_TETO_NORMALIZACAO = 0.30
+EV_TETO_NORMALIZACAO = 0.30    
+DELTA_TETO_NORMALIZACAO = 15.0  
 
 
-def prob_implicita_da_odd(odd_decimal: Optional[float]) -> Optional[float]:
-    """
-    Probabilidade implícita simples (1/odd), sem devig -- fallback
-    PROVISÓRIO pro componente IP do MSC enquanto nenhuma fonte externa
-    (Pinnacle, Odd Justa/GLV de outro app, etc.) estiver conectada a este
-    pipeline (ver nota acima). Ainda embute a margem da casa; ao trocar
-    por uma fonte de mercado mais eficiente, considerar devig (normalizar
-    Over+Under pra somar 1) já que mesmo margens pequenas não são zero.
-    """
-    if odd_decimal is None or odd_decimal <= 1:
-        return None
-    return round(1.0 / odd_decimal, 4)
-
-
-def calcular_msc(ev: Optional[float], prob_implicita: Optional[float],
-                  robustez: float, persona: str = "carlos") -> Optional[int]:
-    """MSC base, 0-100 -- só a força matemática do candidato isolado.
-    Três componentes independentes: EV (valor segundo o próprio modelo),
-    IP (probabilidade implícita do mercado -- freio externo) e Robustez
-    (confiança nos dados de entrada)."""
-    if ev is None or prob_implicita is None or robustez is None:
+def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
+                  prob_real_ajustada: Optional[float], robustez: float,
+                  persona: str = "carlos") -> Optional[int]:
+    """MSC base, 0-100 -- só a força matemática do candidato isolado.[cite: 1]"""
+    if ev is None or delta_pct is None or prob_real_ajustada is None:
         return None
 
     pesos = PESOS_MSC.get(persona.lower(), PESOS_MSC["carlos"])
 
     ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
-    ip_norm = max(0.0, min(1.0, prob_implicita))
-    robustez_norm = max(0.0, min(1.0, robustez))
+    delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
+    componente_terciario = robustez
 
     score = (
         pesos["ev"] * ev_norm +
-        pesos["ip"] * ip_norm +
-        pesos["robustez"] * robustez_norm
+        pesos["delta"] * delta_norm +
+        pesos["robustez_ou_prob"] * componente_terciario
     )
     return round(max(0, min(100, score * 100)))
 
@@ -743,7 +698,7 @@ AJUSTE_MSC_POR_CONVERGENCIA = {
 
 
 def ajustar_msc_por_convergencia(msc_base: Optional[int], nivel_convergencia: Optional[str]) -> Optional[int]:
-    """Aplica o ajuste de convergência ao MSC base."""
+    """Aplica o ajuste de convergência ao MSC base.[cite: 1]"""
     if msc_base is None:
         return None
     ajuste = AJUSTE_MSC_POR_CONVERGENCIA.get(nivel_convergencia, 0)
@@ -768,7 +723,7 @@ def rotulo_confianca(score: Optional[int]) -> Optional[str]:
 
 
 # ============================================================
-# APOSTA COMBINADA (Dupla de Elite como bet builder / múltipla única)
+# APOSTA COMBINADA (Dupla de Elite como bet builder / múltipla única)[cite: 1]
 # ============================================================
 
 MAPA_STAKE_COMBINADA = {2.0: 1.0, 1.0: 0.5, 0.5: 0.5}
@@ -778,7 +733,7 @@ MARGEM_MINIMA_COMBINADA_PCT = 3.0
 
 def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2: float,
                                teto_stake_convergencia: float = 1.0) -> dict:
-    """Calcula odd/probabilidade/edge estimados de uma aposta combinada (2 pernas do mesmo jogo)."""
+    """Calcula odd/probabilidade/edge estimados de uma aposta combinada (2 pernas do mesmo jogo).[cite: 1]"""
     prob_combinada_estimada = round(prob_1 * prob_2, 4)
     odd_combinada_estimada = round(odd_1 * odd_2, 2)
     prob_implicita_combinada = round(1 / odd_combinada_estimada, 4) if odd_combinada_estimada else None
@@ -817,10 +772,120 @@ def calcular_aposta_combinada(prob_1: float, odd_1: float, prob_2: float, odd_2:
     }
 
 # ============================================================
-# CÁLCULO POR MERCADO ISOLADO (usado pelo endpoint utilitário /api/v1/calc)
+# CÁLCULO POR MERCADO ISOLADO (usado pelo endpoint utilitário /api/v1/calc)[cite: 1]
 # ============================================================
 
+def _calcular_lambdas_dos_times(mercado: dict):
+    """Mesma fórmula que estimar_lambda() já usa internamente, só que
+    devolvendo os dois lambdas separados (não a soma) -- é o que Skellam
+    precisa pra moneyline/handicap."""
+    marcada_a = mercado.get("media_marcada_time_a")
+    sofrida_a = mercado.get("media_sofrida_time_a")
+    marcada_b = mercado.get("media_marcada_time_b")
+    sofrida_b = mercado.get("media_sofrida_time_b")
+
+    if None in (marcada_a, sofrida_a, marcada_b, sofrida_b):
+        return None, None
+
+    esperado_a = (marcada_a + sofrida_b) / 2
+    esperado_b = (marcada_b + sofrida_a) / 2
+    return esperado_a, esperado_b
+
+
 def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
+    tipo = mercado.get("tipo", "total_jogo")
+
+    # --- Moneyline 3 vias (futebol: casa/empate/fora) -----------------------
+    if tipo == "moneyline_3vias":
+        lam_a, lam_b = _calcular_lambdas_dos_times(mercado)
+        if lam_a is None:
+            return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
+
+        p_casa, p_empate, p_fora = calcular_probabilidades_1x2_skellam(lam_a, lam_b)
+        lado = mercado.get("lado_odd", "casa")
+        prob_por_lado = {"casa": p_casa, "empate": p_empate, "fora": p_fora}
+        prob_desse_lado = prob_por_lado.get(lado)
+
+        resultado = {
+            "id": mercado.get("id"),
+            "status": "calculado",
+            "probabilidade_casa": p_casa,
+            "probabilidade_empate": p_empate,
+            "probabilidade_fora": p_fora,
+            "ev": None,
+            "kelly_unidades": None,
+        }
+        odd = mercado.get("odd_real_decimal")
+        if odd is not None and prob_desse_lado is not None:
+            ev = calcular_ev(prob_desse_lado, odd)
+            resultado["ev"] = ev
+            if ev is not None and ev > 0:
+                resultado["kelly_unidades"] = kelly_fracionado(prob_desse_lado, odd)
+        return resultado
+
+    # --- Moneyline 2 vias (beisebol/basquete: casa/fora, sem empate) --------
+    if tipo == "moneyline_2vias":
+        lam_a, lam_b = _calcular_lambdas_dos_times(mercado)
+        if lam_a is None:
+            return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
+
+        modelo_prob = "normal" if esporte.lower() == "basquete" else "skellam"
+        p_casa, p_fora = calcular_probabilidade_vitoria_2vias(
+            lam_a, lam_b, modelo=modelo_prob, desvio_padrao=mercado.get("desvio_padrao")
+        )
+        lado = mercado.get("lado_odd", "casa")
+        prob_desse_lado = p_casa if lado == "casa" else p_fora
+
+        resultado = {
+            "id": mercado.get("id"),
+            "status": "calculado",
+            "probabilidade_casa": p_casa,
+            "probabilidade_fora": p_fora,
+            "ev": None,
+            "kelly_unidades": None,
+        }
+        odd = mercado.get("odd_real_decimal")
+        if odd is not None:
+            ev = calcular_ev(prob_desse_lado, odd)
+            resultado["ev"] = ev
+            if ev is not None and ev > 0:
+                resultado["kelly_unidades"] = kelly_fracionado(prob_desse_lado, odd)
+        return resultado
+
+    # --- Handicap Asiático ----------------------------------------------------
+    if tipo == "handicap_asiatico":
+        linha = mercado.get("linha")
+        if linha is None:
+            return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
+
+        lam_a, lam_b = _calcular_lambdas_dos_times(mercado)
+        if lam_a is None:
+            return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
+
+        # Handicap sempre calculado da perspectiva do time A -- se a linha
+        # do JSON for do time B, quem monta o payload deve inverter
+        # media_marcada/sofrida_time_a<->b e o sinal da linha antes de mandar.
+        p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
+
+        resultado = {
+            "id": mercado.get("id"),
+            "status": "calculado",
+            "probabilidade_cobre": p_cobre,
+            "probabilidade_push": p_push,
+            "ev": None,
+            "kelly_unidades": None,
+        }
+        odd = mercado.get("odd_real_decimal")
+        if odd is not None:
+            ev = calcular_ev(p_cobre, odd)
+            resultado["ev"] = ev
+            if ev is not None and ev > 0:
+                resultado["kelly_unidades"] = kelly_fracionado(p_cobre, odd)
+        return resultado
+
+    # --- Default: Over/Under (total de gols/pontos/corridas/props) -- ---------
+    # Comportamento original, intocado -- Total continua funcionando exatamente
+    # como já funcionava antes desse patch.
     linha = mercado.get("linha")
     if linha is None:
         return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
@@ -835,13 +900,6 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
         p_over, p_under = prob_over_under_normal(linha, media_esperada, std_dev)
         lam_ref = media_esperada
     else:
-        # REVERTIDO (2026-09-02): beisebol voltou a usar Poisson puro, igual
-        # aos demais esportes não-normais. A branch que chamava
-        # prob_over_under_neg_binomial() para esporte_key == "beisebol" foi
-        # removida daqui -- era a única diferença de tratamento entre
-        # beisebol e futebol/demais esportes Poisson, e coincidiu com a
-        # queda de rendimento relatada. A função neg-binomial continua
-        # definida acima, disponível para retestar isoladamente depois.
         lam_ref = estimar_lambda(mercado) if mercado.get("media_esperada") is None else mercado.get("media_esperada")
         if lam_ref is None:
             return {"id": mercado.get("id"), "status": "sem_dados_suficientes"}
@@ -875,7 +933,7 @@ def calcular_mercado(mercado: dict, esporte: str = "futebol") -> dict:
 
 def calcular_dossie(mercados: list, esporte: str = "futebol") -> list:
     """Usado só pelo endpoint utilitário /api/v1/calc -- devolve uma LISTA
-    de resultados por mercado."""
+    de resultados por mercado.[cite: 1]"""
     resultados = []
     for m in mercados:
         try:
