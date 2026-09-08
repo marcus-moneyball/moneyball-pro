@@ -488,10 +488,15 @@ async def analyze_tickets(
             "time_a": (mie1_data.get("team_a_roteiro") or {}).get("forma_recente_estruturada"),
             "time_b": (mie1_data.get("team_b_roteiro") or {}).get("forma_recente_estruturada"),
         }
+           if mie1_data:
+        forma_estruturada = {
+            "time_a": (mie1_data.get("team_a_roteiro") or {}).get("forma_recente_estruturada"),
+            "time_b": (mie1_data.get("team_b_roteiro") or {}).get("forma_recente_estruturada"),
+        }
         if forma_estruturada["time_a"] or forma_estruturada["time_b"]:
             user_prompt_content += f"\n\n[FORMA RECENTE ESTRUTURADA (football-data.org) -- FONTE DE VERDADE]\n" + json.dumps(forma_estruturada, indent=2, ensure_ascii=False)
 
-       props_extraidos = dados_estruturados.get("mercados_player_props")
+    props_extraidos = dados_estruturados.get("mercados_player_props")
     if props_extraidos:
         for prop in props_extraidos:
             odd_convertida = converter_odd_para_decimal(prop.get("odd"))
