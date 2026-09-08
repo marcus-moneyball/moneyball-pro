@@ -80,6 +80,10 @@ app.add_middleware(
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# E-mails com acesso ilimitado, sem passar pela cota (ex: seu próprio uso).
+# Configurar na Vercel: DEV_EMAILS=seu-email@gmail.com,outro@x.com
+DEV_EMAILS = {e.strip().lower() for e in os.getenv("DEV_EMAILS", "").split(",") if e.strip()}
+
 
 def get_groq_client():
     if not GROQ_API_KEY:
@@ -270,17 +274,22 @@ async def calcular_mercados(payload: dict, request: Request):
 async def analyze_tickets(
     sport: str = Form(...),
     analyst: str = Form("carlos"),
-    email: Optional[str] = Form(None),
+    email: str = Form(...),  # agora obrigatório -- gatekeeper
     liga: Optional[str] = Form(None),
     files: List[UploadFile] = File(...)
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    cota_info = None
-    if email:
-        if not email_valido(email):
-            raise HTTPException(status_code=400, detail="E-mail inválido.")
+    if not email_valido(email):
+        raise HTTPException(status_code=400, detail="E-mail inválido.")
+
+    email_normalizado = email.strip().lower()
+
+    if email_normalizado in DEV_EMAILS:
+        # Acesso de dev: nunca passa pela cota, não mexe no banco.
+        cota_info = {"permitido": True, "plano": "dev", "consultas_hoje": 0, "limite": None}
+    else:
         db_conn_cota = get_connection()
         try:
             cota_info = checar_e_consumir_cota(db_conn_cota, email)
