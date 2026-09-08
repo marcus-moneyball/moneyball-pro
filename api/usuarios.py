@@ -37,24 +37,34 @@ def _is_postgres(conn) -> bool:
 
 
 def obter_ou_criar_usuario(conn, email: str) -> dict:
+    """
+    Retorna o usuário (criando se ainda não existir), com um campo extra
+    `novo` (bool) indicando se ele acabou de ser criado agora mesmo -- usado
+    pelo gatekeeper pra saber se deve criar o membro correspondente no Ghost.
+    """
     email = email.strip().lower()
     cursor = conn.cursor()
     placeholder = "%s" if _is_postgres(conn) else "?"
     hoje = _hoje_brasil()
 
-    # Upsert atômico para evitar race condition na criação simultânea
     if _is_postgres(conn):
+        # (xmax = 0) é um truque do Postgres: só é TRUE quando a linha foi
+        # de fato inserida agora -- se caiu no ON CONFLICT DO UPDATE porque
+        # já existia, vem FALSE.
         sql = f"""
         INSERT INTO app_users (email, plano, consultas_hoje, data_ultima_consulta)
         VALUES ({placeholder}, 'free', 0, {placeholder})
         ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-        RETURNING email, plano, consultas_hoje, data_ultima_consulta;
+        RETURNING email, plano, consultas_hoje, data_ultima_consulta, (xmax = 0) AS foi_inserido;
         """
         cursor.execute(sql, (email, hoje))
         row = cursor.fetchone()
+        conn.commit()
+        novo = bool(row[4])
     else:
         cursor.execute(f"SELECT email, plano, consultas_hoje, data_ultima_consulta FROM app_users WHERE email = {placeholder}", (email,))
         row = cursor.fetchone()
+        novo = row is None
         if not row:
             cursor.execute(f"INSERT OR IGNORE INTO app_users (email, plano, consultas_hoje, data_ultima_consulta) VALUES ({placeholder}, 'free', 0, {placeholder})", (email, hoje))
             conn.commit()
@@ -66,16 +76,18 @@ def obter_ou_criar_usuario(conn, email: str) -> dict:
         "plano": row[1],
         "consultas_hoje": row[2],
         "data_ultima_consulta": row[3],
+        "novo": novo,
     }
 
 
 def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS_FREE_DIARIO) -> dict:
     if conn is None:
-        return {"permitido": True, "plano": "free", "consultas_hoje": 0, "limite": None}
+        return {"permitido": True, "plano": "free", "consultas_hoje": 0, "limite": None, "novo_usuario": False}
 
     try:
         usuario = obter_ou_criar_usuario(conn, email)
         hoje = _hoje_brasil()
+        novo_usuario = usuario["novo"]
 
         data_ultima = usuario["data_ultima_consulta"]
         if isinstance(data_ultima, str):
@@ -87,7 +99,10 @@ def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS
 
         if usuario["plano"] == "pro":
             _atualizar_contagem(conn, email, consultas_hoje=usuario["consultas_hoje"], data=hoje)
-            return {"permitido": True, "plano": "pro", "consultas_hoje": usuario["consultas_hoje"], "limite": None}
+            return {
+                "permitido": True, "plano": "pro", "consultas_hoje": usuario["consultas_hoje"],
+                "limite": None, "novo_usuario": novo_usuario,
+            }
 
         # Atualização atômica condicional ao limite
         placeholder = "%s" if _is_postgres(conn) else "?"
@@ -108,10 +123,16 @@ def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS
 
         if cursor.rowcount > 0:
             nova_contagem = 1 if data_ultima != hoje else usuario["consultas_hoje"] + 1
-            return {"permitido": True, "plano": "free", "consultas_hoje": nova_contagem, "limite": limite_free}
+            return {
+                "permitido": True, "plano": "free", "consultas_hoje": nova_contagem,
+                "limite": limite_free, "novo_usuario": novo_usuario,
+            }
 
         # Se rowcount == 0, significa que o limite já foi atingido
-        return {"permitido": False, "plano": "free", "consultas_hoje": usuario["consultas_hoje"], "limite": limite_free}
+        return {
+            "permitido": False, "plano": "free", "consultas_hoje": usuario["consultas_hoje"],
+            "limite": limite_free, "novo_usuario": novo_usuario,
+        }
 
     except Exception as e:
         print(f"[COTA] Falha ao checar cota para '{email}': {e}")
@@ -119,7 +140,7 @@ def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS
             conn.rollback()
         except Exception:
             pass
-        return {"permitido": True, "plano": "free", "consultas_hoje": 0, "limite": None}
+        return {"permitido": True, "plano": "free", "consultas_hoje": 0, "limite": None, "novo_usuario": False}
 
 
 def _atualizar_contagem(conn, email: str, consultas_hoje: int, data):
