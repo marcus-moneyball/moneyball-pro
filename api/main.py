@@ -3,11 +3,7 @@ MoneyballPro Engine -- ponto de entrada FastAPI.
 """
 import sys
 import os
-
-# Garante a resolução dos módulos locais no ambiente Serverless
-dir_path = os.path.dirname(os.path.abspath(__file__))
-if dir_path not in sys.path:
-    sys.path.insert(0, dir_path)
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import json
 from datetime import datetime, timezone
@@ -17,32 +13,59 @@ from fastapi.middleware.cors import CORSMiddleware
 from google.genai import types
 from groq import Groq
 
-# Imports relativos explícitos
-from .catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
-from .calc import (
-    calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
-    calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
-)
-from .mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
-from .candidatos import (
-    montar_candidatos_over_under_calculados, montar_candidato_btts,
-    montar_candidato_moneyline, montar_candidatos_chance_dupla, montar_candidatos_handicap_asiatico,
-)
-from .prompts_mie2 import montar_system_prompt_mie2
-from .validacao import validar_e_sanear_entrada
-from .utils import _parse_float_seguro
-from .db import get_connection, fechar_conexao
-from .projecao import obter_projecoes_partida
-from .football_data_org import obter_forma_recente_estruturada
-from .odds_api_client import atualizar_cache_da_liga
-from .usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
-from .notificacoes_telegram import publicar_recomendacao_publica
-from .telegram_membros import (
-    gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
-    salvar_telegram_user_id, obter_plano_e_telegram,
-    enviar_convite_grupo_pro, remover_do_grupo_pro,
-)
-from .ghost_admin import criar_membro_free_ghost
+try:
+    from api.catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
+    from api.calc import (
+        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
+        calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
+    )
+    from api.mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
+    from api.candidatos import (
+        montar_candidatos_over_under_calculados, montar_candidato_btts,
+        montar_candidato_moneyline, montar_candidatos_chance_dupla, montar_candidatos_handicap_asiatico,
+    )
+    from api.prompts_mie2 import montar_system_prompt_mie2
+    from api.validacao import validar_e_sanear_entrada
+    from api.utils import _parse_float_seguro
+    from api.db import get_connection, fechar_conexao
+    from api.projecao import obter_projecoes_partida
+    from api.football_data_org import obter_forma_recente_estruturada
+    from api.odds_api_client import atualizar_cache_da_liga
+    from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from api.notificacoes_telegram import publicar_recomendacao_publica
+    from api.telegram_membros import (
+        gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
+        salvar_telegram_user_id, obter_plano_e_telegram,
+        enviar_convite_grupo_pro, remover_do_grupo_pro,
+    )
+    from api.ghost_admin import criar_membro_free_ghost
+except ImportError:
+    from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
+    from calc import (
+        calcular_dossie, classificar_roteiro_jogo, calcular_matchup, calcular_convergencia,
+        calcular_aposta_combinada, ajustar_msc_por_convergencia, rotulo_confianca,
+    )
+    from mie1_gemini import get_gemini_client, extrair_mercados_estruturados, executar_mie1
+    from candidatos import (
+        montar_candidatos_over_under_calculados, montar_candidato_btts,
+        montar_candidato_moneyline, montar_candidatos_chance_dupla, montar_candidatos_handicap_asiatico,
+    )
+    from prompts_mie2 import montar_system_prompt_mie2
+    from validacao import validar_e_sanear_entrada
+    from utils import _parse_float_seguro
+    from db import get_connection, fechar_conexao
+    from projecao import obter_projecoes_partida
+    from football_data_org import obter_forma_recente_estruturada
+    from odds_api_client import atualizar_cache_da_liga
+    from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from notificacoes_telegram import publicar_recomendacao_publica
+    from telegram_membros import (
+        gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
+        salvar_telegram_user_id, obter_plano_e_telegram,
+        enviar_convite_grupo_pro, remover_do_grupo_pro,
+    )
+    from ghost_admin import criar_membro_free_ghost
+
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
 
@@ -468,6 +491,13 @@ async def analyze_tickets(
         if forma_estruturada["time_a"] or forma_estruturada["time_b"]:
             user_prompt_content += f"\n\n[FORMA RECENTE ESTRUTURADA (football-data.org) -- FONTE DE VERDADE]\n" + json.dumps(forma_estruturada, indent=2, ensure_ascii=False)
 
+    props_extraidos = dados_estruturados.get("mercados_player_props")
+    if props_extraidos:
+        user_prompt_content += (
+            f"\n\n[PROPS DE JOGADOR EXTRAÍDOS DO PRINT (MIE1) -- CANDIDATOS REAIS, NÃO INVENTE OUTROS]\n"
+            + json.dumps(props_extraidos, indent=2, ensure_ascii=False)
+        )
+
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
@@ -481,11 +511,9 @@ async def analyze_tickets(
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": f"{user_prompt_content}\n\n[TRANSCRIÇÃO DOS PRINTS]\n{texto_ocr}"}
         ],
-           temperature=0.0,
-           top_p=0.1,
-           seed=42,
-           response_format={"type": "json_object"}
-        )
+        temperature=0.2,
+        response_format={"type": "json_object"}
+    )
 
     resultado_final = json.loads(groq_response.choices[0].message.content)
 
