@@ -1,3 +1,9 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from catalogos import REGRAS_ESPORTES, PERFIS_ANALISTA
+
 def montar_system_prompt_mie2(sport: str, analyst: str = "carlos") -> str:
     esporte_key = sport.lower()
     catalogo_esporte = REGRAS_ESPORTES.get(esporte_key, REGRAS_ESPORTES["futebol"])
