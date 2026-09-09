@@ -10,16 +10,30 @@ Reset de cota diária: não usa cron job nenhum. A cota é resetada de forma
 "preguiçosa" -- no momento da consulta, se `data_ultima_consulta` for
 diferente de hoje, zera o contador antes de checar. Isso elimina a necessidade
 de manter uma tarefa agendada rodando na Vercel só pra isso.
+
+E-mails de DEV (env var DEV_EMAILS, separados por vírgula) sempre têm acesso
+ilimitado, sem precisar existir linha nenhuma no banco -- útil pra testar sem
+gastar cota real nem mexer no Postgres na mão.
+
+Além do limite por e-mail, existe um limite por IP (checar_limite_por_ip) --
+e-mail sozinho é fácil de burlar (aba anônima + e-mail novo a cada vez), o
+IP não reseta junto com o localStorage.
 """
+import os
 import re
 from datetime import datetime
 from typing import Optional
 from zoneinfo import ZoneInfo
 
 LIMITE_CONSULTAS_FREE_DIARIO = 3
+LIMITE_CONSULTAS_POR_IP_DIARIO = 10  # teto por IP, além do limite por e-mail
 TZ_BRASIL = ZoneInfo("America/Sao_Paulo")
 
 _REGEX_EMAIL_SIMPLES = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+_DEV_EMAILS = {
+    e.strip().lower() for e in os.getenv("DEV_EMAILS", "").split(",") if e.strip()
+}
 
 
 def _hoje_brasil():
@@ -30,6 +44,10 @@ def email_valido(email: Optional[str]) -> bool:
     if not email or not isinstance(email, str):
         return False
     return bool(_REGEX_EMAIL_SIMPLES.match(email.strip()))
+
+
+def eh_email_dev(email: Optional[str]) -> bool:
+    return bool(email) and email.strip().lower() in _DEV_EMAILS
 
 
 def _is_postgres(conn) -> bool:
@@ -84,6 +102,9 @@ def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS
     if conn is None:
         return {"permitido": True, "plano": "free", "consultas_hoje": 0, "limite": None, "novo_usuario": False}
 
+    if eh_email_dev(email):
+        return {"permitido": True, "plano": "dev", "consultas_hoje": 0, "limite": None, "novo_usuario": False}
+
     try:
         usuario = obter_ou_criar_usuario(conn, email)
         hoje = _hoje_brasil()
@@ -97,10 +118,10 @@ def checar_e_consumir_cota(conn, email: str, limite_free: int = LIMITE_CONSULTAS
         if data_ultima != hoje:
             usuario["consultas_hoje"] = 0
 
-        if usuario["plano"] == "pro":
+        if usuario["plano"] in ("pro", "dev"):
             _atualizar_contagem(conn, email, consultas_hoje=usuario["consultas_hoje"], data=hoje)
             return {
-                "permitido": True, "plano": "pro", "consultas_hoje": usuario["consultas_hoje"],
+                "permitido": True, "plano": usuario["plano"], "consultas_hoje": usuario["consultas_hoje"],
                 "limite": None, "novo_usuario": novo_usuario,
             }
 
@@ -156,6 +177,54 @@ def _atualizar_contagem(conn, email: str, consultas_hoje: int, data):
         (consultas_hoje, data, email.strip().lower()),
     )
     conn.commit()
+
+
+def checar_limite_por_ip(conn, ip: Optional[str], limite_ip: int = LIMITE_CONSULTAS_POR_IP_DIARIO) -> bool:
+    """
+    Retorna True se o IP AINDA PODE consultar (não bateu o teto do dia),
+    False se já bateu. É um limite mais alto e independente do limite por
+    e-mail -- existe só pra impedir alguém de resetar a cota abrindo aba
+    anônima e trocando de e-mail a cada vez. Falha aberta (True) se não
+    houver conexão ou IP disponível -- nunca bloqueia por causa disso.
+    """
+    if conn is None or not ip:
+        return True
+
+    placeholder = "%s" if _is_postgres(conn) else "?"
+    clausula_timestamp = "NOW()" if _is_postgres(conn) else "CURRENT_TIMESTAMP"
+    hoje = _hoje_brasil()
+
+    try:
+        cursor = conn.cursor()
+        upsert = (
+            f"""
+            INSERT INTO ip_daily_usage (ip, data, contagem, atualizado_em)
+            VALUES ({placeholder}, {placeholder}, 1, {clausula_timestamp})
+            ON CONFLICT (ip) DO UPDATE SET
+                contagem = CASE WHEN ip_daily_usage.data < {placeholder} THEN 1 ELSE ip_daily_usage.contagem + 1 END,
+                data = {placeholder},
+                atualizado_em = {clausula_timestamp}
+            WHERE ip_daily_usage.data < {placeholder} OR ip_daily_usage.contagem < {placeholder}
+            RETURNING contagem
+            """ if _is_postgres(conn) else
+            f"""
+            INSERT INTO ip_daily_usage (ip, data, contagem) VALUES ({placeholder}, {placeholder}, 1)
+            ON CONFLICT(ip) DO UPDATE SET
+                contagem = CASE WHEN data < {placeholder} THEN 1 ELSE contagem + 1 END,
+                data = {placeholder}
+            WHERE data < {placeholder} OR contagem < {placeholder}
+            """
+        )
+        cursor.execute(upsert, (ip, hoje, hoje, hoje, hoje, limite_ip))
+        conn.commit()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"[COTA IP] Falha ao checar limite por IP '{ip}': {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return True  # falha aberta -- nunca bloqueia por erro de infra
 
 
 def sync_ghost_member(conn, email: str, ghost_member_id: Optional[str], plano: str) -> dict:
