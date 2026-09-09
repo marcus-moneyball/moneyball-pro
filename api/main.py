@@ -31,14 +31,17 @@ try:
     from api.projecao import obter_projecoes_partida
     from api.football_data_org import obter_forma_recente_estruturada
     from api.odds_api_client import atualizar_cache_da_liga
-    from api.usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from api.usuarios import (
+        checar_e_consumir_cota, sync_ghost_member, email_valido,
+        LIMITE_CONSULTAS_FREE_DIARIO, eh_email_dev, checar_limite_por_ip,
+    )
+    from api.ghost_admin import criar_membro_free_ghost
     from api.notificacoes_telegram import publicar_recomendacao_publica
     from api.telegram_membros import (
         gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
         salvar_telegram_user_id, obter_plano_e_telegram,
         enviar_convite_grupo_pro, remover_do_grupo_pro,
     )
-    from api.ghost_admin import criar_membro_free_ghost
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import (
@@ -57,7 +60,10 @@ except ImportError:
     from projecao import obter_projecoes_partida
     from football_data_org import obter_forma_recente_estruturada
     from odds_api_client import atualizar_cache_da_liga
-    from usuarios import checar_e_consumir_cota, sync_ghost_member, email_valido, LIMITE_CONSULTAS_FREE_DIARIO
+    from usuarios import (
+        checar_e_consumir_cota, sync_ghost_member, email_valido,
+        LIMITE_CONSULTAS_FREE_DIARIO, eh_email_dev, checar_limite_por_ip,
+    )
     from notificacoes_telegram import publicar_recomendacao_publica
     from telegram_membros import (
         gerar_token_vinculo, montar_link_vinculo, consumir_token_vinculo,
@@ -268,6 +274,7 @@ async def calcular_mercados(payload: dict, request: Request):
 
 @app.post("/api/v1/analyze")
 async def analyze_tickets(
+    request: Request,
     sport: str = Form(...),
     analyst: str = Form("carlos"),
     email: Optional[str] = Form(None),
@@ -277,13 +284,41 @@ async def analyze_tickets(
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
+    def _obter_ip_cliente(req: Request) -> Optional[str]:
+        # Vercel roda atrás de proxy -- o IP real vem no X-Forwarded-For,
+        # não em request.client.host (que seria o IP do proxy).
+        xff = req.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()
+        return req.client.host if req.client else None
+
+    ip_cliente = _obter_ip_cliente(request)
+
     cota_info = None
     if email:
         if not email_valido(email):
             raise HTTPException(status_code=400, detail="E-mail inválido.")
         db_conn_cota = get_connection()
         try:
+            if not eh_email_dev(email) and not checar_limite_por_ip(db_conn_cota, ip_cliente):
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "cota_excedida": True,
+                        "mensagem": "Limite diário de análises gratuitas atingido.",
+                        "plano": "free",
+                        "consultas_hoje": None,
+                        "limite": None,
+                    },
+                )
+
             cota_info = checar_e_consumir_cota(db_conn_cota, email)
+
+            if cota_info.get("novo_usuario"):
+                try:
+                    criar_membro_free_ghost(email)
+                except Exception as e:
+                    print(f"[GATEKEEPER] Falha ao criar membro free no Ghost pra '{email}': {e}")
         finally:
             fechar_conexao(db_conn_cota)
 
