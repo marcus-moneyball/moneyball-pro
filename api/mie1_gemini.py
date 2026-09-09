@@ -69,13 +69,19 @@ def extrair_mercados_estruturados(
   "mercados_player_props": [
     {"jogador": "Nome do Atleta", "prop": "Pontos/Jardas/Rebotes", "linha": 24.5, "odd": "1.85", "lado": "over"}
   ],
-  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"}"""
+  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"},
+  "mercados_handicap": [
+    {"linha": -5.5, "time_referencia": "A", "odd_real_decimal": "1.90", "selecao_texto": "Time A (-5.5)"}
+  ]"""
     elif sport.lower() == "beisebol":
         bloco_futebol_extra = """,
   "mercados_player_props": [
     {"jogador": "Nome do Atleta", "prop": "Strikeouts/Hits/Total Bases/RBIs/Home Runs", "linha": 5.5, "odd": "1.85", "lado": "over"}
   ],
-  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"}"""
+  "mercado_moneyline": {"odd_time_a": "-150", "odd_time_b": "+130"},
+  "mercados_handicap": [
+    {"linha": -1.5, "time_referencia": "A", "odd_real_decimal": "1.85", "selecao_texto": "Time A (-1.5)"}
+  ]"""
 
     prompt = f"""Extraia dos prints, em JSON estrito (sem markdown, sem texto fora do JSON):
 {{
@@ -104,6 +110,10 @@ Regras:
   sinal correto). "time_referencia" é "A" se o handicap for do primeiro time
   mencionado, "B" se for do segundo. "selecao_texto" é o texto da seleção como
   aparece no print (ex: "Real Madrid (-1.5)").
+- "mercados_handicap" (basquete: Spread / beisebol: Run Line): mesmas regras
+  do "mercados_handicap_asiatico" acima -- "linha" com o sinal exato do print,
+  "time_referencia" "A" ou "B" conforme a ordem dos times mencionados,
+  "selecao_texto" como aparece no print (ex: "Dodgers (-1.5)", "Lakers (-5.5)").
 - REGRA CRÍTICA DE FORMATO DE ODD -- todo campo de odd ("odd", "odd_sim",
   "odd_nao", "odd_1x", "odd_x2", "odd_12", "odd_real_decimal", "odd_time_a",
   "odd_time_b") deve ser extraído como TEXTO (string), EXATAMENTE como aparece
@@ -226,14 +236,13 @@ Regras:
 
     try:
         res = gemini_client.models.generate_content(
-    model="gemini-3.5-flash-lite",
-    contents=[prompt],
-    config=types.GenerateContentConfig(
-        temperature=0.0,
-        top_p=0.1,
-        tools=[types.Tool(google_search=types.GoogleSearch())],
-    ),
-)
+            model="gemini-3.5-flash-lite",
+            contents=[prompt],
+            config=types.GenerateContentConfig(
+                temperature=0,
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+            ),
+        )
         dados = _extrair_json_de_texto(res.text)
         print(
             f"[MIE1 DEBUG] time_a={time_a} time_b={time_b} sport={sport} resultado={dados}"
