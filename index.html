@@ -19,9 +19,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Portal de Membros do Ghost -- permite embutir o botão de assinatura
-         aqui mesmo, fora do domínio do Ghost. Abre o checkout do Stripe do
-         Tier pago configurado em Settings > Membership no Ghost Admin. -->
+    
+    <!-- Portal de Membros do Ghost -->
     <script defer src="https://moneyballpro.com.br/portal.min.js" data-ghost="https://moneyballpro.com.br/" crossorigin="anonymous"></script>
     <script>
         tailwind.config = {
@@ -62,7 +61,7 @@
             <div class="pt-2">
                 <div class="inline-flex items-center justify-center gap-2 bg-base-panel border border-base-border rounded-lg px-4 py-1.5 shadow-sm">
                     <i class="fa-solid fa-bolt text-accent text-[10px]"></i>
-                    <span id="usage-counter" class="text-[11px] font-mono text-slate-300 font-bold">Usos Restantes Hoje: 5/5</span>
+                    <span id="usage-counter" class="text-[11px] font-mono text-slate-300 font-bold">Usos Restantes Hoje: 3/3</span>
                 </div>
             </div>
         </div>
@@ -70,7 +69,7 @@
         <!-- SELEÇÃO DE ESPORTE -->
         <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
-        <!-- SELEÇÃO DE LIGA (só aparece pra futebol) -->
+        <!-- SELEÇÃO DE LIGA (futebol) -->
         <div id="liga-container" class="hidden space-y-2">
             <label class="text-[11px] font-mono text-slate-400 uppercase tracking-wide">Liga da partida</label>
             <div id="liga-tabs" class="grid grid-cols-3 gap-2"></div>
@@ -143,11 +142,13 @@
                 <i class="fa-solid fa-envelope text-accent text-2xl"></i>
             </div>
             <div>
-                <h3 class="text-2xl font-display text-white tracking-wide">ANTES DE COMEÇAR</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Seu e-mail identifica sua conta — é o que controla suas análises gratuitas do dia e libera acesso ilimitado se você for membro Pro.</p>
+                <h3 class="text-2xl font-display text-white tracking-wide">IDENTIFIQUE SUA CONTA</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Digite seu e-mail para contabilizar suas análises gratuitas de hoje ou ativar seu acesso ilimitado como membro Pro.
+                </p>
             </div>
             <div class="space-y-3 pt-2">
-                <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
+                <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono" onkeypress="if(event.key==='Enter') confirmarEmailUsuario()">
                 <button onclick="confirmarEmailUsuario()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
                     Continuar
                 </button>
@@ -167,7 +168,7 @@
                 <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Assine o MoneyballPro Premium e tenha análises ilimitadas de Carlos.</p>
             </div>
             <div class="space-y-3 pt-2">
-                <button data-portal="signup/monthly" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
+                <button onclick="assinarPremium()" data-portal="signup/monthly" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
                     Assinar Premium
                 </button>
             </div>
@@ -199,9 +200,6 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarUsoDoDia();
     atualizarContadorUso();
 
-    // Gatekeeper: trava a tela logo de cara se ainda não tem e-mail salvo.
-    // Sem exceção de "modo dev" aqui -- acesso ilimitado é resolvido no
-    // backend via DEV_EMAILS, comparando o e-mail real digitado no modal.
     if (!obterEmailSalvo()) {
         abrirModalEmail();
     }
@@ -301,9 +299,22 @@ function atualizarAvisoLiga() {
     }
 }
 
+function limparPreviews() {
+    const grid = document.getElementById("img-preview-grid");
+    if (!grid) return;
+    Array.from(grid.querySelectorAll("img")).forEach(img => {
+        if (img.src && img.src.startsWith("blob:")) {
+            URL.revokeObjectURL(img.src);
+        }
+    });
+    grid.innerHTML = "";
+}
+
 function previewImagens(input) {
     const files = Array.from(input.files || []);
     if (!files || files.length === 0) return;
+
+    limparPreviews();
 
     let arquivos = files.slice(0, 5);
     imagensArquivosSelecionados = arquivos;
@@ -311,8 +322,6 @@ function previewImagens(input) {
     const grid = document.getElementById("img-preview-grid");
     const container = document.getElementById("img-preview-container");
     const counter = document.getElementById("img-counter");
-
-    grid.innerHTML = "";
 
     for (const file of arquivos) {
         const url = URL.createObjectURL(file);
@@ -338,7 +347,7 @@ function atualizarContadorUso(cotaInfo) {
         return;
     }
 
-    const restantes = LIMITE_DIARIO - usosHoje;
+    const restantes = Math.max(0, LIMITE_DIARIO - usosHoje);
     counter.innerText = `Usos Restantes Hoje: ${restantes}/${LIMITE_DIARIO}`;
 
     if (restantes <= 0) {
@@ -395,8 +404,6 @@ async function processarPrintComEngine(email) {
         formData.append("liga", ligaAtiva);
     }
 
-    // O e-mail agora é sempre obrigatório no backend -- inclusive no modo
-    // dev (o e-mail de dev precisa estar cadastrado em DEV_EMAILS na Vercel).
     formData.append("email", email);
 
     for (const file of imagensArquivosSelecionados) {
@@ -482,6 +489,14 @@ function fecharModal() {
     document.getElementById('limite-modal').classList.add('hidden');
 }
 
+function assinarPremium() {
+    if (window.GhostPortal) {
+        window.GhostPortal.open('signup/monthly');
+    } else {
+        window.location.href = "https://moneyballpro.com.br/#/portal/signup/monthly";
+    }
+}
+
 function recolherEntrada() {
     document.getElementById("input-box")?.classList.add("hidden");
     document.getElementById("new-analysis-bar")?.classList.remove("hidden");
@@ -497,9 +512,8 @@ function resetarEntrada() {
     document.getElementById("new-analysis-bar")?.classList.add("hidden");
     imagensArquivosSelecionados = [];
     ultimoResultadoGlobal = null;
+    limparPreviews();
     document.getElementById("img-preview-container")?.classList.add("hidden");
-    const grid = document.getElementById("img-preview-grid");
-    if (grid) grid.innerHTML = "";
     const printInput = document.getElementById("print-input");
     if (printInput) printInput.value = "";
     document.getElementById("display-area").innerHTML = "";
@@ -624,7 +638,6 @@ function renderizarBilhetesFormatados(dados) {
     const e2 = dados.dupla_de_elite?.entrada_2 || null;
     const combinada = dados.dupla_de_elite?.aposta_combinada || null;
     const match = dados.match_info || {};
-    const proj = dados.expected_projections || {};
     const asymmetries = dados.key_asymmetries || [];
 
     const htmlEntrada1 = renderEntradaCard(e1, "Entrada 1", "value");
@@ -674,38 +687,30 @@ function renderizarBilhetesFormatados(dados) {
                         <h3 class="font-display text-lg text-white tracking-wide flex items-center gap-2">
                             <i class="fa-solid fa-crosshairs text-accent text-sm"></i> Bilhetes de ELITE
                         </h3>
-                        <span class="text-[11px] font-mono text-slate-400">Stake Média: <b class="text-white">${dados.stake_medio_partida || '—'}</b></span>
+                        <span class="text-[11px] font-mono text-slate-400">Stake Média: <b class="text-white">${dados.stake_medio_partida || dados.stake_media || '1.0u'}</b></span>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        ${htmlEntrada1}
+                        ${htmlEntrada2}
+                    </div>
+
+                    ${combinada && combinada.mercado ? `
+                    <div class="bg-base-card border border-accent/40 rounded-xl p-4 space-y-2 bg-gradient-to-r from-accent/10 to-transparent">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded bg-accent text-base-bg">Aposta Combinada / Dupla de Elite</span>
+                            <span class="text-xs font-mono font-bold text-accent">Odd Total @${combinada.odd || '—'}</span>
+                        </div>
+                        <p class="text-xs text-slate-200 font-semibold">${combinada.mercado} — ${combinada.selecao}</p>
+                        <p class="text-[11px] text-slate-400">${combinada.motivo || ''}</p>
+                    </div>
+                    ` : ''}
+
                     ${nenhumaEntrada ? `
-                        <div class="bg-base-card/40 border border-dashed border-base-border rounded-xl p-5 text-center text-xs text-slate-400">
-                            Nenhum mercado nesta partida bateu o edge mínimo de Carlos.
-                            Sem entrada recomendada — melhor esperar a próxima oportunidade do que forçar uma aposta sem edge real.
-                        </div>
-                    ` : `
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            ${htmlEntrada1}
-                            ${htmlEntrada2}
-                        </div>
-                       ${combinada ? `
-                        <div class="${combinada.aprovada ? 'bg-accent/10 border-accent/30' : 'bg-slate-700/20 border-slate-600/30'} border rounded-xl p-4 space-y-2 mt-3">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-bold ${combinada.aprovada ? 'text-accent' : 'text-slate-400'} uppercase tracking-wide flex items-center gap-1.5">
-                                    <i class="fa-solid ${combinada.aprovada ? 'fa-layer-group' : 'fa-ban'}"></i> ${combinada.aprovada ? 'Aposta Combinada (Dupla)' : 'Combinação Não Recomendada'}
-                                </span>
-                                ${combinada.aprovada ? `<span class="text-sm font-mono font-bold text-white">Odd @${combinada.odd_combinada_estimada}</span>` : ''}
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                                <div><span class="text-slate-500">Edge Estimado:</span> <span class="${combinada.aprovada ? 'text-accent' : 'text-slate-500'} font-bold">${combinada.edge_combinado_estimado_pct}%</span></div>
-                                <div><span class="text-slate-500">Stake Recomendada:</span> <span class="${combinada.aprovada ? 'text-white' : 'text-slate-500'} font-bold">${combinada.stake_recomendada}</span></div>
-                            </div>
-                            <p class="text-[10px] ${combinada.aprovada ? 'text-amber-400/90 bg-amber-400/10 border-amber-400/20' : 'text-slate-400 bg-slate-700/20 border-slate-600/30'} border rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
-                                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
-                                <span>${combinada.aviso}</span>
-                            </p>
-                        </div>
-                        ` : ''}
-                    `}
+                    <div class="bg-base-card/40 border border-dashed border-base-border rounded-xl p-6 text-center text-xs text-slate-500">
+                        Nenhum mercado nesta partida atingiu o delta de edge mínimo exigido pelo algoritmo hoje.
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
