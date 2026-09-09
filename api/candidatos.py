@@ -297,9 +297,16 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
 
 
 def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a: Optional[float], lam_b: Optional[float],
-                                        persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+                                        persona: str = "carlos", fatores_incerteza: Optional[list] = None,
+                                        esporte: str = "futebol") -> list:
     if not mercados_handicap or lam_a is None or lam_b is None:
         return []
+
+    nome_mercado = {
+        "futebol": "Handicap Asiático",
+        "basquete": "Handicap (Spread)",
+        "beisebol": "Run Line",
+    }.get(esporte.lower(), "Handicap")
 
     candidatos = []
     for mercado in mercados_handicap:
@@ -314,7 +321,7 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
         else:
             p_cobre, p_push = calcular_probabilidade_handicap_asiatico(lam_a, lam_b, linha)
 
-        ctx_log = f"futebol/Handicap Asiatico - Time {time_ref} ({linha:+g})"
+        ctx_log = f"{esporte}/{nome_mercado} - Time {time_ref} ({linha:+g})"
         odd_decimal, metricas = _montar_metricas_candidato(
             prob_bruta=p_cobre, 
             odd=odd, 
@@ -327,7 +334,7 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
             continue
 
         candidatos.append({
-            "mercado": "Handicap Asiático",
+            "mercado": nome_mercado,
             "selecao": mercado.get("selecao_texto") or f"Time {time_ref} ({linha:+g})",
             "odd": odd_decimal,
             "probabilidade_real_calculada": p_cobre,
