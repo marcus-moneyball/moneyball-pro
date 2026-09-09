@@ -19,6 +19,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Portal de Membros do Ghost -- permite embutir o botão de assinatura
+         aqui mesmo, fora do domínio do Ghost. Abre o checkout do Stripe do
+         Tier pago configurado em Settings > Membership no Ghost Admin. -->
+    <script defer src="https://moneyballpro.com.br/portal.min.js" data-ghost="https://moneyballpro.com.br/" crossorigin="anonymous"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -49,7 +53,7 @@
         <!-- HEADER & LIMITE DIÁRIO -->
         <div class="text-center space-y-2 pt-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
-                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v3.0 • Análise Esportiva de Elite e Matchup
+                <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.6 • Análise de Dados e Matchup
             </div>
             <img src="brand/logo-mark.png" alt="MoneyballPro" class="w-16 h-16 md:w-20 md:h-20 mx-auto mt-1" width="80" height="80">
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
@@ -139,8 +143,8 @@
                 <i class="fa-solid fa-envelope text-accent text-2xl"></i>
             </div>
             <div>
-                <h3 class="text-2xl font-display text-white tracking-wide">IDENTIFIQUE SUA CONTA</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed"> Digite seu e-mail para contabilizar suas análises gratuitas de hoje ou ativar seu acesso ilimitado como membro Pro.</p>
+                <h3 class="text-2xl font-display text-white tracking-wide">ANTES DE COMEÇAR</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Seu e-mail identifica sua conta — é o que controla suas análises gratuitas do dia e libera acesso ilimitado se você for membro Pro.</p>
             </div>
             <div class="space-y-3 pt-2">
                 <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
@@ -151,21 +155,20 @@
         </div>
     </div>
 
-    <!-- MODAL DE WAITLIST (LIMITE DIÁRIO ATINGIDO) -->
-    <div id="waitlist-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
+    <!-- MODAL DE LIMITE DIÁRIO ATINGIDO -->
+    <div id="limite-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
         <div class="bg-base-panel border border-accent/30 rounded-2xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-value to-accent"></div>
             <div class="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center mx-auto mb-2 border border-accent/20">
-                <i class="fa-solid fa-lock text-accent text-2xl"></i>
+                <i class="fa-solid fa-crown text-accent text-2xl"></i>
             </div>
             <div>
                 <h3 class="text-2xl font-display text-white tracking-wide">LIMITE DIÁRIO ATINGIDO</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Entre para a nossa Lista VIP e garanta acesso antecipado ao plano ilimitado.</p>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Assine o MoneyballPro Premium e tenha análises ilimitadas de Carlos.</p>
             </div>
             <div class="space-y-3 pt-2">
-                <input type="email" id="waitlist-email" placeholder="Digite seu melhor e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
-                <button onclick="entrarWaitlist()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
-                    Garantir Minha Vaga
+                <button data-portal="signup" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
+                    Assinar Premium
                 </button>
             </div>
             <button onclick="fecharModal()" class="text-xs font-semibold text-slate-500 hover:text-white transition-colors mt-2 cursor-pointer">
@@ -472,29 +475,11 @@ async function executarAnalise() {
 }
 
 function abrirModal() {
-    document.getElementById('waitlist-modal').classList.remove('hidden');
+    document.getElementById('limite-modal').classList.remove('hidden');
 }
 
 function fecharModal() {
-    document.getElementById('waitlist-modal').classList.add('hidden');
-}
-
-async function entrarWaitlist() {
-    const email = document.getElementById('waitlist-email').value;
-    if(!email.includes('@')) {
-        alert("Por favor, insira um e-mail válido.");
-        return;
-    }
-    try {
-        const formData = new FormData();
-        formData.append("email", email);
-        await fetch("/api/v1/waitlist", { method: "POST", body: formData });
-    } catch (e) {
-        console.error("Falha ao registrar na waitlist:", e);
-    }
-    alert("Inscrição confirmada! Avisaremos assim que novas vagas forem liberadas.");
-    fecharModal();
-    document.getElementById('waitlist-email').value = '';
+    document.getElementById('limite-modal').classList.add('hidden');
 }
 
 function recolherEntrada() {
