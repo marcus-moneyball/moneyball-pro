@@ -661,7 +661,10 @@ def calcular_convergencia(roteiro: Optional[dict], matchup: Optional[dict]) -> d
 # ============================================================
 
 PESOS_MSC = {
-    "carlos": {"ev": 0.60, "delta": 0.25, "robustez_ou_prob": 0.15},
+    # Rebalanceado: EV puro caiu de 0.60 -> 0.45 porque ele mistura preço
+    # (odd generosa) com probabilidade -- uma odd gorda sozinha não deveria
+    # carregar quase metade do score. "prob" é o componente novo (ver abaixo).
+    "carlos": {"ev": 0.45, "prob": 0.30, "delta": 0.10, "robustez": 0.15},
 }
 
 EV_TETO_NORMALIZACAO = 0.30    
@@ -671,7 +674,17 @@ DELTA_TETO_NORMALIZACAO = 15.0
 def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
                   prob_real_ajustada: Optional[float], robustez: float,
                   persona: str = "carlos") -> Optional[int]:
-    """MSC base, 0-100 -- só a força matemática do candidato isolado.[cite: 1]"""
+    """MSC base, 0-100 -- força matemática do candidato isolado.
+
+    Correção: antes, `prob_real_ajustada` era recebido mas nunca usado --
+    o terceiro componente era sempre `robustez` (confiança nos DADOS), nunca
+    a probabilidade real do evento (confiança no RESULTADO). Isso deixava uma
+    aposta de odd generosa com probabilidade real perto de 50% (praticamente
+    cara-ou-coroa) com o mesmo MSC de uma aposta de alta convicção genuína --
+    e exatamente esse tipo de aposta é que perde "na trave" por margem mínima.
+    Agora `prob_confianca` mede a distância da probabilidade real em relação
+    a 50%, como componente independente do preço da odd.[cite: 1]
+    """
     if ev is None or delta_pct is None or prob_real_ajustada is None:
         return None
 
@@ -679,12 +692,13 @@ def calcular_msc(ev: Optional[float], delta_pct: Optional[float],
 
     ev_norm = max(0.0, min(1.0, ev / EV_TETO_NORMALIZACAO))
     delta_norm = max(0.0, min(1.0, abs(delta_pct) / DELTA_TETO_NORMALIZACAO))
-    componente_terciario = robustez
+    prob_confianca = max(0.0, min(1.0, abs(prob_real_ajustada - 0.5) * 2))
 
     score = (
         pesos["ev"] * ev_norm +
+        pesos["prob"] * prob_confianca +
         pesos["delta"] * delta_norm +
-        pesos["robustez_ou_prob"] * componente_terciario
+        pesos["robustez"] * robustez
     )
     return round(max(0, min(100, score * 100)))
 
