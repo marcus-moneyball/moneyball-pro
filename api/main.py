@@ -26,7 +26,7 @@ try:
     )
     from api.prompts_mie2 import montar_system_prompt_mie2
     from api.validacao import validar_e_sanear_entrada
-    from api.utils import _parse_float_seguro, converter_odd_para_decimal
+    from api.utils import _parse_float_seguro
     from api.db import get_connection, fechar_conexao
     from api.projecao import obter_projecoes_partida
     from api.football_data_org import obter_forma_recente_estruturada
@@ -52,7 +52,7 @@ except ImportError:
     )
     from prompts_mie2 import montar_system_prompt_mie2
     from validacao import validar_e_sanear_entrada
-    from utils import _parse_float_seguro, converter_odd_para_decimal
+    from utils import _parse_float_seguro
     from db import get_connection, fechar_conexao
     from projecao import obter_projecoes_partida
     from football_data_org import obter_forma_recente_estruturada
@@ -79,10 +79,6 @@ app.add_middleware(
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# E-mails com acesso ilimitado, sem passar pela cota (ex: seu próprio uso).
-# Configurar na Vercel: DEV_EMAILS=seu-email@gmail.com,outro@x.com
-DEV_EMAILS = {e.strip().lower() for e in os.getenv("DEV_EMAILS", "").split(",") if e.strip()}
 
 
 def get_groq_client():
@@ -274,22 +270,17 @@ async def calcular_mercados(payload: dict, request: Request):
 async def analyze_tickets(
     sport: str = Form(...),
     analyst: str = Form("carlos"),
-    email: str = Form(...),  # agora obrigatório -- gatekeeper
+    email: Optional[str] = Form(None),
     liga: Optional[str] = Form(None),
     files: List[UploadFile] = File(...)
 ):
     if not files:
         raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
 
-    if not email_valido(email):
-        raise HTTPException(status_code=400, detail="E-mail inválido.")
-
-    email_normalizado = email.strip().lower()
-
-    if email_normalizado in DEV_EMAILS:
-        # Acesso de dev: nunca passa pela cota, não mexe no banco.
-        cota_info = {"permitido": True, "plano": "dev", "consultas_hoje": 0, "limite": None}
-    else:
+    cota_info = None
+    if email:
+        if not email_valido(email):
+            raise HTTPException(status_code=400, detail="E-mail inválido.")
         db_conn_cota = get_connection()
         try:
             cota_info = checar_e_consumir_cota(db_conn_cota, email)
@@ -307,15 +298,6 @@ async def analyze_tickets(
                     "limite": cota_info["limite"],
                 },
             )
-
-        # Primeira vez que esse e-mail passa pelo gatekeeper -- cria como
-        # membro free no Ghost também (best-effort, não trava a análise
-        # se o Ghost falhar).
-        if cota_info.get("novo_usuario"):
-            try:
-                criar_membro_free_ghost(email)
-            except Exception as e:
-                print(f"[GATEKEEPER] Falha ao criar membro free no Ghost para '{email}': {e}")
 
     analista_key = analyst.lower() if analyst.lower() in PERFIS_ANALISTA else "carlos"
     perfil = PERFIS_ANALISTA[analista_key]
@@ -476,6 +458,13 @@ async def analyze_tickets(
                                 conn=conn_odds, data_jogo=data_jogo_hoje,
                             )
                         )
+                        candidatos_calculados.extend(
+                            montar_candidatos_handicap_asiatico(
+                                dados_estruturados.get("mercados_handicap"), lam_a, lam_b,
+                                persona=analista_key, fatores_incerteza=fatores_incerteza,
+                                esporte=sport,
+                            )
+                        )
                 finally:
                     fechar_conexao(conn_odds)
 
@@ -511,14 +500,11 @@ async def analyze_tickets(
 
     props_extraidos = dados_estruturados.get("mercados_player_props")
     if props_extraidos:
-        for prop in props_extraidos:
-            odd_convertida = converter_odd_para_decimal(prop.get("odd"))
-            if odd_convertida is not None:
-                prop["odd"] = str(odd_convertida)
         user_prompt_content += (
             f"\n\n[PROPS DE JOGADOR EXTRAÍDOS DO PRINT (MIE1) -- CANDIDATOS REAIS, NÃO INVENTE OUTROS]\n"
             + json.dumps(props_extraidos, indent=2, ensure_ascii=False)
         )
+
     ocr_res = gemini_client.models.generate_content(
         model="gemini-3.5-flash-lite",
         contents=contents + ["Transcreva de forma limpa e estruturada todo o texto e números visíveis nestes prints."],
