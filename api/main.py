@@ -576,6 +576,18 @@ async def analyze_tickets(
         resultado_final["dupla_de_elite"]["entrada_1"] = validar_e_sanear_entrada(e1, perfil, candidatos_calculados)
         resultado_final["dupla_de_elite"]["entrada_2"] = validar_e_sanear_entrada(e2, perfil, candidatos_calculados)
 
+        # --- Rede de segurança: entrada_1 é pra ser a mais permissiva (regra
+        # 4.1 do prompt tem fallback obrigatório) e entrada_2 a mais seletiva
+        # (regra 4.2, pode ficar null). Na prática o Carlos às vezes inverte
+        # -- devolve entrada_1 null e entrada_2 preenchida, mesmo com a regra
+        # explícita no prompt. Prompt sozinho não garante -- reforça aqui:
+        # se entrada_2 passou na validação e entrada_1 não, entrada_2 já
+        # bateu um critério mais rígido, então serve como entrada_1 também.
+        if (resultado_final["dupla_de_elite"]["entrada_1"] is None
+                and resultado_final["dupla_de_elite"]["entrada_2"] is not None):
+            resultado_final["dupla_de_elite"]["entrada_1"] = resultado_final["dupla_de_elite"]["entrada_2"]
+            resultado_final["dupla_de_elite"]["entrada_2"] = None
+
         nivel_convergencia = convergencia_calculada.get("nivel") if convergencia_calculada else None
         for chave_entrada in ("entrada_1", "entrada_2"):
             entrada_atual = resultado_final["dupla_de_elite"].get(chave_entrada)
