@@ -573,8 +573,8 @@ async def analyze_tickets(
         e1 = resultado_final["dupla_de_elite"].get("entrada_1")
         e2 = resultado_final["dupla_de_elite"].get("entrada_2")
 
-        resultado_final["dupla_de_elite"]["entrada_1"] = validar_e_sanear_entrada(e1, perfil)
-        resultado_final["dupla_de_elite"]["entrada_2"] = validar_e_sanear_entrada(e2, perfil)
+        resultado_final["dupla_de_elite"]["entrada_1"] = validar_e_sanear_entrada(e1, perfil, candidatos_calculados)
+        resultado_final["dupla_de_elite"]["entrada_2"] = validar_e_sanear_entrada(e2, perfil, candidatos_calculados)
 
         nivel_convergencia = convergencia_calculada.get("nivel") if convergencia_calculada else None
         for chave_entrada in ("entrada_1", "entrada_2"):
