@@ -30,27 +30,38 @@ def validar_e_sanear_entrada(entrada: Optional[dict], perfil: dict,
     # candidatos_calculados (já filtrados por MSC >= 80 antes de irem pro
     # LLM), cruzamos por mercado+seleção e SUBSTITUÍMOS os valores
     # auto-reportados pelos valores reais -- o LLM não pode "arredondar pra
-    # cima" a própria margem. Se citou mercado/seleção que não está na lista
-    # de candidatos verificados, é tratado como possível alucinação e
-    # descartado (exceto a entrada de fallback "abaixo_do_edge_minimo", que
-    # é intencionalmente a melhor opção disponível mesmo sem bater o piso).
+    # cima" a própria margem.
+    #
+    # IMPORTANTE: hoje o Python só calcula candidatos pra Total de Jogo, BTTS,
+    # Moneyline, Chance Dupla e Handicap Asiático -- props de jogador (Ks,
+    # hits, earned runs individuais) não têm builder nenhum e por isso NUNCA
+    # aparecem em candidatos_verificados. Se a gente exigisse correspondência
+    # pra qualquer mercado, toda prop seria descartada por engano. Por isso a
+    # exigência de "achou ou descarta" só vale pros nomes de mercado que o
+    # Python de fato sabe calcular (presentes em pelo menos um candidato da
+    # lista, pra este jogo); mercados fora desse conjunto (ex: props) caem
+    # no filtro de delta_min normal, sem a substituição/checagem cruzada.
     if candidatos_verificados and not entrada.get("abaixo_do_edge_minimo"):
-        candidato_real = next(
-            (c for c in candidatos_verificados
-             if c.get("mercado") == entrada.get("mercado")
-             and c.get("selecao") == entrada.get("selecao")),
-            None,
-        )
-        if candidato_real is None:
-            return None
+        mercados_cobertos_pelo_python = {c.get("mercado") for c in candidatos_verificados}
+        if entrada.get("mercado") in mercados_cobertos_pelo_python:
+            candidato_real = next(
+                (c for c in candidatos_verificados
+                 if c.get("mercado") == entrada.get("mercado")
+                 and c.get("selecao") == entrada.get("selecao")),
+                None,
+            )
+            if candidato_real is None:
+                # O mercado é calculado pelo Python, mas essa seleção
+                # específica não está na lista -- aí sim é alucinação.
+                return None
 
-        delta_real = candidato_real.get("delta_edge_pct_calculado")
-        if delta_real is not None:
-            entrada["delta_edge"] = delta_real
-            delta = delta_real
+            delta_real = candidato_real.get("delta_edge_pct_calculado")
+            if delta_real is not None:
+                entrada["delta_edge"] = delta_real
+                delta = delta_real
 
-        if candidato_real.get("msc_calculado") is not None:
-            entrada["msc_score"] = candidato_real["msc_calculado"]
+            if candidato_real.get("msc_calculado") is not None:
+                entrada["msc_score"] = candidato_real["msc_calculado"]
 
     # Regra "sempre 1 bilhete": quando a entrada já veio marcada como a melhor
     # opção disponível abaixo do edge mínimo (ver prompts_mie2.py seção 4,
