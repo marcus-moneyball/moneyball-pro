@@ -37,7 +37,7 @@ Sem esse bloco, classifique você mesmo: TIPO A = produção distribuída / TIPO
 
 [2.3.1 FORMA RECENTE -- FONTE DE VERDADE] Se "[FORMA RECENTE ESTRUTURADA (football-data.org)]" existir, os números (gols marcados/sofridos, jogos sem sofrer) são fato verificado -- proibido inventar/"lembrar" sequência diferente da do bloco. Sem o bloco, trate forma recente com mais cautela (vem de busca livre).
 
-[2.4 COERÊNCIA ASSIMETRIA <-> BILHETE] "key_asymmetries" e "dupla_de_elite" contam a mesma história. Um "betting_angle" só usa tom de recomendação ("boa margem", "edge claro", "aposta segura") se aquele mercado/seleção for entrada_1 ou entrada_2 real, com "abaixo_do_edge_minimo": false. Se não virou entrada (Δ insuficiente, fora da janela, correlação negativa, ou contradiz o roteiro sem Δ muito superior), descreva como contexto tático e deixe claro que não bateu o piso de segurança. Se "entrada_1": null, nenhum betting_angle pode soar como recomendação.
+[2.4 COERÊNCIA ASSIMETRIA <-> BILHETE -- OBRIGATÓRIA] A entrada_1 (e a entrada_2, se houver) TEM que ser o mesmo mercado/seleção que aparece como a assimetria de maior Δ em "key_asymmetries" -- proibido escrever uma análise sobre um mercado (ex: Wheeler dominando, Under 8.5 Runs mal precificado) e depois escolher a entrada em outro mercado que a análise nem menciona (ex: um prop de hits de um rebatedor qualquer). Se o mercado de maior Δ não serve como entrada por algum motivo (odd fora da janela, correlação negativa com a outra entrada), a entrada seguinte tem que vir da segunda maior assimetria identificada -- nunca de um mercado que não foi analisado. "key_asymmetries" e "dupla_de_elite" contam a mesma história, sempre. Um "betting_angle" só usa tom de recomendação ("boa margem", "edge claro", "aposta segura") se aquele mercado/seleção for entrada_1 ou entrada_2 real, com "abaixo_do_edge_minimo": false. Se não virou entrada (Δ insuficiente, fora da janela, correlação negativa, ou contradiz o roteiro sem Δ muito superior), descreva como contexto tático e deixe claro que não bateu o piso de segurança.
 
 NOTA: com 2 entradas, o app recalcula como bet builder em Python depois -- continue preenchendo "stake_recomendada" de cada entrada normalmente (referência individual).
 
@@ -53,9 +53,14 @@ Para props individuais (sem cálculo prévio: chutes, gols de jogador, pontos/re
 ------------------------------------------------
 [4. DUPLA DE ELITE]
 
-4.1 ENTRADA 1 sempre preenchida (Δ_min = {delta_min}%): só null se nenhum candidato tiver odd válida extraída do print. Se nenhum bater {delta_min}%, escolha o de maior Δ real, marque "abaixo_do_edge_minimo": true, force "stake_recomendada": "0.5u" e "confiabilidade": "BAIXA" (ignora Kelly e teto de convergência); no motivo, seja honesto que foi a melhor opção disponível, não uma oportunidade clara.
+4.1 ENTRADA 1 É OBRIGATÓRIA -- SEMPRE PREENCHIDA (só null se literalmente nenhuma odd válida foi extraída do print pra esse jogo; identificar zero assimetria não é motivo pra null, é motivo pra "confiabilidade": "BAIXA"). Algoritmo, nessa ordem:
+  a) Liste as assimetrias reais que você identificou (mesmo pequenas) e pegue a de maior Δ.
+  b) Δ >= {delta_min}% E MSC realmente alto -> entrada normal, "abaixo_do_edge_minimo": false, "confiabilidade": "ALTA" ou "ELITE" conforme o MSC.
+  c) Δ >= {delta_min}% mas MSC morno, OU Δ entre {delta_min}% e o dobro dele -> entrada normal mesmo assim, "confiabilidade": "MODERADA", "stake_recomendada" entre "0.4u" e "0.6u". Isso NÃO é o fallback do item (d) -- é uma entrada de convicção média, rotulada como tal.
+  d) Nenhum candidato bateu {delta_min}% -> ainda assim preencha com o de maior Δ real (mesmo que pequeno, tipo 0.5-1%), marque "abaixo_do_edge_minimo": true, "confiabilidade": "BAIXA", "stake_recomendada": "0.3u" a "0.5u"; no motivo, seja honesto que foi a melhor opção disponível, não uma oportunidade clara.
+  e) Só use null se, de verdade, nenhum mercado do jogo teve odd extraída do print -- "não achei nada com convicção" NUNCA é motivo válido pra null.
 
-4.2 ENTRADA 2 rígida: só entra com Δ >= {delta_min}% de verdade. null > entrada forçada.
+4.2 ENTRADA 2: segue a mesma escada do 4.1 (ALTA/MODERADA/BAIXA), mas sem o fallback do item (d) -- só entra se Δ >= {delta_min}% de verdade (níveis "b" ou "c"). Se não bater, "entrada_2": null é o correto aqui (entrada 2 é sempre a mais seletiva das duas).
 
 4.3 Seleção: maior EV/Delta segundo o viés de {persona_curto}, respeitando 4.1/4.5. Proibido repetir o mesmo mercado base nas duas entradas. "categoria" = COLETIVO/INDIVIDUAL conforme o mercado real (pode diferir entre as duas). "dependencia_hipotese" = DEPENDENTE (só se confirma com o roteiro) ou INDEPENDENTE.
 
