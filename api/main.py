@@ -589,15 +589,37 @@ async def analyze_tickets(
             resultado_final["dupla_de_elite"]["entrada_2"] = None
 
         nivel_convergencia = convergencia_calculada.get("nivel") if convergencia_calculada else None
+
+        # --- Faixas de stake por nível de confiança -- stake_recomendada não
+        # era validado em lugar nenhum do código (só delta_edge e msc_score
+        # eram cruzados com o Python). Isso deixava o Carlos livre pra
+        # escrever "Convicção Elite" com stake de 0.5u, sem nenhuma
+        # consistência forçada entre os dois números.
+        FAIXA_STAKE_POR_ROTULO = {
+            "Convicção Elite": (0.8, 1.0),
+            "Convicção Alta": (0.6, 0.9),
+            "Convicção Moderada": (0.4, 0.6),
+            "Convicção Baixa": (0.3, 0.5),
+        }
+
         for chave_entrada in ("entrada_1", "entrada_2"):
             entrada_atual = resultado_final["dupla_de_elite"].get(chave_entrada)
             if entrada_atual and entrada_atual.get("msc_score") is not None:
                 msc_base = _parse_float_seguro(entrada_atual.get("msc_score"))
                 msc_ajustado = ajustar_msc_por_convergencia(msc_base, nivel_convergencia) if msc_base is not None else None
+                rotulo = rotulo_confianca(msc_ajustado) if msc_ajustado is not None else None
                 entrada_atual["confianca_exibicao"] = {
                     "score": msc_ajustado,
-                    "rotulo": rotulo_confianca(msc_ajustado),
+                    "rotulo": rotulo,
                 } if msc_ajustado is not None else None
+
+                faixa = FAIXA_STAKE_POR_ROTULO.get(rotulo)
+                if faixa:
+                    piso, teto = faixa
+                    stake_bruta = str(entrada_atual.get("stake_recomendada", "")).strip().lower().replace("u", "")
+                    stake_atual = _parse_float_seguro(stake_bruta)
+                    stake_corrigida = teto if stake_atual is None else max(piso, min(teto, stake_atual))
+                    entrada_atual["stake_recomendada"] = f"{round(stake_corrigida, 2)}u"
 
         e1_valida = resultado_final["dupla_de_elite"]["entrada_1"]
         e2_valida = resultado_final["dupla_de_elite"]["entrada_2"]
