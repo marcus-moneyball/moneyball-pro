@@ -19,9 +19,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Portal de Membros do Ghost -->
-    <script defer src="https://moneyballpro.com.br/portal.min.js" data-ghost="https://moneyballpro.com.br/" crossorigin="anonymous"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -61,7 +58,7 @@
             <div class="pt-2">
                 <div class="inline-flex items-center justify-center gap-2 bg-base-panel border border-base-border rounded-lg px-4 py-1.5 shadow-sm">
                     <i class="fa-solid fa-bolt text-accent text-[10px]"></i>
-                    <span id="usage-counter" class="text-[11px] font-mono text-slate-300 font-bold">Usos Restantes Hoje: 3/3</span>
+                    <span id="usage-counter" class="text-[11px] font-mono text-slate-300 font-bold">Usos Restantes Hoje: 5/5</span>
                 </div>
             </div>
         </div>
@@ -69,7 +66,7 @@
         <!-- SELEÇÃO DE ESPORTE -->
         <div id="sport-tabs" class="grid grid-cols-3 gap-2"></div>
 
-        <!-- SELEÇÃO DE LIGA (futebol) -->
+        <!-- SELEÇÃO DE LIGA (só aparece pra futebol) -->
         <div id="liga-container" class="hidden space-y-2">
             <label class="text-[11px] font-mono text-slate-400 uppercase tracking-wide">Liga da partida</label>
             <div id="liga-tabs" class="grid grid-cols-3 gap-2"></div>
@@ -142,13 +139,11 @@
                 <i class="fa-solid fa-envelope text-accent text-2xl"></i>
             </div>
             <div>
-                <h3 class="text-2xl font-display text-white tracking-wide">IDENTIFIQUE SUA CONTA</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-                    Digite seu e-mail para contabilizar suas análises gratuitas de hoje ou ativar seu acesso ilimitado como membro Pro.
-                </p>
+                <h3 class="text-2xl font-display text-white tracking-wide">ANTES DE COMEÇAR</h3>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Seu e-mail identifica sua conta — é o que controla suas análises gratuitas do dia e libera acesso ilimitado se você for membro Pro.</p>
             </div>
             <div class="space-y-3 pt-2">
-                <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono" onkeypress="if(event.key==='Enter') confirmarEmailUsuario()">
+                <input type="email" id="email-capture-input" placeholder="Digite seu e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
                 <button onclick="confirmarEmailUsuario()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
                     Continuar
                 </button>
@@ -156,20 +151,21 @@
         </div>
     </div>
 
-    <!-- MODAL DE LIMITE DIÁRIO ATINGIDO -->
-    <div id="limite-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
+    <!-- MODAL DE WAITLIST (LIMITE DIÁRIO ATINGIDO) -->
+    <div id="waitlist-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-base-bg/90 backdrop-blur-md p-4 transition-all">
         <div class="bg-base-panel border border-accent/30 rounded-2xl p-8 max-w-md w-full text-center space-y-5 shadow-2xl relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent via-value to-accent"></div>
             <div class="w-14 h-14 bg-accent-soft rounded-full flex items-center justify-center mx-auto mb-2 border border-accent/20">
-                <i class="fa-solid fa-crown text-accent text-2xl"></i>
+                <i class="fa-solid fa-lock text-accent text-2xl"></i>
             </div>
             <div>
                 <h3 class="text-2xl font-display text-white tracking-wide">LIMITE DIÁRIO ATINGIDO</h3>
-                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Assine o MoneyballPro Premium e tenha análises ilimitadas de Carlos.</p>
+                <p class="text-xs text-slate-400 mt-2 leading-relaxed">Você consumiu suas 3 análises gratuitas de hoje. Entre para a nossa Lista VIP e garanta acesso antecipado ao plano ilimitado.</p>
             </div>
             <div class="space-y-3 pt-2">
-                <button onclick="assinarPremium()" data-portal="signup/monthly" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
-                    Assinar Premium
+                <input type="email" id="waitlist-email" placeholder="Digite seu melhor e-mail" class="w-full bg-base-bg border border-base-border rounded-xl p-3.5 text-sm text-white focus:outline-none focus:border-accent transition-all placeholder:text-slate-600 text-center font-mono">
+                <button onclick="entrarWaitlist()" class="w-full py-3.5 bg-accent hover:bg-accent-dim font-bold text-base-bg rounded-xl transition-all uppercase text-sm tracking-wider shadow-lg shadow-accent/20 cursor-pointer">
+                    Garantir Minha Vaga
                 </button>
             </div>
             <button onclick="fecharModal()" class="text-xs font-semibold text-slate-500 hover:text-white transition-colors mt-2 cursor-pointer">
@@ -181,12 +177,19 @@
 <script>
 let imagensArquivosSelecionados = [];
 let ultimoResultadoGlobal = null;
-let planoAtualConhecido = null;
 
 let sportAtivo = "futebol";
 let usosHoje = 0;
 const LIMITE_DIARIO = 3;
 const CHAVE_USO_DIARIO = "mb_uso_diario";
+
+const DEV_KEY = "marcus-mb-2026-brasilia";
+const urlParams = new URLSearchParams(window.location.search);
+
+if (urlParams.get("dev") === DEV_KEY) {
+    localStorage.setItem("mb_dev_mode", "1");
+}
+const isDevMode = localStorage.getItem("mb_dev_mode") === "1";
 
 const MODULES = {
     futebol: { label: "Futebol", icon: "fa-futbol" },
@@ -199,10 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
     atualizarVisibilidadeLiga();
     carregarUsoDoDia();
     atualizarContadorUso();
-
-    if (!obterEmailSalvo()) {
-        abrirModalEmail();
-    }
 });
 
 function obterDataLocalYYYYMMDD() {
@@ -231,6 +230,7 @@ function carregarUsoDoDia() {
 }
 
 function registrarUsoDoDia() {
+    if (isDevMode) return;
     const hoje = obterDataLocalYYYYMMDD();
     usosHoje += 1;
     localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify({ data: hoje, contagem: usosHoje }));
@@ -299,22 +299,9 @@ function atualizarAvisoLiga() {
     }
 }
 
-function limparPreviews() {
-    const grid = document.getElementById("img-preview-grid");
-    if (!grid) return;
-    Array.from(grid.querySelectorAll("img")).forEach(img => {
-        if (img.src && img.src.startsWith("blob:")) {
-            URL.revokeObjectURL(img.src);
-        }
-    });
-    grid.innerHTML = "";
-}
-
 function previewImagens(input) {
     const files = Array.from(input.files || []);
     if (!files || files.length === 0) return;
-
-    limparPreviews();
 
     let arquivos = files.slice(0, 5);
     imagensArquivosSelecionados = arquivos;
@@ -322,6 +309,8 @@ function previewImagens(input) {
     const grid = document.getElementById("img-preview-grid");
     const container = document.getElementById("img-preview-container");
     const counter = document.getElementById("img-counter");
+
+    grid.innerHTML = "";
 
     for (const file of arquivos) {
         const url = URL.createObjectURL(file);
@@ -335,11 +324,11 @@ function previewImagens(input) {
     container.classList.remove("hidden");
 }
 
-function atualizarContadorUso(cotaInfo) {
+function atualizarContadorUso() {
     const counter = document.getElementById('usage-counter');
 
-    if (cotaInfo && (cotaInfo.plano === 'pro' || cotaInfo.plano === 'dev')) {
-        counter.innerText = cotaInfo.plano === 'dev' ? "Acesso Dev — Uso Ilimitado" : "Plano Pro — Uso Ilimitado";
+    if (isDevMode) {
+        counter.innerText = "Modo Dev — Uso Ilimitado";
         counter.classList.remove('text-risk');
         counter.classList.add('text-slate-300');
         counter.parentElement.classList.remove('border-risk/40');
@@ -347,7 +336,7 @@ function atualizarContadorUso(cotaInfo) {
         return;
     }
 
-    const restantes = Math.max(0, LIMITE_DIARIO - usosHoje);
+    const restantes = LIMITE_DIARIO - usosHoje;
     counter.innerText = `Usos Restantes Hoje: ${restantes}/${LIMITE_DIARIO}`;
 
     if (restantes <= 0) {
@@ -404,7 +393,9 @@ async function processarPrintComEngine(email) {
         formData.append("liga", ligaAtiva);
     }
 
-    formData.append("email", email);
+    if (!isDevMode && email) {
+        formData.append("email", email);
+    }
 
     for (const file of imagensArquivosSelecionados) {
         formData.append("files", file);
@@ -440,11 +431,14 @@ async function executarAnalise() {
     const btn = document.getElementById("analisar-btn");
     const display = document.getElementById("display-area");
 
-    let email;
-    try {
-        email = await obterEmailUsuario();
-    } catch (e) {
-        return;
+    let email = "dev@moneyballpro.com.br"; // E-mail padrão para o modo dev
+    
+    if (!isDevMode) {
+        try {
+            email = await obterEmailUsuario();
+        } catch (e) {
+            return; 
+        }
     }
 
     btn.disabled = true;
@@ -462,8 +456,7 @@ async function executarAnalise() {
         ultimoResultadoGlobal = dados;
 
         registrarUsoDoDia();
-        planoAtualConhecido = dados.cota_info ? dados.cota_info.plano : null;
-        atualizarContadorUso(dados.cota_info);
+        atualizarContadorUso();
 
         recolherEntrada();
         renderizarBilhetesFormatados(dados);
@@ -480,21 +473,31 @@ async function executarAnalise() {
         btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Análise de Carlos`;
     }
 }
-
+    
 function abrirModal() {
-    document.getElementById('limite-modal').classList.remove('hidden');
+    document.getElementById('waitlist-modal').classList.remove('hidden');
 }
 
 function fecharModal() {
-    document.getElementById('limite-modal').classList.add('hidden');
+    document.getElementById('waitlist-modal').classList.add('hidden');
 }
 
-function assinarPremium() {
-    if (window.GhostPortal) {
-        window.GhostPortal.open('signup/monthly');
-    } else {
-        window.location.href = "https://moneyballpro.com.br/#/portal/signup/monthly";
+async function entrarWaitlist() {
+    const email = document.getElementById('waitlist-email').value;
+    if(!email.includes('@')) {
+        alert("Por favor, insira um e-mail válido.");
+        return;
     }
+    try {
+        const formData = new FormData();
+        formData.append("email", email);
+        await fetch("/api/v1/waitlist", { method: "POST", body: formData });
+    } catch (e) {
+        console.error("Falha ao registrar na waitlist:", e);
+    }
+    alert("Inscrição confirmada! Avisaremos assim que novas vagas forem liberadas.");
+    fecharModal();
+    document.getElementById('waitlist-email').value = '';
 }
 
 function recolherEntrada() {
@@ -503,8 +506,7 @@ function recolherEntrada() {
 }
 
 function resetarEntrada() {
-    const temAcessoIlimitado = planoAtualConhecido === 'pro' || planoAtualConhecido === 'dev';
-    if (!temAcessoIlimitado && usosHoje >= LIMITE_DIARIO) {
+    if (!isDevMode && usosHoje >= LIMITE_DIARIO) {
         abrirModal();
         return;
     }
@@ -512,8 +514,9 @@ function resetarEntrada() {
     document.getElementById("new-analysis-bar")?.classList.add("hidden");
     imagensArquivosSelecionados = [];
     ultimoResultadoGlobal = null;
-    limparPreviews();
     document.getElementById("img-preview-container")?.classList.add("hidden");
+    const grid = document.getElementById("img-preview-grid");
+    if (grid) grid.innerHTML = "";
     const printInput = document.getElementById("print-input");
     if (printInput) printInput.value = "";
     document.getElementById("display-area").innerHTML = "";
@@ -638,6 +641,7 @@ function renderizarBilhetesFormatados(dados) {
     const e2 = dados.dupla_de_elite?.entrada_2 || null;
     const combinada = dados.dupla_de_elite?.aposta_combinada || null;
     const match = dados.match_info || {};
+    const proj = dados.expected_projections || {};
     const asymmetries = dados.key_asymmetries || [];
 
     const htmlEntrada1 = renderEntradaCard(e1, "Entrada 1", "value");
@@ -687,30 +691,38 @@ function renderizarBilhetesFormatados(dados) {
                         <h3 class="font-display text-lg text-white tracking-wide flex items-center gap-2">
                             <i class="fa-solid fa-crosshairs text-accent text-sm"></i> Bilhetes de ELITE
                         </h3>
-                        <span class="text-[11px] font-mono text-slate-400">Stake Média: <b class="text-white">${dados.stake_medio_partida || dados.stake_media || '1.0u'}</b></span>
+                        <span class="text-[11px] font-mono text-slate-400">Stake Média: <b class="text-white">${dados.stake_medio_partida || '—'}</b></span>
                     </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        ${htmlEntrada1}
-                        ${htmlEntrada2}
-                    </div>
-
-                    ${combinada && combinada.mercado ? `
-                    <div class="bg-base-card border border-accent/40 rounded-xl p-4 space-y-2 bg-gradient-to-r from-accent/10 to-transparent">
-                        <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-bold font-mono uppercase px-2 py-0.5 rounded bg-accent text-base-bg">Aposta Combinada / Dupla de Elite</span>
-                            <span class="text-xs font-mono font-bold text-accent">Odd Total @${combinada.odd || '—'}</span>
-                        </div>
-                        <p class="text-xs text-slate-200 font-semibold">${combinada.mercado} — ${combinada.selecao}</p>
-                        <p class="text-[11px] text-slate-400">${combinada.motivo || ''}</p>
-                    </div>
-                    ` : ''}
 
                     ${nenhumaEntrada ? `
-                    <div class="bg-base-card/40 border border-dashed border-base-border rounded-xl p-6 text-center text-xs text-slate-500">
-                        Nenhum mercado nesta partida atingiu o delta de edge mínimo exigido pelo algoritmo hoje.
-                    </div>
-                    ` : ''}
+                        <div class="bg-base-card/40 border border-dashed border-base-border rounded-xl p-5 text-center text-xs text-slate-400">
+                            Nenhum mercado nesta partida bateu o edge mínimo de Carlos.
+                            Sem entrada recomendada — melhor esperar a próxima oportunidade do que forçar uma aposta sem edge real.
+                        </div>
+                    ` : `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            ${htmlEntrada1}
+                            ${htmlEntrada2}
+                        </div>
+                       ${combinada ? `
+                        <div class="${combinada.aprovada ? 'bg-accent/10 border-accent/30' : 'bg-slate-700/20 border-slate-600/30'} border rounded-xl p-4 space-y-2 mt-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold ${combinada.aprovada ? 'text-accent' : 'text-slate-400'} uppercase tracking-wide flex items-center gap-1.5">
+                                    <i class="fa-solid ${combinada.aprovada ? 'fa-layer-group' : 'fa-ban'}"></i> ${combinada.aprovada ? 'Aposta Combinada (Dupla)' : 'Combinação Não Recomendada'}
+                                </span>
+                                ${combinada.aprovada ? `<span class="text-sm font-mono font-bold text-white">Odd @${combinada.odd_combinada_estimada}</span>` : ''}
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                                <div><span class="text-slate-500">Edge Estimado:</span> <span class="${combinada.aprovada ? 'text-accent' : 'text-slate-500'} font-bold">${combinada.edge_combinado_estimado_pct}%</span></div>
+                                <div><span class="text-slate-500">Stake Recomendada:</span> <span class="${combinada.aprovada ? 'text-white' : 'text-slate-500'} font-bold">${combinada.stake_recomendada}</span></div>
+                            </div>
+                            <p class="text-[10px] ${combinada.aprovada ? 'text-amber-400/90 bg-amber-400/10 border-amber-400/20' : 'text-slate-400 bg-slate-700/20 border-slate-600/30'} border rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation mt-0.5"></i>
+                                <span>${combinada.aviso}</span>
+                            </p>
+                        </div>
+                        ` : ''}
+                    `}
                 </div>
             </div>
         </div>
