@@ -42,18 +42,30 @@
         .fade-up { animation: fadeUp .4s ease-out both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
+
+    <!-- Ghost Portal (membros) -- embed em site externo -->
+    <script defer src="https://moneyballpro.com.br/portal.js" data-ghost="https://moneyballpro.com.br/" crossorigin="anonymous"></script>
 </head>
 <body class="bg-base-bg text-slate-200 font-sans min-h-screen relative" style="background-image: radial-gradient(circle at 50% -10%, rgba(242,177,52,0.07), transparent 55%);">
     <div class="max-w-3xl mx-auto p-4 md:p-8 space-y-6 relative z-10">
 
+        <!-- BARRA SUPERIOR: MEMBRO -->
+        <div class="flex justify-end pt-1">
+            <a href="#/portal/signup" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-dim text-base-bg text-[11px] font-bold uppercase tracking-wide transition-all shadow-lg shadow-accent/20 cursor-pointer">
+                <i class="fa-solid fa-crown text-[10px]"></i> Torne-se Membro
+            </a>
+        </div>
+
         <!-- HEADER & LIMITE DIÁRIO -->
-        <div class="text-center space-y-2 pt-2">
+        <div class="text-center space-y-2">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft border border-accent/25 text-[10px] font-bold text-accent tracking-widest uppercase">
                 <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span> Engine v2.6 • Análise de Dados e Matchup
+                <span class="ml-1 px-1.5 py-0.5 rounded bg-risk/20 border border-risk/40 text-risk text-[9px] tracking-widest">BETA</span>
             </div>
             <img src="brand/logo-mark.png" alt="MoneyballPro" class="w-16 h-16 md:w-20 md:h-20 mx-auto mt-1" width="80" height="80">
             <h1 class="font-display text-4xl md:text-5xl text-white tracking-wide">MONEYBALL<span class="text-accent">PRO</span></h1>
-            <p class="text-xs text-slate-500">Análise quantitativa de valor esportivo, por Carlos.</p>
+            <p class="text-xs text-slate-500">Análise Carlos. Odds 1.20 - 3.00. Edge 1,5% - 10%</p>
+            <p class="text-[10px] text-risk/80 font-mono">Versão Beta — em fase de testes, funcionalidades e critérios ainda em ajuste.</p>
 
             <div class="pt-2">
                 <div class="inline-flex items-center justify-center gap-2 bg-base-panel border border-base-border rounded-lg px-4 py-1.5 shadow-sm">
@@ -432,12 +444,12 @@ async function executarAnalise() {
     const display = document.getElementById("display-area");
 
     let email = "dev@moneyballpro.com.br"; // E-mail padrão para o modo dev
-    
+
     if (!isDevMode) {
         try {
             email = await obterEmailUsuario();
         } catch (e) {
-            return; 
+            return;
         }
     }
 
@@ -473,7 +485,7 @@ async function executarAnalise() {
         btn.innerHTML = `<i class="fa-solid fa-bolt"></i> Executar Análise de Carlos`;
     }
 }
-    
+
 function abrirModal() {
     document.getElementById('waitlist-modal').classList.remove('hidden');
 }
