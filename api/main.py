@@ -647,4 +647,10 @@ async def analyze_tickets(
     except Exception as e:
         print(f"[TELEGRAM] Falha inesperada ao publicar: {e}")
 
+    # cota_info já foi calculada lá em cima (usada pra decidir se bloqueia
+    # com 402) mas nunca era devolvida no sucesso -- o frontend não tinha
+    # como saber o plano/consultas reais do usuário, só um contador local
+    # falso em localStorage, sem nenhuma relação com o Ghost de verdade.
+    resultado_final["cota_info"] = cota_info
+
     return resultado_final
