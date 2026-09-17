@@ -191,9 +191,6 @@ let imagensArquivosSelecionados = [];
 let ultimoResultadoGlobal = null;
 
 let sportAtivo = "futebol";
-let usosHoje = 0;
-const LIMITE_DIARIO = 3;
-const CHAVE_USO_DIARIO = "mb_uso_diario";
 
 const DEV_KEY = "marcus-mb-2026-brasilia";
 const urlParams = new URLSearchParams(window.location.search);
@@ -212,8 +209,7 @@ const MODULES = {
 document.addEventListener("DOMContentLoaded", () => {
     buildSportTabs();
     atualizarVisibilidadeLiga();
-    carregarUsoDoDia();
-    atualizarContadorUso();
+    atualizarContadorUso(carregarUltimaCotaConhecida());
 });
 
 function obterDataLocalYYYYMMDD() {
@@ -224,28 +220,25 @@ function obterDataLocalYYYYMMDD() {
     return `${ano}-${mes}-${dia}`;
 }
 
-function carregarUsoDoDia() {
-    const hoje = obterDataLocalYYYYMMDD();
-    let registro = null;
+// Isto é só um CACHE PRA EXIBIÇÃO enquanto não vem resposta nova do
+// servidor -- nunca é usado pra bloquear nada. A cota de verdade (ligada
+// ao plano real do Ghost) é sempre calculada e aplicada no backend, em
+// cada chamada de /api/v1/analyze; aqui só guardamos o último número que
+// o servidor nos disse, pra não mostrar "carregando" toda vez que a
+// página recarrega.
+const CHAVE_CACHE_COTA = "mb_ultima_cota_conhecida";
+
+function carregarUltimaCotaConhecida() {
     try {
-        registro = JSON.parse(localStorage.getItem(CHAVE_USO_DIARIO) || "null");
-    } catch (e) {
-        registro = null;
-    }
-
-    if (!registro || registro.data !== hoje) {
-        registro = { data: hoje, contagem: 0 };
-        localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify(registro));
-    }
-
-    usosHoje = registro.contagem;
+        const cache = JSON.parse(localStorage.getItem(CHAVE_CACHE_COTA) || "null");
+        if (cache && cache.data === obterDataLocalYYYYMMDD()) return cache.cota;
+    } catch (e) { /* ignora cache corrompido */ }
+    return null;
 }
 
-function registrarUsoDoDia() {
-    if (isDevMode) return;
-    const hoje = obterDataLocalYYYYMMDD();
-    usosHoje += 1;
-    localStorage.setItem(CHAVE_USO_DIARIO, JSON.stringify({ data: hoje, contagem: usosHoje }));
+function salvarUltimaCotaConhecida(cotaInfo) {
+    if (!cotaInfo) return;
+    localStorage.setItem(CHAVE_CACHE_COTA, JSON.stringify({ data: obterDataLocalYYYYMMDD(), cota: cotaInfo }));
 }
 
 function buildSportTabs() {
@@ -336,24 +329,37 @@ function previewImagens(input) {
     container.classList.remove("hidden");
 }
 
-function atualizarContadorUso() {
+function atualizarContadorUso(cotaInfo) {
     const counter = document.getElementById('usage-counter');
+    const pill = counter.parentElement;
+
+    pill.classList.remove('border-risk/40');
+    pill.classList.add('border-base-border');
+    counter.classList.remove('text-risk');
+    counter.classList.add('text-slate-300');
 
     if (isDevMode) {
         counter.innerText = "Modo Dev — Uso Ilimitado";
-        counter.classList.remove('text-risk');
-        counter.classList.add('text-slate-300');
-        counter.parentElement.classList.remove('border-risk/40');
-        counter.parentElement.classList.add('border-base-border');
         return;
     }
 
-    const restantes = LIMITE_DIARIO - usosHoje;
-    counter.innerText = `Usos Restantes Hoje: ${restantes}/${LIMITE_DIARIO}`;
+    if (!cotaInfo) {
+        counter.innerText = "Plano Free — cota carrega após a 1ª análise";
+        return;
+    }
+
+    if (cotaInfo.plano === 'pro' || cotaInfo.plano === 'dev') {
+        counter.innerText = "Membro Pro — Análises Ilimitadas";
+        return;
+    }
+
+    const limite = cotaInfo.limite ?? 3;
+    const restantes = Math.max(0, limite - (cotaInfo.consultas_hoje ?? 0));
+    counter.innerText = `Usos Restantes Hoje: ${restantes}/${limite}`;
 
     if (restantes <= 0) {
         counter.classList.replace('text-slate-300', 'text-risk');
-        counter.parentElement.classList.replace('border-base-border', 'border-risk/40');
+        pill.classList.replace('border-base-border', 'border-risk/40');
     }
 }
 
@@ -467,8 +473,8 @@ async function executarAnalise() {
         const dados = await processarPrintComEngine(email);
         ultimoResultadoGlobal = dados;
 
-        registrarUsoDoDia();
-        atualizarContadorUso();
+        atualizarContadorUso(dados.cota_info);
+        salvarUltimaCotaConhecida(dados.cota_info);
 
         recolherEntrada();
         renderizarBilhetesFormatados(dados);
@@ -476,6 +482,10 @@ async function executarAnalise() {
     } catch (error) {
         console.error(error);
         if (error.status === 402) {
+            if (error.detalhe) {
+                atualizarContadorUso(error.detalhe);
+                salvarUltimaCotaConhecida(error.detalhe);
+            }
             abrirModal();
         } else {
             display.innerHTML = alertaErro(`Erro no Servidor: ${error.message}`);
@@ -518,7 +528,12 @@ function recolherEntrada() {
 }
 
 function resetarEntrada() {
-    if (!isDevMode && usosHoje >= LIMITE_DIARIO) {
+    const ultimaCota = carregarUltimaCotaConhecida();
+    const cotaProvavelmenteEsgotada = ultimaCota
+        && ultimaCota.plano !== 'pro' && ultimaCota.plano !== 'dev'
+        && (ultimaCota.limite ?? 3) - (ultimaCota.consultas_hoje ?? 0) <= 0;
+
+    if (!isDevMode && cotaProvavelmenteEsgotada) {
         abrirModal();
         return;
     }
