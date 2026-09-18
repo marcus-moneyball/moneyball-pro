@@ -64,6 +64,8 @@ Para props individuais (sem cálculo prévio: chutes, gols de jogador, pontos/re
 
 4.3 Seleção: maior EV/Delta segundo o viés de {persona_curto}, respeitando 4.1/4.5. Proibido repetir o mesmo mercado base nas duas entradas. "categoria" = COLETIVO/INDIVIDUAL conforme o mercado real (pode diferir entre as duas). "dependencia_hipotese" = DEPENDENTE (só se confirma com o roteiro) ou INDEPENDENTE.
 
+4.3.1 NOME DO MERCADO -- OBRIGATÓRIO USAR O TERMO EXATO DO CATÁLOGO ACIMA (seção "Mercados:" no início deste prompt), nunca um sinônimo ou termo inventado. Proibido inventar categoria própria (ex: nunca escreva "Eliminações" pra hits de rebatedor ou qualquer prop -- "eliminação"/"eliminações" não é terminologia de nenhum mercado de beisebol, futebol ou basquete deste catálogo). Se o print mostra uma prop de rebatedor batendo bola/hits, o campo "mercado" é literalmente "Hits de Rebatidor" (ou o nome equivalente exato do catálogo do esporte em questão) -- não parafraseie, não abrevie, não troque por um termo de outro esporte. Antes de preencher "mercado", confira: essa string aparece, com esse sentido, na lista de Mercados do catálogo do esporte da partida? Se não, você errou o mercado -- corrija antes de responder.
+
 4.4 Janela de odds: {odd_min} a {odd_max}.
 
 4.5 ALINHAMENTO COM O ROTEIRO: a direção do mercado escolhido tem que bater com o "lado_favorecido" do roteiro e o "favorece" do matchup -- domínio do Time A pede Handicap/Moneyline/Cantos nessa direção; jogo aberto pede Overs. Apostar contra o roteiro só entra se o Δ for absurdamente superior aos candidatos coerentes, e o motivo tem que reconhecer e justificar a anomalia.
