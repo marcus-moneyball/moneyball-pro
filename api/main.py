@@ -418,6 +418,11 @@ async def analyze_tickets(
                         except Exception as e:
                             print(f"[ODDS API] Falha ao atualizar cache da liga '{liga}': {e}")
 
+                    # Piso de MSC pra aceitar um candidato calculado varia com
+                    # a convergência dessa partida (ver candidatos.py) -- uma
+                    # única leitura aqui, repassada pra todos os builders.
+                    nivel_convergencia_atual = convergencia_calculada.get("nivel") if convergencia_calculada else None
+
                     candidatos_calculados.extend(
                         montar_candidatos_over_under_calculados(
                             dados_estruturados.get("mercados_total_principal", []),
@@ -427,6 +432,7 @@ async def analyze_tickets(
                             esporte=sport,
                             persona=analista_key,
                             fatores_incerteza=fatores_incerteza,
+                            nivel_convergencia=nivel_convergencia_atual,
                         )
                     )
 
@@ -443,6 +449,7 @@ async def analyze_tickets(
                                     esporte=sport,
                                     persona=analista_key,
                                     fatores_incerteza=fatores_incerteza,
+                                    nivel_convergencia=nivel_convergencia_atual,
                                 )
                             )
 
@@ -458,6 +465,7 @@ async def analyze_tickets(
                                     esporte=sport,
                                     persona=analista_key,
                                     fatores_incerteza=fatores_incerteza,
+                                    nivel_convergencia=nivel_convergencia_atual,
                                 )
                             )
 
@@ -465,6 +473,7 @@ async def analyze_tickets(
                         montar_candidato_btts(
                             dados_estruturados.get("mercado_btts"), lam_a, lam_b,
                             persona=analista_key, fatores_incerteza=fatores_incerteza,
+                            nivel_convergencia=nivel_convergencia_atual,
                         )
                     )
 
@@ -474,12 +483,14 @@ async def analyze_tickets(
                                 dados_estruturados.get("mercado_chance_dupla"), lam_a, lam_b,
                                 persona=analista_key, fatores_incerteza=fatores_incerteza,
                                 conn=conn_odds, time_a=time_a, time_b=time_b, data_jogo=data_jogo_hoje,
+                                nivel_convergencia=nivel_convergencia_atual,
                             )
                         )
                         candidatos_calculados.extend(
                             montar_candidatos_handicap_asiatico(
                                 dados_estruturados.get("mercados_handicap_asiatico"), lam_a, lam_b,
                                 persona=analista_key, fatores_incerteza=fatores_incerteza,
+                                nivel_convergencia=nivel_convergencia_atual,
                             )
                         )
                     elif sport.lower() in ("basquete", "beisebol"):
@@ -491,6 +502,7 @@ async def analyze_tickets(
                                 esporte=sport, nome_time_a=nome_time_a, nome_time_b=nome_time_b,
                                 persona=analista_key, fatores_incerteza=fatores_incerteza,
                                 conn=conn_odds, data_jogo=data_jogo_hoje,
+                                nivel_convergencia=nivel_convergencia_atual,
                             )
                         )
                         candidatos_calculados.extend(
@@ -498,6 +510,7 @@ async def analyze_tickets(
                                 dados_estruturados.get("mercados_handicap"), lam_a, lam_b,
                                 persona=analista_key, fatores_incerteza=fatores_incerteza,
                                 esporte=sport,
+                                nivel_convergencia=nivel_convergencia_atual,
                             )
                         )
                 finally:
