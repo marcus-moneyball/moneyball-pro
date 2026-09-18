@@ -82,6 +82,7 @@ def _montar_metricas_candidato(
     mercado_sharp: Optional[str] = None,
     indice_selecao: Optional[int] = None,
     fair_prob_sharp_precalculado: Optional[float] = None,
+    nivel_convergencia: Optional[str] = None,
 ) -> Tuple[Optional[float], Dict[str, Any]]:
     odd_decimal = converter_odd_para_decimal(odd)
 
@@ -112,12 +113,28 @@ def _montar_metricas_candidato(
         fair_prob_precalculado=fair_prob_sharp_precalculado,
     )
 
-    # --- TRAVA DE EMERGÊNCIA: FILTRO RIGOROSO DE MSC ---
-    MSC_MINIMO_EXIGIDO = 80.0  # Sobe o sarrafo para aceitar apenas entradas de alta confiança
-    if msc is None or msc < MSC_MINIMO_EXIGIDO:
+    # --- PISO DE MSC CORRELACIONADO COM A CONVERGÊNCIA ---
+    # Antes era um piso fixo de 80 (só Elite passava) pra qualquer mercado
+    # calculado -- isso é binário e ignora que já temos um segundo sinal
+    # independente (Roteiro + Matchup) pra essa mesma partida. Quando os
+    # dois pilares já concordam (ALTA), o candidato precisa de menos força
+    # matemática sozinho pra ser aceito; quando eles se contradizem (BAIXA),
+    # continua exigindo Elite pra compensar o conflito. Isso também corrige
+    # a assimetria com props: antes só prop conseguia aparecer como
+    # "Alta"/"Moderada", mercado calculado (coletivo) só existia como Elite
+    # ou nada.
+    PISO_MSC_POR_CONVERGENCIA = {
+        "ALTA": 40.0,    # Moderada -- roteiro e matchup já confirmam o lado
+        "MEDIA": 60.0,   # Alta -- só um pilar confirma
+        "NEUTRO": 70.0,  # entre Alta e Elite -- nenhum pilar indica lado
+        "BAIXA": 80.0,   # Elite -- sinais conflitantes, precisa de força esmagadora
+    }
+    msc_minimo_exigido = PISO_MSC_POR_CONVERGENCIA.get(nivel_convergencia, 60.0)
+
+    if msc is None or msc < msc_minimo_exigido:
         print(
             f"[MSC CIRCUIT BREAKER] Candidato descartado por baixa confiança -- "
-            f"MSC gerado: {msc} (Mínimo exigido: {MSC_MINIMO_EXIGIDO}). "
+            f"MSC gerado: {msc} (Mínimo exigido: {msc_minimo_exigido}, convergência: {nivel_convergencia}). "
             f"contexto={contexto_log or 'n/d'}"
         )
         return None, {}
@@ -136,7 +153,8 @@ def _montar_metricas_candidato(
 
 def montar_candidatos_over_under_calculados(
     mercados: list, lam_total: Optional[float], nome_mercado: str, unidade_selecao: str,
-    esporte: str = "futebol", persona: str = "carlos", fatores_incerteza: Optional[list] = None
+    esporte: str = "futebol", persona: str = "carlos", fatores_incerteza: Optional[list] = None,
+    nivel_convergencia: Optional[str] = None,
 ) -> list:
     if lam_total is None:
         return []
@@ -163,7 +181,8 @@ def montar_candidatos_over_under_calculados(
 
         ctx_log = f"{esporte_key}/{nome_mercado} - {lado} {linha}"
         odd_decimal, metricas = _montar_metricas_candidato(
-            prob_bruta, odd, persona, fatores_incerteza, delta_pct, contexto_log=ctx_log
+            prob_bruta, odd, persona, fatores_incerteza, delta_pct, contexto_log=ctx_log,
+            nivel_convergencia=nivel_convergencia,
         )
         if odd_decimal is None:
             continue
@@ -181,7 +200,8 @@ def montar_candidatos_over_under_calculados(
 
 
 def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
-                            persona: str = "carlos", fatores_incerteza: Optional[list] = None) -> list:
+                            persona: str = "carlos", fatores_incerteza: Optional[list] = None,
+                            nivel_convergencia: Optional[str] = None) -> list:
     if not mercado_btts or lam_a is None or lam_b is None:
         return []
 
@@ -200,7 +220,8 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
         if odd:
             ctx_log = f"futebol/BTTS - {selecao}"
             odd_decimal, metricas = _montar_metricas_candidato(
-                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log
+                prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log,
+                nivel_convergencia=nivel_convergencia,
             )
             if odd_decimal is not None:
                 candidatos.append({
@@ -217,7 +238,8 @@ def montar_candidato_btts(mercado_btts: Optional[dict], lam_a: Optional[float], 
 def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
                                 esporte: str, nome_time_a: str = "Time A", nome_time_b: str = "Time B",
                                 persona: str = "carlos", fatores_incerteza: Optional[list] = None,
-                                conn=None, data_jogo: Optional[str] = None) -> list:
+                                conn=None, data_jogo: Optional[str] = None,
+                                nivel_convergencia: Optional[str] = None) -> list:
     if not mercado_moneyline or lam_a is None or lam_b is None:
         return []
 
@@ -237,6 +259,7 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
                 prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log,
                 conn=conn, esporte=esporte, time_a=nome_time_a, time_b=nome_time_b,
                 data_jogo=data_jogo, mercado_sharp="moneyline", indice_selecao=indice,
+                nivel_convergencia=nivel_convergencia,
             )
             if odd_decimal is not None:
                 candidatos.append({
@@ -253,7 +276,8 @@ def montar_candidato_moneyline(mercado_moneyline: Optional[dict], lam_a: Optiona
 def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: Optional[float], lam_b: Optional[float],
                                     persona: str = "carlos", fatores_incerteza: Optional[list] = None,
                                     conn=None, time_a: Optional[str] = None, time_b: Optional[str] = None,
-                                    data_jogo: Optional[str] = None) -> list:
+                                    data_jogo: Optional[str] = None,
+                                    nivel_convergencia: Optional[str] = None) -> list:
     if not mercado_chance_dupla or lam_a is None or lam_b is None:
         return []
 
@@ -284,6 +308,7 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
             odd_decimal, metricas = _montar_metricas_candidato(
                 prob, odd, persona, fatores_incerteza, delta_pct=None, contexto_log=ctx_log,
                 fair_prob_sharp_precalculado=fair_combo,
+                nivel_convergencia=nivel_convergencia,
             )
             if odd_decimal is not None:
                 candidatos.append({
@@ -298,7 +323,8 @@ def montar_candidatos_chance_dupla(mercado_chance_dupla: Optional[dict], lam_a: 
 
 def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a: Optional[float], lam_b: Optional[float],
                                         persona: str = "carlos", fatores_incerteza: Optional[list] = None,
-                                        esporte: str = "futebol") -> list:
+                                        esporte: str = "futebol",
+                                        nivel_convergencia: Optional[str] = None) -> list:
     if not mercados_handicap or lam_a is None or lam_b is None:
         return []
 
@@ -328,7 +354,8 @@ def montar_candidatos_handicap_asiatico(mercados_handicap: Optional[list], lam_a
             persona=persona, 
             fatores_incerteza=fatores_incerteza, 
             delta_pct=None,
-            contexto_log=ctx_log
+            contexto_log=ctx_log,
+            nivel_convergencia=nivel_convergencia,
         )
         if odd_decimal is None:
             continue
