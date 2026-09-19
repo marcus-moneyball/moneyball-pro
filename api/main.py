@@ -42,6 +42,7 @@ try:
         salvar_telegram_user_id, obter_plano_e_telegram,
         enviar_convite_grupo_pro, remover_do_grupo_pro,
     )
+    from api.eventos import registrar_evento
 except ImportError:
     from catalogos import PERFIS_ANALISTA, CONFIG_MERCADO_PRINCIPAL
     from calc import (
@@ -71,6 +72,7 @@ except ImportError:
         enviar_convite_grupo_pro, remover_do_grupo_pro,
     )
     from ghost_admin import criar_membro_free_ghost
+    from eventos import registrar_evento
 
 
 app = FastAPI(title="MoneyballPro Engine", version="2.6.0")
@@ -654,6 +656,42 @@ async def analyze_tickets(
                 resultado_final["dupla_de_elite"]["aposta_combinada"] = calcular_aposta_combinada(
                     prob_1, odd_1, prob_2, odd_2, teto_stake_convergencia=teto_convergencia,
                 )
+
+    # --- NOVO: instrumentação de eventos pro teste do "aha moment" ---
+    # Best-effort e não-bloqueante: se falhar, não deve derrubar a análise.
+    if email:
+        conn_evt = get_connection()
+        try:
+            registrar_evento(conn_evt, email, "sessao_analise", {"esporte": sport})
+
+            entrada_1_evt = (resultado_final.get("dupla_de_elite") or {}).get("entrada_1")
+            entrada_2_evt = (resultado_final.get("dupla_de_elite") or {}).get("entrada_2")
+
+            if entrada_1_evt is None:
+                registrar_evento(conn_evt, email, "recomendacao_negativa", {"esporte": sport})
+
+            for entrada_evt in (entrada_1_evt, entrada_2_evt):
+                if entrada_evt:
+                    odd_evt = _parse_float_seguro(entrada_evt.get("odd"))
+                    stake_evt = _parse_float_seguro(
+                        str(entrada_evt.get("stake_recomendada", "")).strip().lower().replace("u", "")
+                    )
+                    if odd_evt is not None and stake_evt is not None:
+                        if odd_evt <= 1.30 and stake_evt <= 0.5:
+                            registrar_evento(
+                                conn_evt, email, "stake_divergente",
+                                {"tipo": "cautela_em_favorito", "odd": odd_evt, "stake": stake_evt, "esporte": sport},
+                            )
+                        elif 1.80 <= odd_evt <= 2.50 and stake_evt >= 0.8:
+                            registrar_evento(
+                                conn_evt, email, "stake_divergente",
+                                {"tipo": "conviccao_em_odd_modesta", "odd": odd_evt, "stake": stake_evt, "esporte": sport},
+                            )
+        except Exception as e:
+            print(f"[EVENTOS] Falha ao registrar eventos pra '{email}': {e}")
+        finally:
+            fechar_conexao(conn_evt)
+    # --- FIM NOVO ---
 
     try:
         publicar_recomendacao_publica(resultado_final)
